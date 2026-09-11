@@ -234,7 +234,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     try {
       // Check if last message was a quiz question and evaluate answer
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg?.quizData || activeMode === 'quiz') {
+      if (lastMsg?.quizData?.question) {
         const evalResult = await tiaService.evaluateQuizAnswer(
           question,
           lastMsg?.quizData?.question || '',

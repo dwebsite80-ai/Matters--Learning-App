@@ -669,19 +669,26 @@ export async function sendTextMessage(
 
   // 1. Try Server-Side API first (Universal AI Learning Assistant Pipeline)
   try {
+    const payload = {
+      message: cleanInput,
+      question: cleanInput,
+      userText: cleanInput,
+      course: context?.subjectName || null,
+      currentCourse: context?.subjectName || null,
+      lesson: context?.lessonTitle || null,
+      currentLesson: context?.lessonTitle || null,
+      context: context || null,
+      mode,
+      language: currentLanguage,
+      conversationHistory: conversationHistory.slice(-6),
+    };
+
     const response = await fetch(endpoint, {
       method: 'POST',
-      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        message: cleanInput,
-        context,
-        mode,
-        language: currentLanguage,
-        conversationHistory: conversationHistory.slice(-6),
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (import.meta.env.DEV) {
@@ -691,11 +698,21 @@ export async function sendTextMessage(
 
     if (response.ok) {
       const data = await response.json();
-      if (import.meta.env.DEV) {
-        console.log(`[Tia Frontend] API response status: ok=${data?.ok}, hasMessage=${Boolean(data?.message)}`);
-      }
-      if (data?.ok && data?.message) {
-        return data.message;
+      if (data?.ok) {
+        if (data.message && data.message.text) {
+          return data.message;
+        }
+        const replyText = data.text || data.answer || data.displayText;
+        if (replyText) {
+          return {
+            id: generateId(),
+            sender: 'tia',
+            text: replyText,
+            speechText: data.speechText || replyText,
+            timestamp: Date.now(),
+            quickActions: data.quickActions || [],
+          };
+        }
       }
     } else {
       let errorMsg = '';
