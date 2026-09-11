@@ -94,6 +94,9 @@ export async function processTiaChat(body: TiaChatRequestBody): Promise<TiaChatR
     '';
 
   const userText = String(rawUserText).trim();
+  const hasKey = Boolean(getGeminiApiKey());
+  console.log(`[Tia AI] Request received | Question: "${userText}" | Lang: ${body.language || 'hi'} | GEMINI_API_KEY present: ${hasKey}`);
+
   if (!userText) {
     return {
       status: 400,
@@ -238,12 +241,14 @@ CRITICAL MANDATES:
 TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi-IN TTS)' : 'English'}`;
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  // Prefer ultra-fast, high-availability gemini-3.1-flash-lite first to avoid 503 demand spikes
+  const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
   let response: any = null;
   let lastGeminiError: any = null;
 
   for (let i = 0; i < modelsToTry.length; i++) {
     const modelName = modelsToTry[i];
+    console.log(`[Tia AI] Gemini request started | Model: ${modelName} | Prompt length: ${userContextPrompt.length}`);
     try {
       response = await gemini.models.generateContent({
         model: modelName,
@@ -256,14 +261,14 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
         },
       });
       if (response?.text) {
+        console.log(`[Tia AI] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`);
         break;
       }
     } catch (err: any) {
       lastGeminiError = err;
       const status = err?.status || err?.code;
-      console.warn(`[Tia AI] Model ${modelName} error (status: ${status}):`, err?.message || err);
 
-      // Fast fail on auth error
+      // Fast fail on auth error immediately
       if (
         status === 400 ||
         status === 401 ||
@@ -271,6 +276,7 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
         err?.message?.includes('API key not valid') ||
         err?.message?.includes('API_KEY_INVALID')
       ) {
+        console.error(`[Tia AI] Authentication error with Gemini API: ${err?.message || err}`);
         return {
           status: 401,
           data: {
@@ -282,7 +288,10 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
       }
 
       if (i < modelsToTry.length - 1) {
-        await sleep(350);
+        console.log(`[Tia AI] Model ${modelName} temporary issue (status: ${status}); failing over to next model...`);
+        await sleep(250);
+      } else {
+        console.error(`[Tia AI] All models failed | Final model: ${modelName} | Status: ${status} | Error: ${err?.message || err}`);
       }
     }
   }

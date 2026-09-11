@@ -722,14 +722,10 @@ export async function sendTextMessage(
       } catch {
         errorMsg = await response.text().catch(() => 'Unknown network error');
       }
-      if (import.meta.env.DEV) {
-        console.error(`[Tia Frontend] API error message (HTTP ${response.status}): ${errorMsg}`);
-      }
+      console.error(`[Tia Frontend] API error response (HTTP ${response.status}): ${errorMsg}`);
     }
   } catch (apiErr: any) {
-    if (import.meta.env.DEV) {
-      console.error('[Tia Frontend] Network error calling /api/tia/chat:', apiErr?.message || apiErr);
-    }
+    console.error('[Tia Frontend] Network error calling /api/tia/chat:', apiErr?.message || apiErr);
   }
 
   // 2. Failure Fallback: NEVER show the current lesson as the answer for unrelated questions.

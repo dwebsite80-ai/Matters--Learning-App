@@ -2,15 +2,7 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/tia/chat",
-      "destination": "/api/tia/chat"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
