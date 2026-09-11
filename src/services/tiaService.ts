@@ -660,11 +660,18 @@ export async function sendTextMessage(
 ): Promise<TiaMessage> {
   const isHindi = currentLanguage === 'hi';
   const cleanInput = (userText || '').trim();
+  const endpoint = '/api/tia/chat';
+
+  if (import.meta.env.DEV) {
+    console.log(`[Tia Frontend] Calling endpoint: ${endpoint}`);
+    console.log(`[Tia Frontend] Question: "${cleanInput}" | Lang: ${currentLanguage} | Mode: ${mode}`);
+  }
 
   // 1. Try Server-Side API first (Universal AI Learning Assistant Pipeline)
   try {
-    const response = await fetch('/api/tia/chat', {
+    const response = await fetch(endpoint, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -677,14 +684,35 @@ export async function sendTextMessage(
       }),
     });
 
+    if (import.meta.env.DEV) {
+      console.log(`[Tia Frontend] HTTP status: ${response.status} (${response.statusText})`);
+      console.log(`[Tia Frontend] Request success/failure: ${response.ok ? 'SUCCESS' : 'FAILURE'}`);
+    }
+
     if (response.ok) {
       const data = await response.json();
+      if (import.meta.env.DEV) {
+        console.log(`[Tia Frontend] API response status: ok=${data?.ok}, hasMessage=${Boolean(data?.message)}`);
+      }
       if (data?.ok && data?.message) {
         return data.message;
       }
+    } else {
+      let errorMsg = '';
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson?.error || JSON.stringify(errJson);
+      } catch {
+        errorMsg = await response.text().catch(() => 'Unknown network error');
+      }
+      if (import.meta.env.DEV) {
+        console.error(`[Tia Frontend] API error message (HTTP ${response.status}): ${errorMsg}`);
+      }
     }
-  } catch (apiErr) {
-    console.warn('Tia chat API network issue:', apiErr);
+  } catch (apiErr: any) {
+    if (import.meta.env.DEV) {
+      console.error('[Tia Frontend] Network error calling /api/tia/chat:', apiErr?.message || apiErr);
+    }
   }
 
   // 2. Failure Fallback: NEVER show the current lesson as the answer for unrelated questions.

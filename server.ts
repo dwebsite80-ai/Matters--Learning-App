@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -14,11 +15,39 @@ import { getCourseScope } from './src/services/tiaCourseRegistry';
 import { cleanTiaSpeechText } from './src/services/tiaLanguageConfig';
 import { TiaLessonContext, TiaMessage } from './src/types';
 
+function getGeminiApiKey(): string | undefined {
+  const rawKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.API_KEY;
+
+  if (!rawKey) return undefined;
+  const trimmed = rawKey.trim();
+  // Filter out placeholder template strings
+  if (
+    !trimmed ||
+    trimmed === 'MY_GEMINI_API_KEY' ||
+    trimmed === 'YOUR_API_KEY' ||
+    trimmed.startsWith('MY_')
+  ) {
+    return undefined;
+  }
+  return trimmed;
+}
+
 let aiClient: GoogleGenAI | null = null;
+let lastApiKey: string | null = null;
+
 function getGeminiClient(): GoogleGenAI | null {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
+  const currentKey = getGeminiApiKey();
+  if (!currentKey) {
+    return null;
+  }
+  if (!aiClient || lastApiKey !== currentKey) {
+    lastApiKey = currentKey;
     aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey: currentKey,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -33,6 +62,17 @@ async function startServer() {
   const app = express();
   const PRIMARY_PORT = 3000;
 
+  // CORS middleware to ensure seamless communication in all environments (iframes, shared previews, local)
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
   app.use(express.json());
 
   // Health checks
@@ -41,6 +81,16 @@ async function startServer() {
   });
   app.get('/healthz', (req, res) => {
     res.json({ status: 'ok' });
+  });
+
+  // Diagnostic status check for API configuration (dev only, no secrets exposed)
+  app.get('/api/tia/status', (req, res) => {
+    const hasKey = Boolean(getGeminiApiKey());
+    res.json({
+      ok: true,
+      hasGeminiApiKey: hasKey,
+      nodeEnv: process.env.NODE_ENV || 'development',
+    });
   });
 
   // Tia AI chat endpoint
@@ -62,48 +112,68 @@ async function startServer() {
 
       const userText = (message || '').trim();
       if (!userText) {
-        return res.status(400).json({ error: 'Message cannot be empty' });
+        return res.status(400).json({ ok: false, error: 'Message cannot be empty' });
       }
 
       const isHindi = language === 'hi';
       const course = getCourseScope(context?.subjectId, context);
 
-      // Server-Side Gemini AI Pipeline
+      const hasKey = Boolean(getGeminiApiKey());
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[Tia Server] POST /api/tia/chat - Question: "${userText}" | Lang: ${language} | HasKey: ${hasKey}`);
+      }
+
+      // Check server-side Gemini credential
       const gemini = getGeminiClient();
+      if (!gemini) {
+        console.warn(
+          '[Tia Server] Error: GEMINI_API_KEY is not configured in this environment. Configure in AI Studio Settings -> Secrets or .env'
+        );
+        return res.status(500).json({
+          ok: false,
+          error: 'GEMINI_API_KEY is not configured on the server',
+          code: 'MISSING_API_KEY',
+        });
+      }
+
       let generatedDisplayText = '';
       let generatedSpeechText = '';
       let quickActions: string[] = [];
+      let lastGeminiError: any = null;
 
-      if (gemini) {
-        try {
-          const lessonSections = context?.sections
-            ?.map(
-              (s) =>
-                `• ${isHindi ? s.title_hi || s.title : s.title}: ${
-                  isHindi ? s.content_hi || s.content : s.content
-                }`
-            )
-            .join('\n') || '';
+      try {
+        const lessonSections = context?.sections
+          ?.map(
+            (s) =>
+              `• ${isHindi ? s.title_hi || s.title : s.title}: ${
+                isHindi ? s.content_hi || s.content : s.content
+              }`
+          )
+          .join('\n') || '';
 
-          const recentHistory = conversationHistory
-            .slice(-4)
-            .map((m) => `${m.sender === 'user' ? 'User' : 'Tia'}: ${m.text}`)
-            .join('\n');
+        const recentHistory = conversationHistory
+          .slice(-4)
+          .map((m) => `${m.sender === 'user' ? 'User' : 'Tia'}: ${m.text}`)
+          .join('\n');
 
-          const systemPrompt = `You are Tia, an intelligent, conversational, warm, and highly engaging AI learning assistant.
-CORE IDENTITY:
-You behave as: "General AI assistant + current course expert".
-The current course is your specialty and area of deep focus, NOT a restriction or boundary.
+        const systemPrompt = `You are Tia, an intelligent, conversational, warm, and highly engaging AI learning assistant.
+CORE IDENTITY & KNOWLEDGE PRIORITIES:
+- You behave as: "General AI assistant + current course expert".
+- CURRENT COURSE = EXPERT CONTEXT.
+- CURRENT LESSON = RELEVANT CONTEXT.
+- USER'S LATEST QUESTION = HIGHEST PRIORITY.
+- The current course is your specialty and area of deep focus, NOT a restriction or boundary.
 
 CRITICAL MANDATES:
-1. TIA MUST ANSWER ALL REASONABLE QUESTIONS:
+1. TIA MUST ANSWER ALL USER QUESTIONS:
    - Whatever the user asks, answer the ACTUAL latest question: "${userText}".
    - Remove every course boundary. Never refuse or restrict the user.
-   - If the question relates to the current course (${course.name}) -> Answer with deep course expertise.
-   - If the question is about general knowledge, public figures (e.g. Narendra Modi, Virat Kohli), programming (e.g. Python), recipes (e.g. Pizza), science, or everyday life -> Answer directly, accurately, and informatively!
+   - If the question relates to the current course (${course.name}) -> Deeply utilize course knowledge and practical principles.
+   - If the question is about general knowledge, public figures (e.g. Virat Kohli, Narendra Modi), programming (e.g. Python), business models (e.g. Airbnb), science, recipes, or everyday life -> Answer directly, accurately, and informatively!
    - Connect naturally with the current course ONLY IF it makes intuitive sense (e.g. connecting GDP to Economics). If not relevant, answer normally and helpfully.
    - NEVER, UNDER ANY CIRCUMSTANCES, SAY:
      - "This is outside your course."
+     - "This question is outside your course."
      - "I can only answer course-related questions."
      - "Please ask something related to your lesson."
      The current course is context, NOT a barrier!
@@ -124,7 +194,7 @@ CRITICAL MANDATES:
    - Target Language: ${isHindi ? 'Hindi' : 'English'}
    - If Hindi:
      - displayText: Friendly, natural Hindi/Hinglish with markdown bolding (**शब्द**) for emphasis.
-     - speechText: Natural spoken Hindi in pure DEVANAGARI script for the Indian TTS engine (hi-IN). English technical names (e.g. Python, GDP, Virat Kohli) can stay, but all conversational Hindi words MUST be in Devanagari script so TTS pronounces them properly. DO NOT put asterisks (*), markdown hashes (#), bullet points, URLs, or emojis in speechText.
+     - speechText: Natural spoken Hindi in pure DEVANAGARI script for the Indian TTS engine (hi-IN). English technical names (e.g. Python, GDP, Virat Kohli, Airbnb) can stay, but all conversational Hindi words MUST be in Devanagari script so TTS pronounces them properly. DO NOT put asterisks (*), markdown hashes (#), bullet points, URLs, or emojis in speechText.
    - If English:
      - displayText: Fluent, natural English with markdown bolding.
      - speechText: Natural spoken English for en-IN TTS without markdown symbols or emojis.
@@ -137,106 +207,127 @@ CRITICAL MANDATES:
      "quickActions": ["Suggested action 1", "Suggested action 2", "Suggested action 3"]
    }`;
 
-          const userContextPrompt = `CURRENT_COURSE: ${course.name} (${course.description})
-ACTIVE_LESSON_TITLE: ${context?.lessonTitle || course.name}
-${lessonSections ? `ACTIVE_LESSON_SUMMARY:\n${lessonSections.slice(0, 400)}\n` : ''}
-${recentHistory ? `CONVERSATION_HISTORY:\n${recentHistory}\n` : ''}
-USER_LATEST_QUESTION: "${userText}"
-TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in Devanagari script)' : 'English'}`;
+        const userContextPrompt = `CURRENT_COURSE (EXPERT CONTEXT): ${course.name} (${course.description})
+CURRENT_LESSON (RELEVANT CONTEXT): ${context?.lessonTitle || course.name}
+${lessonSections ? `CURRENT_LESSON_CONTENT:\n${lessonSections.slice(0, 500)}\n` : ''}
+${recentHistory ? `RECENT_CONVERSATION:\n${recentHistory}\n` : ''}
+USER_LATEST_QUESTION (HIGHEST PRIORITY): "${userText}"
+TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi-IN TTS)' : 'English'}`;
 
-          const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-          // Prioritize gemini-3.1-flash-lite for ultra-fast, high-quota response
-          const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
-          let response: any = null;
+        const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+        const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+        let response: any = null;
 
-          for (let i = 0; i < modelsToTry.length; i++) {
-            const modelName = modelsToTry[i];
-            try {
-              response = await gemini.models.generateContent({
-                model: modelName,
-                contents: userContextPrompt,
-                config: {
-                  systemInstruction: systemPrompt,
-                  temperature: 0.7,
-                  maxOutputTokens: 650,
-                  responseMimeType: 'application/json',
-                },
-              });
-              if (response?.text) break;
-            } catch (err: any) {
-              const isHighDemand =
-                err?.status === 503 ||
-                err?.message?.includes('503') ||
-                err?.message?.includes('high demand') ||
-                err?.message?.includes('UNAVAILABLE');
-              console.info(
-                `Model ${modelName} temporarily busy${isHighDemand ? ' (high demand spike)' : ''}, checking next fallback...`
-              );
-              if (i < modelsToTry.length - 1) {
-                await sleep(350);
+        for (let i = 0; i < modelsToTry.length; i++) {
+          const modelName = modelsToTry[i];
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[Tia Server] Invoking Gemini model: ${modelName}`);
+          }
+          try {
+            response = await gemini.models.generateContent({
+              model: modelName,
+              contents: userContextPrompt,
+              config: {
+                systemInstruction: systemPrompt,
+                temperature: 0.7,
+                maxOutputTokens: 750,
+                responseMimeType: 'application/json',
+              },
+            });
+            if (response?.text) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.log(`[Tia Server] Gemini model ${modelName} responded successfully.`);
               }
+              break;
+            }
+          } catch (err: any) {
+            lastGeminiError = err;
+            const status = err?.status || err?.code;
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn(`[Tia Server] Model ${modelName} error (status: ${status}):`, err?.message || err);
+            }
+
+            // If authentication or permission failed, do not loop through other models
+            if (
+              status === 400 ||
+              status === 401 ||
+              status === 403 ||
+              err?.message?.includes('API key not valid') ||
+              err?.message?.includes('API_KEY_INVALID')
+            ) {
+              return res.status(401).json({
+                ok: false,
+                error: `Gemini API authentication failed: ${err?.message || 'Invalid API key'}`,
+                code: 'AUTH_FAILED',
+              });
+            }
+
+            if (i < modelsToTry.length - 1) {
+              await sleep(350);
             }
           }
+        }
 
-          if (response?.text) {
-            const rawText = response.text.trim();
-            let parsedDisplay = '';
-            let parsedSpeech = '';
-            let parsedActions: string[] = [];
+        if (response?.text) {
+          const rawText = response.text.trim();
+          let parsedDisplay = '';
+          let parsedSpeech = '';
+          let parsedActions: string[] = [];
 
-            try {
-              const parsed = JSON.parse(rawText);
-              if (parsed && typeof parsed === 'object') {
+          // Clean JSON string
+          const cleanJson = rawText
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/```\s*$/i, '')
+            .trim();
+
+          try {
+            const parsed = JSON.parse(cleanJson);
+            if (parsed && typeof parsed === 'object') {
+              parsedDisplay = parsed.displayText || parsed.text || '';
+              parsedSpeech = parsed.speechText || '';
+              if (Array.isArray(parsed.quickActions)) {
+                parsedActions = parsed.quickActions.filter(Boolean);
+              }
+            }
+          } catch {
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
                 parsedDisplay = parsed.displayText || parsed.text || '';
                 parsedSpeech = parsed.speechText || '';
                 if (Array.isArray(parsed.quickActions)) {
                   parsedActions = parsed.quickActions.filter(Boolean);
                 }
+              } catch {
+                // ignore
               }
-            } catch {
-              const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                try {
-                  const parsed = JSON.parse(jsonMatch[0]);
-                  parsedDisplay = parsed.displayText || parsed.text || '';
-                  parsedSpeech = parsed.speechText || '';
-                  if (Array.isArray(parsed.quickActions)) {
-                    parsedActions = parsed.quickActions.filter(Boolean);
-                  }
-                } catch {
-                  // ignore
-                }
-              }
-            }
-
-            if (!parsedDisplay) {
-              parsedDisplay = rawText;
-              parsedSpeech = cleanTiaSpeechText(rawText, isHindi);
-            }
-
-            if (parsedDisplay && parsedDisplay.trim().length > 5) {
-              generatedDisplayText = parsedDisplay.trim();
-              generatedSpeechText = cleanTiaSpeechText(parsedSpeech || parsedDisplay, isHindi);
-              quickActions = parsedActions;
             }
           }
-        } catch (geminiErr: any) {
-          console.warn('Gemini error during Tia chat:', geminiErr?.message || geminiErr);
+
+          if (!parsedDisplay) {
+            parsedDisplay = rawText;
+            parsedSpeech = cleanTiaSpeechText(rawText, isHindi);
+          }
+
+          if (parsedDisplay && parsedDisplay.trim().length > 5) {
+            generatedDisplayText = parsedDisplay.trim();
+            generatedSpeechText = cleanTiaSpeechText(parsedSpeech || parsedDisplay, isHindi);
+            quickActions = parsedActions;
+          }
         }
+      } catch (geminiErr: any) {
+        console.warn('[Tia Server] Gemini error during Tia chat:', geminiErr?.message || geminiErr);
+        lastGeminiError = geminiErr;
       }
 
-      // If AI generation failed, DO NOT show lesson content as answer!
-      // Provide the clean, graceful connection message requested by user.
       if (!generatedDisplayText) {
-        generatedDisplayText = isHindi
-          ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'
-          : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!";
-        generatedSpeechText = isHindi
-          ? 'Oops, Tia ka connection thoda slow ho gaya. Ek baar phir try karo.'
-          : "Oops, Tia's connection hit a slight bump. Please try asking again!";
-        quickActions = isHindi
-          ? ['फिर से पूछें', `💡 ${course.name} समझाइए`, '🎯 झटपट क्विज़']
-          : ['Ask again', `💡 Explain ${course.name}`, '🎯 Quick quiz'];
+        console.warn('[Tia Server] Gemini generation produced no text; returning 503 unavailable');
+        return res.status(503).json({
+          ok: false,
+          error: lastGeminiError?.message || 'Gemini AI service unavailable',
+          code: 'AI_UNAVAILABLE',
+        });
       }
 
       if (quickActions.length === 0) {
@@ -256,9 +347,9 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in Devanagari script)' : 'Englis
           quickActions,
         },
       });
-    } catch (err) {
-      console.error('Error handling /api/tia/chat:', err);
-      return res.status(500).json({ error: 'Internal server error processing Tia chat' });
+    } catch (err: any) {
+      console.error('[Tia Server] Error handling /api/tia/chat:', err?.message || err);
+      return res.status(500).json({ ok: false, error: 'Internal server error processing Tia chat' });
     }
   });
 
