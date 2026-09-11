@@ -287,7 +287,16 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
         if (onEnd) onEnd();
       };
 
-      synthRef.current.speak(utterance);
+      try {
+        synthRef.current.speak(utterance);
+      } catch (speakErr) {
+        console.warn('[useTiaVoice] SpeechSynthesis speak call failed gracefully:', speakErr);
+        setIsSpeaking(false);
+        setTiaState('idle');
+        if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
+        setVoiceVolumeLevel(0);
+        if (onEnd) onEnd();
+      }
     },
     []
   );

@@ -651,6 +651,76 @@ export async function generateRevisionQuestions(
  * If currentLanguage === 'en':
  * - Even if user asks "Inflation kya hota hai?", Tia responds in English.
  */
+/**
+ * Safely extracts AI answer text, speechText, and quickActions from ANY valid backend payload format.
+ */
+export function extractAnswerFromPayload(data: any): {
+  text: string;
+  speechText: string;
+  quickActions: string[];
+} {
+  let text = '';
+  let speechText = '';
+  let quickActions: string[] = [];
+
+  if (!data) {
+    return { text, speechText, quickActions };
+  }
+
+  if (typeof data === 'string') {
+    text = data.trim();
+    return { text, speechText: text, quickActions };
+  }
+
+  if (typeof data === 'object') {
+    // 1. Check nested message object
+    if (data.message && typeof data.message === 'object') {
+      text =
+        data.message.text ||
+        data.message.displayText ||
+        data.message.answer ||
+        data.message.response ||
+        '';
+      speechText = data.message.speechText || '';
+      if (Array.isArray(data.message.quickActions)) {
+        quickActions = data.message.quickActions;
+      }
+    } else if (typeof data.message === 'string') {
+      text = data.message;
+    }
+
+    // 2. Check top-level properties
+    if (!text) {
+      text =
+        data.text ||
+        data.answer ||
+        data.displayText ||
+        data.response ||
+        data.reply ||
+        data.result ||
+        data.content ||
+        (Array.isArray(data.candidates) && data.candidates[0]?.content?.parts?.[0]?.text) ||
+        '';
+    }
+
+    // 3. Fallback speechText
+    if (!speechText) {
+      speechText = data.speechText || data.speech || text;
+    }
+
+    // 4. Fallback quick actions
+    if (quickActions.length === 0 && Array.isArray(data.quickActions)) {
+      quickActions = data.quickActions;
+    }
+  }
+
+  return {
+    text: (text || '').trim(),
+    speechText: (speechText || text || '').trim(),
+    quickActions,
+  };
+}
+
 export async function sendTextMessage(
   userText: string,
   context?: TiaLessonContext,
@@ -662,10 +732,8 @@ export async function sendTextMessage(
   const cleanInput = (userText || '').trim();
   const endpoint = '/api/tia/chat';
 
-  if (import.meta.env.DEV) {
-    console.log(`[Tia Frontend] Calling endpoint: ${endpoint}`);
-    console.log(`[Tia Frontend] Question: "${cleanInput}" | Lang: ${currentLanguage} | Mode: ${mode}`);
-  }
+  console.log(`[Tia Frontend] Calling endpoint: ${endpoint}`);
+  console.log(`[Tia Frontend] Question: "${cleanInput}" | Lang: ${currentLanguage} | Mode: ${mode}`);
 
   // 1. Try Server-Side API first (Universal AI Learning Assistant Pipeline)
   try {
@@ -691,28 +759,40 @@ export async function sendTextMessage(
       body: JSON.stringify(payload),
     });
 
-    if (import.meta.env.DEV) {
-      console.log(`[Tia Frontend] HTTP status: ${response.status} (${response.statusText})`);
-      console.log(`[Tia Frontend] Request success/failure: ${response.ok ? 'SUCCESS' : 'FAILURE'}`);
-    }
+    // Stage 1: RAW API response received
+    console.log(`[Tia Frontend] 1. RAW API response received | HTTP status: ${response.status} (${response.statusText}) | ok: ${response.ok}`);
 
     if (response.ok) {
-      const data = await response.json();
-      if (data?.ok) {
-        if (data.message && data.message.text) {
-          return data.message;
-        }
-        const replyText = data.text || data.answer || data.displayText;
-        if (replyText) {
-          return {
-            id: generateId(),
-            sender: 'tia',
-            text: replyText,
-            speechText: data.speechText || replyText,
-            timestamp: Date.now(),
-            quickActions: data.quickActions || [],
-          };
-        }
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        console.warn('[Tia Frontend] response.json() parse error, falling back to text():', jsonErr);
+        const rawText = await response.text().catch(() => '');
+        data = { text: rawText };
+      }
+
+      // Stage 2: Parsed response object
+      console.log(`[Tia Frontend] 2. Parsed response object:`, {
+        ok: data?.ok,
+        keys: data && typeof data === 'object' ? Object.keys(data) : typeof data,
+      });
+
+      // Stage 3: Extracted answer text
+      const extracted = extractAnswerFromPayload(data);
+      console.log(`[Tia Frontend] 3. Extracted answer text: length=${extracted.text.length}, preview="${extracted.text.slice(0, 60)}..."`);
+
+      if (extracted.text) {
+        return {
+          id: generateId(),
+          sender: 'tia',
+          text: extracted.text,
+          speechText: extracted.speechText || extracted.text,
+          timestamp: Date.now(),
+          quickActions: extracted.quickActions || [],
+        };
+      } else {
+        console.warn('[Tia Frontend] Extracted answer text was empty despite HTTP 200.');
       }
     } else {
       let errorMsg = '';
@@ -728,8 +808,8 @@ export async function sendTextMessage(
     console.error('[Tia Frontend] Network error calling /api/tia/chat:', apiErr?.message || apiErr);
   }
 
-  // 2. Failure Fallback: NEVER show the current lesson as the answer for unrelated questions.
-  // Return the friendly, graceful connection retry message requested by user.
+  // 2. Failure Fallback: ONLY reaches here when network request failed or returned non-200.
+  console.warn('[Tia Frontend] Network/API call failed or returned empty; using graceful connection fallback.');
   const courseName = context?.subjectName || (isHindi ? 'वर्तमान कोर्स' : 'current course');
   const fallbackText = isHindi
     ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'

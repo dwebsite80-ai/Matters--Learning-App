@@ -14,7 +14,7 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
   content,
   className = '',
 }) => {
-  if (!content) return null;
+  if (!content || typeof content !== 'string') return null;
 
   // Split into block sections by double newlines or single newlines with list items
   const lines = content.split('\n');

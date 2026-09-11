@@ -195,10 +195,15 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       }
 
       setMessages((prev) => [...prev, response]);
+      setIsLoading(false);
+      setTiaState('idle');
+
       if (voiceEnabled) {
-        speakText(response.speechText || response.text);
-      } else {
-        setTiaState('idle');
+        try {
+          speakText(response.speechText || response.text);
+        } catch (ttsErr) {
+          console.warn('[Tia Frontend] TTS error during mode trigger:', ttsErr);
+        }
       }
     } catch (e) {
       console.error('Error generating Tia response:', e);
@@ -231,6 +236,9 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     setIsLoading(true);
     setTiaState('thinking');
 
+    let response: TiaMessage | null = null;
+    let apiError: any = null;
+
     try {
       // Check if last message was a quiz question and evaluate answer
       const lastMsg = messages[messages.length - 1];
@@ -242,9 +250,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
           currentLanguage
         );
 
-        if (currentRequestId !== activeRequestIdRef.current) return;
-
-        const tiaReply: TiaMessage = {
+        response = {
           id: `tia-eval-${Date.now()}`,
           sender: 'tia',
           text: `${evalResult.feedback}\n\n${evalResult.explanation}\n\n${
@@ -267,82 +273,80 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                   'Back to reading',
                 ],
         };
-
-        setMessages((prev) => [...prev, tiaReply]);
-        if (voiceEnabled) {
-          speakText(tiaReply.speechText || tiaReply.text);
-        } else {
-          setTiaState('idle');
-        }
-        return;
-      }
-
-      // Check if in speaking practice
-      if (activeMode === 'speaking_practice') {
-        const speakingEval = await tiaService.evaluateSpeakingAnswer(
+      } else if (activeMode === 'speaking_practice') {
+        response = await tiaService.evaluateSpeakingAnswer(
           question,
           context,
           currentLanguage
         );
-
-        if (currentRequestId !== activeRequestIdRef.current) return;
-
-        setMessages((prev) => [...prev, speakingEval]);
-        if (voiceEnabled) {
-          speakText(speakingEval.speechText || speakingEval.text);
-        } else {
-          setTiaState('idle');
-        }
-        return;
-      }
-
-      // Default contextual message routing with currentLanguage and conversation history
-      const response = await tiaService.sendTextMessage(
-        question,
-        context,
-        activeMode,
-        currentLanguage,
-        updatedHistory
-      );
-
-      // Race condition check
-      if (currentRequestId !== activeRequestIdRef.current) return;
-
-      setMessages((prev) => [...prev, response]);
-
-      if (voiceEnabled) {
-        speakText(response.speechText || response.text);
       } else {
-        setTiaState('idle');
+        // Default contextual message routing with currentLanguage and conversation history
+        response = await tiaService.sendTextMessage(
+          question,
+          context,
+          activeMode,
+          currentLanguage,
+          updatedHistory
+        );
       }
     } catch (err) {
-      console.error('Tia error', err);
-      if (currentRequestId === activeRequestIdRef.current) {
-        const isHi = currentLanguage === 'hi';
-        const fallbackMsg: TiaMessage = {
-          id: `tia-err-${Date.now()}`,
-          sender: 'tia',
-          text: isHi
-            ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'
-            : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!",
-          speechText: isHi
-            ? 'Oops, Tia ka connection thoda slow ho gaya. Ek baar phir try karo.'
-            : "Oops, Tia's connection hit a slight bump. Please try asking again!",
-          timestamp: Date.now(),
-          quickActions: isHi
-            ? ['फिर से पूछें', '💡 यह पाठ समझाओ', '🎯 क्विज़ खेलें']
-            : ['Ask again', '💡 Explain lesson', '🎯 Quiz me'],
-        };
-        setMessages((prev) => [...prev, fallbackMsg]);
-        if (voiceEnabled) {
-          speakText(fallbackMsg.speechText || fallbackMsg.text);
-        } else {
+      apiError = err;
+      console.error('[Tia Frontend] Error during AI response generation/fetch:', err);
+    }
+
+    // Race condition check
+    if (currentRequestId !== activeRequestIdRef.current) return;
+
+    // Stage 4 & 5: If a valid response was generated/received
+    if (response) {
+      // 4. Response state updated
+      console.log(`[Tia Frontend] 4. Response state updated: id=${response.id}, textLength=${response.text.length}`);
+      setMessages((prev) => [...prev, response!]);
+      setIsLoading(false);
+      setTiaState('idle');
+
+      // 5. UI response rendered, attempt optional TTS in strict isolation
+      console.log(`[Tia Frontend] 5. UI response rendered | Attempting optional TTS layer`);
+      if (voiceEnabled) {
+        try {
+          speakText(response.speechText || response.text);
+        } catch (ttsErr) {
+          console.warn('[Tia Frontend] Optional TTS playback failed (UI response remains intact):', ttsErr);
           setTiaState('idle');
         }
       }
-    } finally {
-      if (currentRequestId === activeRequestIdRef.current) {
-        setIsLoading(false);
+      return;
+    }
+
+    // ONLY execute fallback if API call threw and no response could be retrieved
+    setIsLoading(false);
+    setTiaState('idle');
+
+    const isHi = currentLanguage === 'hi';
+    const fallbackMsg: TiaMessage = {
+      id: `tia-err-${Date.now()}`,
+      sender: 'tia',
+      text: isHi
+        ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'
+        : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!",
+      speechText: isHi
+        ? 'Oops, Tia ka connection thoda slow ho gaya. Ek baar phir try karo.'
+        : "Oops, Tia's connection hit a slight bump. Please try asking again!",
+      timestamp: Date.now(),
+      quickActions: isHi
+        ? ['फिर से पूछें', '💡 यह पाठ समझाओ', '🎯 क्विज़ खेलें']
+        : ['Ask again', '💡 Explain lesson', '🎯 Quiz me'],
+    };
+
+    console.log(`[Tia Frontend] 4. Response state updated with fallback: id=${fallbackMsg.id}`);
+    setMessages((prev) => [...prev, fallbackMsg]);
+    console.log(`[Tia Frontend] 5. UI response rendered (fallback message)`);
+
+    if (voiceEnabled) {
+      try {
+        speakText(fallbackMsg.speechText || fallbackMsg.text);
+      } catch (ttsErr) {
+        console.warn('[Tia Frontend] Optional TTS fallback speech failed:', ttsErr);
       }
     }
   };
