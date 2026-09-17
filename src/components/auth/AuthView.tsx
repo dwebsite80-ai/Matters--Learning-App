@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Sparkles, Mail, Lock, User, ArrowRight, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Sparkles, Lock, User, AtSign, ArrowRight, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { isValidUsername, normalizeUsername } from '../../lib/supabase';
 
 interface AuthViewProps {
   onSuccessSignup?: () => void;
@@ -8,35 +9,42 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
   const { logIn, signUp, loginAsDemo, isConfiguredWithSupabase } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('signup');
+  const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inFlightRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setInfoMsg(null);
 
-    if (!email || !email.includes('@')) {
-      setErrorMsg('Please provide a valid email address.');
+    // Prevent duplicate submits / concurrent clicks synchronously
+    if (inFlightRef.current || isSubmitting) {
+      console.warn('[Auth Frontend] Submission ignored: another request is already in-flight.');
       return;
     }
 
-    if (mode === 'forgot') {
-      setIsSubmitting(true);
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setInfoMsg('Password reset instructions have been sent to your email.');
-      }, 600);
+    setErrorMsg(null);
+    setInfoMsg(null);
+
+    const cleanUsername = normalizeUsername(username);
+
+    // Client-side validations
+    if (!cleanUsername) {
+      setErrorMsg('Username me sirf letters, numbers aur underscore use karo.');
+      return;
+    }
+
+    if (!isValidUsername(cleanUsername)) {
+      setErrorMsg('Username me sirf letters, numbers aur underscore use karo.');
       return;
     }
 
     if (!password || password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
+      setErrorMsg('Password thoda strong rakho.');
       return;
     }
 
@@ -45,21 +53,58 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
       return;
     }
 
+    inFlightRef.current = true;
     setIsSubmitting(true);
+
     try {
       if (mode === 'signup') {
-        await signUp(name, email, password);
+        console.log('[Auth Frontend] Calling signUp with:', { name: name.trim(), username: cleanUsername });
+        await signUp(name.trim(), cleanUsername, password);
         if (onSuccessSignup) onSuccessSignup();
       } else {
-        await logIn(email, password);
+        console.log('[Auth Frontend] Calling logIn with:', { username: cleanUsername });
+        await logIn(cleanUsername, password);
       }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setErrorMsg(err.message);
+      const anyErr = err as any;
+      const status = anyErr?.status || anyErr?.code;
+      const rawMsg = anyErr?.message || '';
+      const msgLower = rawMsg.toLowerCase();
+
+      if (
+        status === 429 ||
+        msgLower.includes('too many') ||
+        msgLower.includes('rate limit') ||
+        msgLower.includes('security purposes') ||
+        msgLower.includes('over_email_send_rate_limit')
+      ) {
+        setErrorMsg('Abhi bahut attempts ho gaye hain 😅. Thodi der baad dobara try karo.');
+      } else if (
+        msgLower.includes('already taken') ||
+        msgLower.includes('already registered') ||
+        msgLower.includes('already exists') ||
+        msgLower.includes('user already')
+      ) {
+        setErrorMsg('Ye username already taken hai.');
+      } else if (
+        msgLower.includes('galat') ||
+        msgLower.includes('invalid') ||
+        msgLower.includes('credentials') ||
+        msgLower.includes('not found') ||
+        msgLower.includes('incorrect')
+      ) {
+        setErrorMsg('Username ya password galat hai.');
+      } else if (msgLower.includes('strong') || msgLower.includes('weak') || msgLower.includes('password')) {
+        setErrorMsg('Password thoda strong rakho.');
+      } else if (msgLower.includes('underscore') || msgLower.includes('letters')) {
+        setErrorMsg('Username me sirf letters, numbers aur underscore use karo.');
+      } else if (rawMsg) {
+        setErrorMsg(rawMsg);
       } else {
-        setErrorMsg('Authentication failed. Please try again.');
+        setErrorMsg('Oops, kuch technical problem aa gayi. Dobara try karo.');
       }
     } finally {
+      inFlightRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -73,7 +118,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
       if (err instanceof Error) {
         setErrorMsg(err.message);
       } else {
-        setErrorMsg('Failed to log into demo account.');
+        setErrorMsg('Oops, kuch technical problem aa gayi. Dobara try karo.');
       }
     } finally {
       setIsSubmitting(false);
@@ -110,56 +155,38 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 sm:px-8 border border-black/5 rounded-[32px] sm:rounded-[36px] shadow-sm">
           {/* Mode Switcher Tabs */}
-          {mode !== 'forgot' && (
-            <div className="flex border-b border-black/5 mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('signup');
-                  setErrorMsg(null);
-                  setInfoMsg(null);
-                }}
-                className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
-                  mode === 'signup'
-                    ? 'border-[#1A1A1A] text-[#1A1A1A]'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Create Account
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setErrorMsg(null);
-                  setInfoMsg(null);
-                }}
-                className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
-                  mode === 'login'
-                    ? 'border-[#1A1A1A] text-[#1A1A1A]'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Log In
-              </button>
-            </div>
-          )}
-
-          {mode === 'forgot' && (
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={() => setMode('login')}
-                className="text-xs text-[#1A1A1A] hover:underline font-bold flex items-center gap-1 mb-2 uppercase tracking-widest text-[10px]"
-              >
-                ← Back to Login
-              </button>
-              <h2 className="text-xl font-serif italic text-[#1A1A1A]">Reset Password</h2>
-              <p className="text-xs text-gray-500 mt-1 font-light">
-                Enter your email address and we will send you a reset link.
-              </p>
-            </div>
-          )}
+          <div className="flex border-b border-black/5 mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setErrorMsg(null);
+                setInfoMsg(null);
+              }}
+              className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
+                mode === 'signup'
+                  ? 'border-[#1A1A1A] text-[#1A1A1A]'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Create Account
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMsg(null);
+                setInfoMsg(null);
+              }}
+              className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
+                mode === 'login'
+                  ? 'border-[#1A1A1A] text-[#1A1A1A]'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Log In
+            </button>
+          </div>
 
           {/* Feedback Messages */}
           {errorMsg && (
@@ -176,8 +203,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
             </div>
           )}
 
-          {/* Form */}
+          {/* Authentication Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Full Name (Sign Up only) */}
             {mode === 'signup' && (
               <div>
                 <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
@@ -192,80 +220,73 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Rahul Sharma"
+                    placeholder="Anurag Sharma"
+                    autoComplete="name"
                     className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB]"
                   />
                 </div>
               </div>
             )}
 
+            {/* Username (Both Sign Up and Log In) */}
             <div>
               <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
-                Email Address
+                Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Mail className="w-4 h-4" />
+                  <AtSign className="w-4 h-4" />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="anurag123"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete={mode === 'signup' ? 'username' : 'username'}
+                  className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB] font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Password (Both Sign Up and Log In) */}
+            <div>
+              <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB]"
                 />
               </div>
             </div>
 
-            {mode !== 'forgot' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest">
-                    Password
-                  </label>
-                  {mode === 'login' && (
-                    <button
-                      type="button"
-                      onClick={() => setMode('forgot')}
-                      className="text-[10px] text-gray-500 hover:text-black uppercase tracking-wider font-semibold"
-                    >
-                      Forgot password?
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB]"
-                  />
-                </div>
-              </div>
-            )}
-
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting}
               id="auth-submit-btn"
-              className="w-full mt-2 flex items-center justify-center gap-2 py-4 px-6 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black disabled:opacity-40 transition-all shadow-md cursor-pointer"
+              className={`w-full mt-2 flex items-center justify-center gap-2 py-4 px-6 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black transition-all shadow-md ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+              }`}
             >
               {isSubmitting ? (
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               ) : (
                 <>
                   <span>
-                    {mode === 'signup'
-                      ? 'Sign Up & Start Learning'
-                      : mode === 'login'
-                      ? 'Log In'
-                      : 'Send Reset Link'}
+                    {mode === 'signup' ? 'SIGN UP & START LEARNING' : 'LOG IN'}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </>

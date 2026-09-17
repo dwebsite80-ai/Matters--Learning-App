@@ -363,14 +363,23 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Save Preferences
   const savePreferences = async (updatedPrefs: Partial<UserPreferences>) => {
-    if (!user || !preferences) return;
+    if (!user) return;
+    const basePrefs: UserPreferences = preferences || {
+      user_id: user.id,
+      selected_subjects: ['law-rights', 'money-finance', 'economics'],
+      level: 'Beginner',
+      daily_minutes: 10,
+      preferred_time: 'Morning',
+      learning_goal: 'Improve my practical knowledge',
+      onboarding_completed: false,
+    };
     const newPrefs: UserPreferences = {
-      ...preferences,
+      ...basePrefs,
       ...updatedPrefs,
       user_id: user.id,
     };
     updateUserPreferencesState(newPrefs);
-    await dbSaveUserPreferences(newPrefs);
+    await dbSaveUserPreferences(newPrefs, user.username);
   };
 
   const streakStatus: StreakStatus = stats?.streak_status || stats?.streakStatus || 'not_started';

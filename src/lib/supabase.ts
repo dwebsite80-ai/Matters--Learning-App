@@ -29,9 +29,23 @@ const STORAGE_PREFIX = 'matters_app_';
 const KEY_CURRENT_USER = `${STORAGE_PREFIX}current_user_id`;
 const KEY_USERS_REGISTRY = `${STORAGE_PREFIX}users_registry`;
 
+export function normalizeUsername(input: string): string {
+  return (input || '').trim().toLowerCase();
+}
+
+export function isValidUsername(username: string): boolean {
+  return /^[a-z0-9_]{3,24}$/.test(username);
+}
+
+export function getSyntheticEmail(username: string): string {
+  return `${normalizeUsername(username)}@tia.local`;
+}
+
 interface StoredUserAccount {
   id: string;
   name: string;
+  full_name?: string;
+  username?: string;
   email: string;
   passwordHash: string;
   created_at: string;
@@ -85,10 +99,12 @@ export async function dbGetUserProfile(userId: string): Promise<UserProfile | nu
         .eq('id', userId)
         .single();
       if (!error && data) {
+        const username = data.username || (data.email ? data.email.split('@')[0] : undefined);
         return {
           id: data.id,
-          name: data.name,
-          email: data.email,
+          name: data.full_name || data.name || 'Learner',
+          username: username,
+          email: data.email || (username ? `${username}@tia.local` : 'learner@tia.local'),
           created_at: data.created_at,
         };
       }
@@ -100,15 +116,17 @@ export async function dbGetUserProfile(userId: string): Promise<UserProfile | nu
   const users = getStoredUsers();
   const found = users[userId];
   if (found) {
-    if (found.id === 'demo-user-101' && found.name !== 'Anurag') {
+    if (found.id === 'demo-user-101') {
       found.name = 'Anurag';
-      found.email = 'anurag.learner@example.com';
+      found.username = 'anurag';
+      found.email = 'anurag@tia.local';
       users[userId] = found;
       saveStoredUsers(users);
     }
     return {
       id: found.id,
       name: found.name,
+      username: found.username || found.email.split('@')[0],
       email: found.email,
       created_at: found.created_at,
     };
@@ -116,16 +134,16 @@ export async function dbGetUserProfile(userId: string): Promise<UserProfile | nu
   return null;
 }
 
-export async function dbGetUserPreferences(userId: string): Promise<UserPreferences | null> {
+export async function dbGetUserPreferences(userId: string, username?: string): Promise<UserPreferences> {
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       if (!error && data) {
-        return {
+        const loaded: UserPreferences = {
           user_id: data.user_id,
           selected_subjects: data.selected_subjects || ['law-rights', 'money-finance', 'economics'],
           level: data.level || 'Beginner',
@@ -134,34 +152,94 @@ export async function dbGetUserPreferences(userId: string): Promise<UserPreferen
           learning_goal: data.learning_goal || 'Improve my practical knowledge',
           onboarding_completed: Boolean(data.onboarding_completed),
         };
+        try {
+          localStorage.setItem(`${STORAGE_PREFIX}prefs_${userId}`, JSON.stringify(loaded));
+        } catch {}
+        return loaded;
       }
     } catch (e) {
       console.warn('Supabase preferences fetch error:', e);
     }
   }
 
+  // 1. Check local storage by userId
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}prefs_${userId}`);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed) return parsed;
     }
   } catch (e) {
     console.error('Local preferences load error', e);
   }
 
-  return null;
+  // 2. Check local storage by username if provided
+  const cleanUsername = username ? normalizeUsername(username) : null;
+  if (cleanUsername) {
+    try {
+      const rawUser = localStorage.getItem(`${STORAGE_PREFIX}prefs_user_${cleanUsername}`);
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        if (parsed) return { ...parsed, user_id: userId };
+      }
+    } catch {}
+  }
+
+  // 3. Check if any stored user account has this username
+  try {
+    const storedUsers = getStoredUsers();
+    const found = storedUsers[userId];
+    if (found?.username) {
+      const rawUser = localStorage.getItem(`${STORAGE_PREFIX}prefs_user_${normalizeUsername(found.username)}`);
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        if (parsed) return { ...parsed, user_id: userId };
+      }
+    }
+  } catch {}
+
+  // 4. Default preferences with onboarding_completed = false for un-onboarded users
+  return {
+    user_id: userId,
+    selected_subjects: ['law-rights', 'money-finance', 'economics'],
+    level: 'Beginner',
+    daily_minutes: 10,
+    preferred_time: 'Morning',
+    learning_goal: 'Improve my practical knowledge',
+    onboarding_completed: false,
+  };
 }
 
-export async function dbSaveUserPreferences(prefs: UserPreferences): Promise<void> {
+export async function dbSaveUserPreferences(prefs: UserPreferences, username?: string): Promise<void> {
+  const userId = prefs.user_id;
+
+  // 1. Save to local storage under user_id
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}prefs_${prefs.user_id}`, JSON.stringify(prefs));
+    localStorage.setItem(`${STORAGE_PREFIX}prefs_${userId}`, JSON.stringify(prefs));
+    if (prefs.onboarding_completed) {
+      localStorage.setItem(`${STORAGE_PREFIX}onboarding_done_${userId}`, 'true');
+    }
   } catch (e) {
     console.error('Error saving preferences locally', e);
   }
 
+  // 2. Save under username if available to guarantee persistence across logouts/logins
+  const cleanUsername = username ? normalizeUsername(username) : null;
+  if (cleanUsername) {
+    try {
+      localStorage.setItem(`${STORAGE_PREFIX}prefs_user_${cleanUsername}`, JSON.stringify(prefs));
+      if (prefs.onboarding_completed) {
+        localStorage.setItem(`${STORAGE_PREFIX}onboarding_done_user_${cleanUsername}`, 'true');
+      }
+    } catch (e) {
+      console.error('Error saving preferences for username locally', e);
+    }
+  }
+
+  // 3. Try saving to Supabase if configured
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from('user_preferences').upsert({
+      const { error } = await supabase.from('user_preferences').upsert({
         user_id: prefs.user_id,
         selected_subjects: prefs.selected_subjects,
         level: prefs.level,
@@ -171,6 +249,9 @@ export async function dbSaveUserPreferences(prefs: UserPreferences): Promise<voi
         onboarding_completed: prefs.onboarding_completed,
         updated_at: new Date().toISOString(),
       });
+      if (error) {
+        console.warn('Supabase preferences upsert note:', error.message);
+      }
     } catch (e) {
       console.warn('Supabase preferences save error:', e);
     }
@@ -380,16 +461,17 @@ export async function dbSaveUserStats(stats: UserStats): Promise<void> {
 }
 
 // Local Auth Database Simulation (ensures instant sign up, login, password check, persistence)
-export async function localSignUp(name: string, email: string, password: string):Promise<UserProfile> {
+export async function localSignUp(name: string, username: string, password: string): Promise<UserProfile> {
   const users = getStoredUsers();
-  const normalizedEmail = email.trim().toLowerCase();
+  const cleanUsername = normalizeUsername(username);
+  const syntheticEmail = getSyntheticEmail(cleanUsername);
   
   // Check if exists
-  const existingId = Object.keys(users).find(
-    (id) => users[id].email.toLowerCase() === normalizedEmail
+  const existingUser = Object.values(users).find(
+    (u) => (u.username && normalizeUsername(u.username) === cleanUsername) || u.email.toLowerCase() === syntheticEmail
   );
-  if (existingId) {
-    throw new Error('An account with this email already exists. Please log in.');
+  if (existingUser) {
+    throw new Error('Ye username already taken hai.');
   }
 
   const userId = 'usr_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
@@ -398,7 +480,9 @@ export async function localSignUp(name: string, email: string, password: string)
   const newUser: StoredUserAccount = {
     id: userId,
     name: name.trim(),
-    email: normalizedEmail,
+    full_name: name.trim(),
+    username: cleanUsername,
+    email: syntheticEmail,
     passwordHash: btoa(password), // Simple encoding for local MVP
     created_at: now,
   };
@@ -432,29 +516,36 @@ export async function localSignUp(name: string, email: string, password: string)
   return {
     id: userId,
     name: newUser.name,
+    full_name: newUser.full_name,
+    username: newUser.username,
     email: newUser.email,
     created_at: newUser.created_at,
   };
 }
 
-export async function localLogIn(email: string, password: string): Promise<UserProfile> {
+export async function localLogIn(username: string, password: string): Promise<UserProfile> {
   const users = getStoredUsers();
-  const normalizedEmail = email.trim().toLowerCase();
+  const cleanUsername = normalizeUsername(username);
+  const syntheticEmail = getSyntheticEmail(cleanUsername);
+
   const user = Object.values(users).find(
-    (u) => u.email.toLowerCase() === normalizedEmail
+    (u) => (u.username && normalizeUsername(u.username) === cleanUsername) ||
+           u.email.toLowerCase() === syntheticEmail ||
+           (u.id === 'demo-user-101' && (cleanUsername === 'anurag' || cleanUsername === 'anurag123'))
   );
 
   if (!user) {
-    throw new Error('No account found with this email. Please sign up.');
+    throw new Error('Username ya password galat hai.');
   }
 
   if (user.passwordHash !== btoa(password)) {
-    throw new Error('Incorrect password. Please try again.');
+    throw new Error('Username ya password galat hai.');
   }
 
   return {
     id: user.id,
     name: user.name,
+    username: user.username || cleanUsername,
     email: user.email,
     created_at: user.created_at,
   };
@@ -463,21 +554,21 @@ export async function localLogIn(email: string, password: string): Promise<UserP
 // Seed Demo User if needed for immediate instant evaluation
 export function seedDefaultDemoUser(): UserProfile {
   const users = getStoredUsers();
-  const demoEmail = 'anurag.learner@example.com';
+  const demoEmail = 'anurag@tia.local';
   const existing = Object.values(users).find(
-    (u) => u.email === demoEmail || u.id === 'demo-user-101'
+    (u) => u.email === demoEmail || u.id === 'demo-user-101' || (u.username && normalizeUsername(u.username) === 'anurag')
   );
 
   if (existing) {
-    if (existing.name !== 'Anurag' || existing.email !== demoEmail) {
-      existing.name = 'Anurag';
-      existing.email = demoEmail;
-      users[existing.id] = existing;
-      saveStoredUsers(users);
-    }
+    existing.name = 'Anurag';
+    existing.username = 'anurag';
+    existing.email = demoEmail;
+    users[existing.id] = existing;
+    saveStoredUsers(users);
     return {
       id: existing.id,
       name: existing.name,
+      username: 'anurag',
       email: existing.email,
       created_at: existing.created_at,
     };
@@ -488,6 +579,7 @@ export function seedDefaultDemoUser(): UserProfile {
   const demoAccount: StoredUserAccount = {
     id: demoId,
     name: 'Anurag',
+    username: 'anurag',
     email: demoEmail,
     passwordHash: btoa('password123'),
     created_at: now,

@@ -12,6 +12,9 @@ import {
   Shirt,
   Lightbulb,
   Clock,
+  HeartPulse,
+  Flame,
+  Sprout,
 } from 'lucide-react';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -47,6 +50,12 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
         return Lightbulb;
       case 'time-management':
         return Clock;
+      case 'first-aid':
+        return HeartPulse;
+      case 'survival-skills':
+        return Flame;
+      case 'modern-farming':
+        return Sprout;
       default:
         return BookOpen;
     }
@@ -93,6 +102,12 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
               ? 'bg-[#FEF3C7] text-amber-900'
               : sub.id === 'time-management'
               ? 'bg-[#CCFBF1] text-teal-900'
+              : sub.id === 'first-aid'
+              ? 'bg-[#FEE2E2] text-red-800'
+              : sub.id === 'survival-skills'
+              ? 'bg-[#FFEDD5] text-orange-900'
+              : sub.id === 'modern-farming'
+              ? 'bg-[#DCFCE7] text-emerald-900'
               : 'bg-[#FFFBEB] text-amber-900';
 
           const subName = language === 'hi' && sub.name_hi ? sub.name_hi : sub.name;

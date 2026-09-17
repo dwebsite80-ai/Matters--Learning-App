@@ -86,6 +86,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
           return '💼 केस स्टडीज़';
         case 'time-management':
           return '⏰ समय प्रबंधन';
+        case 'first-aid':
+          return '🩹 प्राथमिक चिकित्सा';
+        case 'survival-skills':
+          return '🔥 उत्तरजीविता कौशल';
+        case 'modern-farming':
+          return '🌱 आधुनिक कृषि';
         default:
           return '📚 पाठ्यक्रम';
       }
@@ -111,6 +117,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         return '💼 Case Studies';
       case 'time-management':
         return '⏰ Time Management';
+      case 'first-aid':
+        return '🩹 First Aid & Emergency';
+      case 'survival-skills':
+        return '🔥 Survival Skills';
+      case 'modern-farming':
+        return '🌱 Modern Farming';
       default:
         return '📚 Course';
     }

@@ -18,8 +18,12 @@ import {
   ScrollText,
   Shirt,
   Lightbulb,
+  HeartPulse,
+  Flame,
+  Sprout,
 } from 'lucide-react';
-import { SubjectId, LearningLevel, DailyMinutes, PreferredTime, LearningGoal } from '../../types';
+import { SubjectId, LearningLevel, DailyMinutes, PreferredTime, LearningGoal, UserPreferences } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { triggerConfetti } from '../../lib/confetti';
@@ -29,6 +33,7 @@ interface OnboardingFlowProps {
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+  const { completeOnboarding } = useAuth();
   const { savePreferences } = useLearning();
   const { language, setLanguage, t } = useLanguage();
 
@@ -44,6 +49,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
     'dressing-sense',
     'case-studies',
     'time-management',
+    'first-aid',
+    'survival-skills',
+    'modern-farming',
   ]);
   const [level, setLevel] = useState<LearningLevel>('Beginner');
   const [dailyMinutes, setDailyMinutes] = useState<DailyMinutes>(10);
@@ -52,6 +60,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
     'Improve my practical knowledge'
   );
   const [saving, setSaving] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const toggleSubject = (id: SubjectId) => {
     if (selectedSubjects.includes(id)) {
@@ -64,21 +73,34 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   };
 
   const handleFinish = async () => {
+    if (saving) return;
+    setErrorMessage(null);
     setSaving(true);
     try {
-      await savePreferences({
+      const prefsPayload: Partial<UserPreferences> = {
         selected_subjects: selectedSubjects,
         level,
         daily_minutes: dailyMinutes,
         preferred_time: preferredTime,
         learning_goal: learningGoal,
         onboarding_completed: true,
-      });
+      };
+
+      if (completeOnboarding) {
+        await completeOnboarding(prefsPayload);
+      } else {
+        await savePreferences(prefsPayload);
+      }
+
       triggerConfetti();
       onComplete();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error saving onboarding preferences:', e);
-      onComplete();
+      setErrorMessage(
+        language === 'hi'
+          ? 'अध्ययन शुरू करने में समस्या आई। कृपया पुनः प्रयास करें।'
+          : 'Could not complete onboarding. Please try again.'
+      );
     } finally {
       setSaving(false);
     }
@@ -184,6 +206,36 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
       title_hi: '⏱️ समय प्रबंधन एवं कार्यकुशलता',
       desc_en: 'Eisenhower matrix, Pomodoro, calendar blocking, saying no & GTD weekly review.',
       desc_hi: 'आइजनहावर मैट्रिक्स, पोमोडोरो, टाइम-ब्लॉकिंग, ना कहने की कला व GTD वीकली रिव्यू।',
+    },
+    {
+      id: 'first-aid' as SubjectId,
+      icon: HeartPulse,
+      iconBg: 'bg-[#FEE2E2]',
+      iconColor: 'text-red-800',
+      title_en: '🩹 First Aid & Emergency Response',
+      title_hi: '🩹 प्राथमिक चिकित्सा एवं आपातकालीन प्रतिक्रिया',
+      desc_en: 'CPR, choking relief, severe bleeding tourniquets, stroke FAST, and burn trauma care.',
+      desc_hi: 'सीपीआर, चोकिंग राहत, ब्लीडिंग नियंत्रण, स्ट्रोक FAST पहचान एवं बर्न प्राथमिक उपचार।',
+    },
+    {
+      id: 'survival-skills' as SubjectId,
+      icon: Flame,
+      iconBg: 'bg-[#FFEDD5]',
+      iconColor: 'text-orange-900',
+      title_en: '🔥 Survival Skills',
+      title_hi: '🔥 उत्तरजीविता कौशल एवं आपदा प्रबंधन',
+      desc_en: 'Rule of Threes, solar still water purification, friction fire craft, and storm navigation.',
+      desc_hi: '3 का नियम, जल शोधन, घर्षण से आग जलाना, शेल्टर निर्माण एवं आपदा नेविगेशन।',
+    },
+    {
+      id: 'modern-farming' as SubjectId,
+      icon: Sprout,
+      iconBg: 'bg-[#DCFCE7]',
+      iconColor: 'text-emerald-900',
+      title_en: '🌱 Modern Farming',
+      title_hi: '🌱 आधुनिक एवं पुनर्योजी कृषि',
+      desc_en: 'Soil health, precision drip, bio-inputs, IPM biological pest control, polyhouse & drones.',
+      desc_hi: 'मृदा स्वास्थ्य, ड्रिप सिंचाई, वर्मीकम्पोस्ट, IPM कीट नियंत्रण, पॉलीहाउस एवं कृषि ड्रोन।',
     },
   ];
 
@@ -603,6 +655,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                 {dailyMinutes} {language === 'hi' ? 'मिनट/दिन' : 'mins/day'} · {level} · {selectedSubjects.length} {language === 'hi' ? 'विषय' : 'subjects'}
               </p>
             </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+                <span className="font-bold">⚠️</span>
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button

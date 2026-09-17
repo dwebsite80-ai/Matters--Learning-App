@@ -6,6 +6,7 @@ import http from 'http';
 import { createServer as createViteServer } from 'vite';
 
 import { processTiaChat, getGeminiApiKey } from './src/services/tiaAiHandler';
+import { processSignup } from './src/services/authServerHandler';
 
 async function startServer() {
   const app = express();
@@ -50,6 +51,24 @@ async function startServer() {
     } catch (err: any) {
       console.error('[Tia Server] Error handling /api/tia/chat:', err?.message || err);
       return res.status(500).json({ ok: false, error: 'Internal server error processing Tia chat' });
+    }
+  });
+
+  // Secure Server-side Signup Endpoint (replaces client-side /auth/v1/signup)
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const clientIp =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.socket.remoteAddress ||
+        '127.0.0.1';
+      const result = await processSignup(req.body || {}, clientIp);
+      return res.status(result.status).json(result.data);
+    } catch (err: any) {
+      console.error('[Auth Server] Error handling /api/auth/signup:', err?.message || err);
+      return res.status(500).json({
+        ok: false,
+        error: 'Oops, kuch technical problem aa gayi. Dobara try karo.',
+      });
     }
   });
 

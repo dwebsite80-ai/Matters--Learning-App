@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   User,
-  Mail,
+  AtSign,
   Calendar,
   Clock,
   Award,
@@ -55,6 +55,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       'dressing-sense',
       'case-studies',
       'time-management',
+      'first-aid',
+      'survival-skills',
+      'modern-farming',
     ]
   );
 
@@ -169,6 +172,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       desc_en: 'Eisenhower matrix, Pomodoro, calendar blocking, saying no & GTD weekly review',
       desc_hi: 'आइजनहावर मैट्रिक्स, पोमोडोरो, टाइम-ब्लॉकिंग, ना कहने की कला व GTD वीकली रिव्यू',
     },
+    {
+      id: 'first-aid' as SubjectId,
+      label_en: '🩹 First Aid & Emergency Response',
+      label_hi: '🩹 प्राथमिक चिकित्सा एवं आपातकालीन प्रतिक्रिया',
+      desc_en: 'CPR, choking relief, severe bleeding tourniquets, stroke FAST, and burn trauma care',
+      desc_hi: 'सीपीआर, चोकिंग राहत, ब्लीडिंग नियंत्रण, स्ट्रोक FAST पहचान एवं बर्न प्राथमिक उपचार',
+    },
+    {
+      id: 'survival-skills' as SubjectId,
+      label_en: '🔥 Survival Skills',
+      label_hi: '🔥 उत्तरजीविता कौशल एवं आपदा प्रबंधन',
+      desc_en: 'Rule of Threes, solar still water purification, friction fire craft, and storm navigation',
+      desc_hi: '3 का नियम, जल शोधन, घर्षण से आग जलाना, शेल्टर निर्माण एवं आपदा नेविगेशन',
+    },
+    {
+      id: 'modern-farming' as SubjectId,
+      label_en: '🌱 Modern Farming',
+      label_hi: '🌱 आधुनिक एवं पुनर्योजी कृषि',
+      desc_en: 'Soil health, precision drip, bio-inputs, IPM biological pest control, polyhouse & drones',
+      desc_hi: 'मृदा स्वास्थ्य, ड्रिप सिंचाई, वर्मीकम्पोस्ट, IPM कीट नियंत्रण, पॉलीहाउस एवं कृषि ड्रोन',
+    },
   ];
 
   return (
@@ -199,8 +223,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
               {user?.name || 'Knowledge Seeker'}
             </h2>
             <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5 truncate font-light">
-              <Mail className="w-3.5 h-3.5 text-gray-400" />
-              <span>{user?.email || 'user@example.com'}</span>
+              <AtSign className="w-3.5 h-3.5 text-gray-400" />
+              <span className="font-mono text-gray-700">{user?.username || 'learner'}</span>
             </p>
             <p className="text-[11px] text-gray-400 flex items-center gap-1.5 mt-1 font-mono">
               <Calendar className="w-3.5 h-3.5 text-gray-400" />

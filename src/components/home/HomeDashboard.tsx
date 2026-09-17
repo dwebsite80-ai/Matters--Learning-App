@@ -94,6 +94,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         return '💡';
       case 'time-management':
         return '⏱️';
+      case 'first-aid':
+        return '🩹';
+      case 'survival-skills':
+        return '🔥';
+      case 'modern-farming':
+        return '🌱';
       default:
         return '📚';
     }

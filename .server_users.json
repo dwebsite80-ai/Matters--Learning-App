@@ -1,0 +1,16 @@
+{
+  "anurag": {
+    "id": "demo-user-101",
+    "fullName": "Anurag Sharma",
+    "username": "anurag",
+    "passwordHash": "cGFzc3dvcmQxMjM=",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  "anurag_test_123": {
+    "id": "usr_rnj3lp9mtzgdev2",
+    "fullName": "Anurag",
+    "username": "anurag_test_123",
+    "passwordHash": "cGFzc3dvcmQxMjM=",
+    "createdAt": "2026-09-13T06:48:33.661Z"
+  }
+}

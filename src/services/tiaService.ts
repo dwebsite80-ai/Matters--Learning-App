@@ -155,6 +155,12 @@ export async function generateFunnyExplanation(
       funnyBody = `टाइम मैनेजमेंट का मतलब यह नहीं कि सुबह 5:00 बजे का अलार्म लगाओ और 5:03 पर कंबल ओढ़कर सो जाओ! ⏰😴\n\nज़्यादातर लोग 8 घंटे का टाइट शेड्यूल बनाते हैं जिसमें 1 मिनट का भी बफर नहीं होता। फिर एक 10 मिनट का फोन आता है और पूरा दिन ताश के पत्तों की तरह ढह जाता है! टिया का नियम: हमेशा बफर टाइम रखो। अगर कुछ गलत नहीं हुआ, तो बिना गिल्ट के रील देख लेना!`;
     } else if (subjectId === 'dressing-sense') {
       funnyBody = `ड्रेसिंग सेंस का फंडा: फॉर्मल पैंट के साथ नियॉन ग्रीन स्नीकर्स पहनना आपको "कूल" नहीं, बल्कि चलता-फिरता ट्रैफिक सिग्नल बनाता है! 🚦👔\n\nबेस कलर्स हमेशा न्यूट्रल रखो—नेवी ब्लू, चारकोल ग्रे, या क्रिस्प व्हाइट। ताकि लोग आपकी बात सुनें, न कि यह सोचें कि आपके जूते रात में चमकते हैं या नहीं!`;
+    } else if (subjectId === 'first-aid') {
+      funnyBody = `फर्स्ट एड का गोल्डन रूल: फिल्मों की तरह सांप काटने पर मुंह से ज़हर चूसना या चाकू से चीरा लगाना बिल्कुल बंद करो! 🎬🚫\n\nअसली प्राथमिक चिकित्सा का मतलब है: शांत रहना, तुरंत 108 डायल करना, सीधे घाव पर साफ कपड़े से दबाव बनाना, और व्यक्ति को स्थिर रखना। पैनिक से ज़्यादा नुकसान होता है!`;
+    } else if (subjectId === 'survival-skills') {
+      funnyBody = `सर्वाइवल का पहला असूल: टीवी शो देखकर जंगल में बिना सोचे-समझे कीड़े या कच्ची चीजें मत चबाओ! 🏕️🦎\n\n'Rule of Threes' याद रखो: 3 मिनट बिना हवा, 3 घंटे बिना शेल्टर (कड़ाके की ठंड में), 3 दिन बिना पानी, और 3 हफ्ते बिना खाने के। सबसे पहले शेल्टर और साफ़ पानी की व्यवस्था करो!`;
+    } else if (subjectId === 'modern-farming') {
+      funnyBody = `आधुनिक खेती का सीक्रेट: बिना सोचे-समझे खेत में अंधाधुंध केमिकल उड़ेलना मिट्टी के साथ अन्याय है! 🌱🌾\n\nअसली मॉडर्न फार्मर वो है जो मिट्टी का pH टेस्ट कराता है, ड्रिप इरिगेशन से 60% पानी बचाता है, और बायो-फर्टिलाइजर का इस्तेमाल करता है। अब खेती स्मार्ट साइंस से होती है!`;
     } else {
       funnyBody = `**${lessonTitle}** को ऐसे देखो: ज़िंदगी 10% वो है जो होती है, और 90% वो है कि आप बिना घबराए कैसे रिएक्ट करते हैं! 😂\n\nलोग इसे रॉकेट साइंस समझते हैं, पर यह बस फॉर्मल जूतों में लिपटा हुआ कॉमन सेंस है। इस एक नियम को समझ लो और आप उन सब से 5 कदम आगे हो जाओगे जो सिर्फ रट्टा मारते हैं!`;
     }
@@ -178,6 +184,12 @@ export async function generateFunnyExplanation(
       funnyBody = `Time management isn't about setting an aggressive 5:00 AM alarm that gets hit with snooze at 5:02 AM! ⏰😴\n\nMost people schedule 8 packed hours with zero buffer. Then one random 10-minute family phone call strikes, and the entire day collapses like a house of cards! Tia's golden rule: Always keep buffer blocks.`;
     } else if (subjectId === 'dressing-sense') {
       funnyBody = `Dressing sense decoded: Wearing neon green sneakers with formal trousers doesn't make you "edgy", it makes you look like a traffic signal with strong opinions! 🚦👔\n\nKeep foundational colors neutral—navy, charcoal, crisp white. That way people listen to what you say instead of wondering if your sneakers glow in the dark!`;
+    } else if (subjectId === 'first-aid') {
+      funnyBody = `Golden rule of First Aid: Stop mimicking movies where someone tries to suck snake venom or slice wounds with a knife! 🎬🚫\n\nReal first aid is: staying calm, calling 108 emergency, applying firm direct pressure on bleeding with a clean cloth, and keeping the person resting. Panic hurts more than the cut!`;
+    } else if (subjectId === 'survival-skills') {
+      funnyBody = `Rule #1 of Wilderness Survival: Do not eat random mushrooms or jump into wild rapids pretending to be Bear Grylls! 🏕️\n\nAlways memorize the 'Rule of Threes': 3 minutes without air, 3 hours without shelter in freezing cold, 3 days without water, and 3 weeks without food. Prioritize shelter and hydration before hunting wild beasts!`;
+    } else if (subjectId === 'modern-farming') {
+      funnyBody = `Modern farming reality check: Dumping synthetic fertilizers indiscriminately isn't helping your soil—it's exhausting the living microbiome! 🌱🌾\n\nSmart agriculture means testing your soil pH, saving 60% water through precision drip, and using organic bio-inputs. Farming today is high-precision engineering!`;
     } else {
       funnyBody = `Look at **${lessonTitle}** like this: Life is 10% what happens and 90% how you react without panicking! 😂\n\nMost people treat this like rocket science, but it's really just common sense dressed up in sharp shoes. Master this one rule and you're miles ahead of everyone who just memorizes definitions!`;
     }

@@ -155,7 +155,8 @@ function MainAppContent() {
     return (
       <OnboardingFlow
         onComplete={() => {
-          refreshUserData();
+          setActiveLesson(null);
+          setActiveQuizLesson(null);
           setActiveTab('home');
           scrollToTop({ behavior: 'instant' });
         }}

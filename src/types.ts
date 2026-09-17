@@ -8,7 +8,10 @@ export type SubjectId =
   | 'personality-development'
   | 'dressing-sense'
   | 'case-studies'
-  | 'time-management';
+  | 'time-management'
+  | 'first-aid'
+  | 'survival-skills'
+  | 'modern-farming';
 
 export type AppLanguage = 'en' | 'hi';
 
@@ -24,7 +27,9 @@ export type LearningGoal =
 export interface UserProfile {
   id: string;
   name: string;
-  email: string;
+  full_name?: string;
+  username?: string;
+  email?: string;
   created_at: string;
 }
 

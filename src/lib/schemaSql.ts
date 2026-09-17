@@ -6,10 +6,15 @@
 export const SUPABASE_SCHEMA_SQL = `-- 1. PROFILES TABLE (linked to auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  username TEXT UNIQUE NOT NULL,
+  name TEXT,
+  email TEXT,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Case-insensitive unique constraint on username
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_username_lower ON public.profiles (LOWER(username));
 
 -- 2. USER PREFERENCES TABLE
 CREATE TABLE IF NOT EXISTS public.user_preferences (
