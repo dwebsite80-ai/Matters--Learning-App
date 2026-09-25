@@ -1133,20 +1133,23 @@ export function generateKnowledgeResponse(
   // 4. Dynamic Lesson Content Synthesizer
   if (context?.sections && context.sections.length > 0) {
     const firstSection = context.sections[0];
+    const lessonTitle = isHindi
+      ? context.lessonTitle_hi || context.lessonTitle
+      : context.lessonTitle;
     const secContent = isHindi
-      ? firstSection.content_hi || firstSection.content
+      ? firstSection.content_hi || ''
       : firstSection.content;
     const practical = context.practicalExample;
 
     const dynamicDisplay = isHindi
-      ? `**${context.lessonTitle}** के संदर्भ में:\n\n${secContent.slice(0, 350)}...\n\n${
+      ? `**${lessonTitle}** के संदर्भ में:\n\n${secContent ? secContent.slice(0, 350) + '...' : ''}\n\n${
           practical
             ? `**व्यावहारिक उदाहरण:** ${practical.scenario_hi || practical.scenario}\n${
                 practical.analysis_hi || practical.analysis
               }`
             : ''
         }\n\nसीधी सीख: थ्योरी को असल ज़िंदगी से जोड़कर देखना ही सीखने का सबसे तेज़ तरीका है! 😂`
-      : `In the context of **${context.lessonTitle}**:\n\n${secContent.slice(0, 350)}...\n\n${
+      : `In the context of **${lessonTitle}**:\n\n${secContent.slice(0, 350)}...\n\n${
           practical
             ? `**Real-World Example:** ${practical.scenario}\n${practical.analysis}`
             : ''
@@ -1154,11 +1157,11 @@ export function generateKnowledgeResponse(
 
     const dynamicSpeech = isHindi
       ? cleanTiaSpeechText(
-          `${context.lessonTitle} के संदर्भ में। ${secContent.slice(0, 200)}। व्यावहारिक उदाहरण के साथ समझना ही सबसे आसान तरीका है।`,
+          `${lessonTitle} के संदर्भ में। ${secContent ? secContent.slice(0, 180) + '।' : ''} व्यावहारिक उदाहरण के साथ समझना ही सबसे आसान तरीका है।`,
           true
         )
       : cleanTiaSpeechText(
-          `In the context of ${context.lessonTitle}. ${secContent.slice(0, 200)}. Testing the principle in daily life is the best way to master it.`,
+          `In the context of ${lessonTitle}. ${secContent.slice(0, 200)}. Testing the principle in daily life is the best way to master it.`,
           false
         );
 

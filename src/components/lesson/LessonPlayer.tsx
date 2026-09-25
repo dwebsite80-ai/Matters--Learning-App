@@ -15,6 +15,7 @@ import { Lesson, SubjectId, TiaMode } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { scrollToTop, useScrollToTop } from '../../lib/scrollHelper';
 import { TiaAvatar } from '../tia/TiaAvatar';
+import { ALL_LESSONS } from '../../data/initialContent';
 
 interface LessonPlayerProps {
   lesson: Lesson;
@@ -30,6 +31,14 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
   onOpenTia,
 }) => {
   const { language } = useLanguage();
+
+  // Find next lesson teaser in current subject
+  const subjectLessons = ALL_LESSONS.filter((l) => l.subject_id === lesson.subject_id);
+  const currentLessonIndex = subjectLessons.findIndex((l) => l.id === lesson.id);
+  const nextLesson =
+    currentLessonIndex >= 0 && currentLessonIndex < subjectLessons.length - 1
+      ? subjectLessons[currentLessonIndex + 1]
+      : undefined;
 
   // Steps: 0 = Hook & Intro, 1..N = Concept Sections, N+1 = Real-life Example, (N+2 = Activity if present), last = Key Takeaways
   const sections = lesson?.sections || [];
@@ -196,8 +205,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
           <TiaAvatar state="idle" size="sm" />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-xs text-[#1A1A1A]">Tia Learning Companion</span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-200/50 text-[#8C5E1A]">AI Voice</span>
+              <span className="font-bold text-xs text-[#1A1A1A]">
+                {language === 'hi' ? 'टिया एआई मार्गदर्शक' : 'Tia Learning Companion'}
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-200/50 text-[#8C5E1A]">
+                {language === 'hi' ? 'एआई आवाज़' : 'AI Voice'}
+              </span>
             </div>
             <span className="text-[11px] text-gray-600 block">
               {language === 'hi' ? 'कोई भी संदेह पूछें या मजेदार अंदाज में समझें' : 'Stuck or want a fun breakdown?'}
@@ -428,6 +441,26 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
               </div>
             ))}
           </div>
+
+          {/* Next Lesson Teaser */}
+          {nextLesson && (
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-[#FFFBEB] via-[#FEF3C7]/40 to-[#FFF7ED] border border-amber-200/80 text-[#1A1A1A] space-y-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-[#8C5E1A] uppercase">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>{language === 'hi' ? 'अगला पाठ (टीज़र)' : 'Coming Up Next · Teaser'}</span>
+              </div>
+              <h3 className="font-serif italic font-bold text-base sm:text-lg text-[#1A1A1A]">
+                {language === 'hi' && nextLesson.title_hi
+                  ? nextLesson.title_hi
+                  : (nextLesson.title_en || nextLesson.title)}
+              </h3>
+              <p className="text-xs text-gray-600 font-light leading-relaxed">
+                {language === 'hi' && (nextLesson.subtitle_hi || nextLesson.hook_hi)
+                  ? (nextLesson.subtitle_hi || nextLesson.hook_hi)
+                  : (nextLesson.subtitle_en || nextLesson.subtitle || nextLesson.hook_en || nextLesson.hook)}
+              </p>
+            </div>
+          )}
 
           <div className="p-5 rounded-2xl bg-[#1A1A1A] text-white flex items-center justify-between">
             <div>

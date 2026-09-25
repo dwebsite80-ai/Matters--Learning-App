@@ -20,9 +20,11 @@ import { getQuestionsByLessonId, getLessonById, getSubjectById, getTopicsBySubje
 import { scrollToTop, useScrollToTop } from './lib/scrollHelper';
 import { TiaFloatingButton } from './components/tia/TiaFloatingButton';
 import { TiaAssistantModal } from './components/tia/TiaAssistantModal';
+import { useLanguage } from './context/LanguageContext';
 
 function MainAppContent() {
   const { user, preferences, loading, refreshUserData } = useAuth();
+  const { language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [selectedSubjectId, setSelectedSubjectId] = useState<SubjectId | null>(null);
@@ -60,41 +62,43 @@ function MainAppContent() {
       }))
     : undefined;
 
+  const isHi = language === 'hi';
   const tiaContext: TiaLessonContext | undefined = targetLesson
     ? {
         subjectId: targetLesson.subject_id,
         subjectName: currentSubject?.name || targetLesson.subject_id,
-        subjectName_hi: currentSubject?.name_hi,
+        subjectName_hi: currentSubject?.name_hi || currentSubject?.name,
         courseDescription: currentSubject?.description,
-        courseDescription_hi: currentSubject?.description_hi,
+        courseDescription_hi: currentSubject?.description_hi || currentSubject?.description,
         courseTopics,
         courseLessons,
         lessonId: targetLesson.id,
         lessonTitle: targetLesson.title_en || targetLesson.title,
-        lessonTitle_hi: targetLesson.title_hi,
+        lessonTitle_hi: targetLesson.title_hi || targetLesson.title,
         lessonSubtitle: targetLesson.subtitle_en || targetLesson.subtitle,
-        lessonSubtitle_hi: targetLesson.subtitle_hi,
+        lessonSubtitle_hi: targetLesson.subtitle_hi || targetLesson.subtitle,
         lessonHook: targetLesson.hook_en || targetLesson.hook,
+        lessonHook_hi: targetLesson.hook_hi || targetLesson.hook,
         difficulty: targetLesson.difficulty,
         sections: targetLesson.sections?.map((s) => ({
           title: s.title,
-          title_hi: s.title_hi,
+          title_hi: s.title_hi || s.title,
           content: s.content,
-          content_hi: s.content_hi,
+          content_hi: s.content_hi || s.content,
           example: s.example,
         })),
         practicalExample: targetLesson.practical_example
           ? {
               scenario: targetLesson.practical_example.scenario,
-              scenario_hi: targetLesson.practical_example.scenario_hi,
+              scenario_hi: targetLesson.practical_example.scenario_hi || targetLesson.practical_example.scenario,
               analysis: targetLesson.practical_example.analysis,
-              analysis_hi: targetLesson.practical_example.analysis_hi,
+              analysis_hi: targetLesson.practical_example.analysis_hi || targetLesson.practical_example.analysis,
               tip: targetLesson.practical_example.actionable_tip,
-              tip_hi: targetLesson.practical_example.actionable_tip_hi,
+              tip_hi: targetLesson.practical_example.actionable_tip_hi || targetLesson.practical_example.actionable_tip,
             }
           : undefined,
         keyTakeaways: targetLesson.key_takeaways,
-        keyTakeaways_hi: targetLesson.key_takeaways_hi,
+        keyTakeaways_hi: targetLesson.key_takeaways_hi || targetLesson.key_takeaways,
         currentQuizQuestion: activeQuizLesson
           ? getQuestionsByLessonId(activeQuizLesson.id)[0]
           : undefined,
@@ -104,13 +108,14 @@ function MainAppContent() {
     ? {
         subjectId: currentSubject.id,
         subjectName: currentSubject.name,
-        subjectName_hi: currentSubject.name_hi,
+        subjectName_hi: currentSubject.name_hi || currentSubject.name,
         courseDescription: currentSubject.description,
-        courseDescription_hi: currentSubject.description_hi,
+        courseDescription_hi: currentSubject.description_hi || currentSubject.description,
         courseTopics,
         courseLessons,
         lessonId: '',
         lessonTitle: currentSubject.name,
+        lessonTitle_hi: currentSubject.name_hi || currentSubject.name,
         difficulty: 'Beginner',
         studentName: user?.user_metadata?.name || 'Anurag',
       }

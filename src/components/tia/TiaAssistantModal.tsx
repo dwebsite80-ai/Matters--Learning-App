@@ -130,18 +130,70 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     }
   }, [isOpen]);
 
-  // Language change is strictly SILENT:
+  // Language switch:
   // - Halts any ongoing speech immediately
-  // - Does NOT speak anything
-  // - Does NOT generate an AI response
-  // - Does NOT push any language switch announcement message to the chat
-  // The new language becomes active for the NEXT user interaction.
+  // - Instantly updates Tia greeting and active mode message to the newly selected language
   useEffect(() => {
     if (prevLangRef.current !== currentLanguage) {
       stopSpeaking();
       prevLangRef.current = currentLanguage;
+
+      const isHi = currentLanguage === 'hi';
+      const lessonName = isHi
+        ? context?.lessonTitle_hi || context?.lessonTitle
+        : context?.lessonTitle;
+
+      const greetingText = isHi
+        ? lessonName
+          ? `नमस्ते! मैं हूँ **टिया**, आपकी एआई लर्निंग गाइड। 🎙️\n\nमैं देख रही हूँ कि आप **${lessonName}** पढ़ रहे हैं। कहीं उलझन है, आसान व्याख्या चाहिए, या इसे मज़ाकिया अंदाज़ में समझना है? मुझसे कुछ भी पूछिए या माइक दबाकर बोलिए!`
+          : `नमस्ते! मैं हूँ **टिया**, आपकी एआई वॉइस ट्यूटर। 🎙️\n\nमैं कठिन कॉन्सेप्ट्स को आसान, याद रखने योग्य और मज़ेदार बनाने के लिए यहाँ हूँ। आप जो भी सीखना चाहते हैं, बेझिझक बोलिए या टाइप कीजिए!`
+        : lessonName
+        ? `Hey! I'm **Tia**, your AI learning companion. 🎙️\n\nI see you're working on **${lessonName}**. Stuck anywhere, need a simpler explanation, or want me to make it funny? Ask me anything or tap the mic to speak!`
+        : `Hey! I'm **Tia**, your AI voice tutor. 🎙️\n\nI'm here to help make complex concepts simple, memorable, and fun. Speak or type whatever you'd like to learn!`;
+
+      const greetingSpeech = isHi
+        ? lessonName
+          ? `नमस्ते! मैं हूँ टिया, आपकी एआई लर्निंग गाइड। मैं देख रही हूँ कि आप ${lessonName} पढ़ रहे हैं। कहीं उलझन है या आसान व्याख्या चाहिए, मुझसे कुछ भी पूछिए!`
+          : `नमस्ते! मैं हूँ टिया, आपकी एआई वॉइस ट्यूटर। कठिन कॉन्सेप्ट्स को आसान और मज़ेदार बनाने के लिए मैं यहाँ हूँ। बेझिझक पूछिए!`
+        : lessonName
+        ? `Hey! I'm Tia, your AI learning companion. I see you're working on ${lessonName}. Ask me anything or tap the mic to speak!`
+        : `Hey! I'm Tia, your AI voice tutor. I'm here to help make complex concepts simple and fun. Ask me anything!`;
+
+      const newGreeting: TiaMessage = {
+        id: 'welcome-msg',
+        sender: 'tia',
+        text: greetingText,
+        speechText: greetingSpeech,
+        mode: 'chat',
+        timestamp: Date.now(),
+        quickActions: isHi
+          ? [
+              '💡 यह पाठ समझाइए',
+              '😂 मज़ाकिया अंदाज़ में बताओ',
+              '🎯 झटपट क्विज़',
+              '🗣️ बोलने का अभ्यास',
+            ]
+          : [
+              '💡 Explain This Lesson',
+              '😂 Make It Funny',
+              '🎯 Quick Quiz',
+              '🗣️ Speaking Practice',
+            ],
+      };
+
+      setMessages((prev) => {
+        if (prev.length <= 1) {
+          return [newGreeting];
+        }
+        return prev.map((m) => (m.id === 'welcome-msg' ? newGreeting : m));
+      });
+
+      // If a specific mode was active, re-trigger it cleanly in the new language
+      if (activeMode && activeMode !== 'chat' && isOpen) {
+        handleTriggerModeAction(activeMode);
+      }
     }
-  }, [currentLanguage, stopSpeaking]);
+  }, [currentLanguage, context, stopSpeaking, activeMode, isOpen]);
 
   // Handle when mode changes via prop or user selection
   useEffect(() => {
@@ -327,10 +379,10 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       id: `tia-err-${Date.now()}`,
       sender: 'tia',
       text: isHi
-        ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'
+        ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया 😅। एक बार फिर पूछिए।'
         : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!",
       speechText: isHi
-        ? 'Oops, Tia ka connection thoda slow ho gaya. Ek baar phir try karo.'
+        ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया। एक बार फिर पूछिए।'
         : "Oops, Tia's connection hit a slight bump. Please try asking again!",
       timestamp: Date.now(),
       quickActions: isHi

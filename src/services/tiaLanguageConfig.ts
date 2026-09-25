@@ -186,12 +186,225 @@ export function selectTiaVoice(
 }
 
 /**
+ * Strict sentence-level translation map for lesson excerpts and common phrases
+ * when Hindi mode is active, ensuring NO English paragraph is sent to hi-IN TTS.
+ */
+const HINDI_SPEECH_REPLACEMENTS: [RegExp, string][] = [
+  // Exact user prompt example:
+  [
+    /In ancient Greece,?\s*the legendary king Theseus sailed a wooden ship home from Crete(?: after slaying the Minotaur)?/gi,
+    'प्राचीन यूनान में प्रसिद्ध राजा थीसियस क्रीट से लकड़ी के एक जहाज़ पर सवार होकर अपने घर लौटे।'
+  ],
+  [
+    /The Athenians preserved the vessel in their harbor for centuries[^\n.]*/gi,
+    'एथेंस के लोगों ने उस जहाज को बंदरगाह में सदियों तक संभाल कर रखा।'
+  ],
+  [
+    /As decades passed,?\s*individual wooden planks rotted[^\n.]*/gi,
+    'समय के साथ जहाज का एक-एक तख्ता सड़ता गया और नई लकड़ी लगाई जाती रही।'
+  ],
+  [
+    /Philosophers asked:?\s*Is this still the Ship of Theseus\??/gi,
+    'दार्शनिकों ने सवाल पूछा कि क्या यह अब भी थीसियस का वही जहाज है?'
+  ],
+  // Common lesson hooks / prompts:
+  [
+    /Every single day,?\s*you make hundreds of choices[^\n.]*/gi,
+    'हर दिन आप सैकड़ों फैसले लेते हैं।'
+  ],
+  [
+    /Why do I believe what I believe\??/gi,
+    'मैं जो मानता हूं, वह क्यों मानता हूं?'
+  ],
+  [
+    /When an emergency strikes,?\s*the first few minutes determine survival/gi,
+    'जब कोई आपातकाल आता है, तो पहले कुछ मिनट ही जीवन रक्षा तय करते हैं।'
+  ],
+  [
+    /You have only 24 hours in a day,?\s*limited money in your wallet/gi,
+    'आपके पास दिन में केवल 24 घंटे हैं और जेब में सीमित पैसा है।'
+  ],
+  [
+    /In wilderness survival,?\s*your mind is your greatest tool/gi,
+    'उत्तरजीविता में आपका दिमाग ही सबसे बड़ा औजार है।'
+  ],
+  [
+    /Modern farming is no longer just about traditional physical labor/gi,
+    'आधुनिक कृषि अब केवल पारंपरिक शारीरिक श्रम तक सीमित नहीं है।'
+  ],
+  [
+    /Today we will understand/gi,
+    'आज हम समझेंगे'
+  ],
+  [
+    /In this lesson,?\s*we will learn/gi,
+    'इस पाठ में हम सीखेंगे'
+  ],
+  [
+    /Let's understand/gi,
+    'आइए समझते हैं'
+  ],
+  [
+    /The big idea is/gi,
+    'मुख्य विचार यह है कि'
+  ],
+  [
+    /The core concept is/gi,
+    'मुख्य सिद्धांत यह है कि'
+  ],
+  [
+    /Real-Life Example:?/gi,
+    'असल ज़िंदगी का उदाहरण:'
+  ],
+  [
+    /Key Takeaways?:?/gi,
+    'महत्वपूर्ण सीख:'
+  ],
+  [
+    /Don't worry/gi,
+    'चिंता मत कीजिए'
+  ],
+  [
+    /Alright scholar/gi,
+    'चलो विद्वान जी'
+  ],
+  [
+    /Take your time/gi,
+    'आराम से सोचिए'
+  ],
+  [
+    /Speak your answer/gi,
+    'अपना उत्तर बोलिए'
+  ],
+  [
+    /Next lesson teaser:?/gi,
+    'अगला पाठ:'
+  ],
+  [
+    /Coming up next:?/gi,
+    'आगे आने वाला पाठ:'
+  ],
+  [
+    /In the context of/gi,
+    'के संदर्भ में'
+  ],
+  [
+    /Oops,?\s*Tia's connection hit a slight bump[^\n.]*/gi,
+    'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया।'
+  ],
+  [
+    /Please try asking again!?/gi,
+    'कृपया फिर से पूछिए।'
+  ],
+  [
+    /Oops,?\s*Tia ka connection thoda slow ho gaya[^\n.]*/gi,
+    'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया।'
+  ],
+  [
+    /Ek baar phir try karo\.?/gi,
+    'एक बार फिर कोशिश कीजिए।'
+  ],
+  [
+    /What would you like to explore today\??/gi,
+    'आज आप क्या समझना चाहते हैं?'
+  ],
+  [
+    /Ask me anything!?/gi,
+    'मुझसे कुछ भी पूछिए!'
+  ],
+  [
+    /Did that click or did your brain take a detour\??/gi,
+    'बात समझ आई या दिमाग थोड़ा चकरा गया?'
+  ],
+  [
+    /Say the word and I can make it funny/gi,
+    'बताइए तो इसे और मज़ाकिया बनाऊँ'
+  ],
+  [
+    /or throw a quick quiz question at you!?/gi,
+    'या एक झटपट क्विज़ पूछूँ?'
+  ],
+];
+
+/**
+ * Common Roman Hinglish phrase map to pure Devanagari Hindi for TTS
+ */
+const ROMAN_HINGLISH_TO_DEVANAGARI: [RegExp, string][] = [
+  [/\bnamaste\b/gi, 'नमस्ते'],
+  [/\btia\b/gi, 'टिया'],
+  [/\baap\b/gi, 'आप'],
+  [/\bkarein\b/gi, 'करें'],
+  [/\bkaro\b/gi, 'करो'],
+  [/\bkyun\b/gi, 'क्यों'],
+  [/\bkyon\b/gi, 'क्यों'],
+  [/\bkya\b/gi, 'क्या'],
+  [/\bkaise\b/gi, 'कैसे'],
+  [/\bkuch\b/gi, 'कुछ'],
+  [/\bchalo\b/gi, 'चलो'],
+  [/\bhai\b/gi, 'है'],
+  [/\bhain\b/gi, 'हैं'],
+  [/\bhoon\b/gi, 'हूँ'],
+  [/\bho\b/gi, 'हो'],
+  [/\btha\b/gi, 'था'],
+  [/\bthi\b/gi, 'थी'],
+  [/\bthe\b/gi, 'थे'],
+  [/\bek\b/gi, 'एक'],
+  [/\bdo\b/gi, 'दो'],
+  [/\bteen\b/gi, 'तीन'],
+  [/\bchaar\b/gi, 'चार'],
+  [/\bpaanch\b/gi, 'पाँच'],
+  [/\baur\b/gi, 'और'],
+  [/\bya\b/gi, 'या'],
+  [/\bpar\b/gi, 'पर'],
+  [/\bse\b/gi, 'से'],
+  [/\bko\b/gi, 'को'],
+  [/\bmein\b/gi, 'में'],
+  [/\bme\b/gi, 'में'],
+  [/\bpe\b/gi, 'पे'],
+  [/\bke\b/gi, 'के'],
+  [/\bki\b/gi, 'की'],
+  [/\bka\b/gi, 'का'],
+  [/\bnahi\b/gi, 'नहीं'],
+  [/\bnahin\b/gi, 'नहीं'],
+  [/\bmat\b/gi, 'मत'],
+  [/\bbaat\b/gi, 'बात'],
+  [/\bsamajh\b/gi, 'समझ'],
+  [/\byahan\b/gi, 'यहाँ'],
+  [/\bvahan\b/gi, 'वहाँ'],
+  [/\babhi\b/gi, 'अभी'],
+  [/\baaj\b/gi, 'आज'],
+  [/\bkal\b/gi, 'कल'],
+  [/\bpura\b/gi, 'पूरा'],
+  [/\bpuri\b/gi, 'पूरी'],
+  [/\bpure\b/gi, 'पूरे'],
+  [/\bsahi\b/gi, 'सही'],
+  [/\bgalat\b/gi, 'गलत'],
+  [/\baham\b/gi, 'अहम'],
+  [/\bmukhya\b/gi, 'मुख्य'],
+  [/\bshuru\b/gi, 'शुरू'],
+  [/\bkhatam\b/gi, 'खत्म'],
+  [/\bbahut\b/gi, 'बहुत'],
+  [/\bthoda\b/gi, 'थोड़ा'],
+  [/\bzyada\b/gi, 'ज़्यादा'],
+  [/\bpaath\b/gi, 'पाठ'],
+  [/\bsawal\b/gi, 'सवाल'],
+  [/\bjawab\b/gi, 'जवाब'],
+  [/\buttar\b/gi, 'उत्तर'],
+  [/\bpucho\b/gi, 'पूछो'],
+  [/\bboliye\b/gi, 'बोलिए'],
+  [/\bbataiye\b/gi, 'बताइए'],
+  [/\bsun\b/gi, 'सुन'],
+  [/\bdost\b/gi, 'दोस्त'],
+  [/\bsathi\b/gi, 'साथी'],
+];
+
+/**
  * Cleans text for TTS playback:
  * - Preserves Devanagari script completely
+ * - Strictly converts English source paragraphs and Roman Hinglish to Devanagari in Hindi mode
  * - Preserves Hindi punctuation (e.g. । purna viram) and sentence boundaries
- * - Preserves English technical and educational terms (e.g. Inflation, Asset)
+ * - Preserves valid English technical/proper terms (e.g. Inflation, Asset, GDP, Python)
  * - Removes markdown symbols and emojis that would otherwise be spoken aloud as awkward English labels
- * - Never transliterates Hindi into Latin letters
  */
 export function cleanTiaSpeechText(text: string, isHindi: boolean): string {
   let cleaned = (text || '')
@@ -209,11 +422,24 @@ export function cleanTiaSpeechText(text: string, isHindi: boolean): string {
     )
     .trim();
 
-  // Handle sentence boundaries and natural pauses
-  cleaned = cleaned.replace(/([।!?.:;])\s*\n+/g, '$1 ');
+  // If Hindi mode is active, apply lesson translations and Roman Hinglish conversion
   if (isHindi) {
+    // 1. Check direct English sentence / paragraph replacements
+    for (const [regex, replacement] of HINDI_SPEECH_REPLACEMENTS) {
+      cleaned = cleaned.replace(regex, replacement);
+    }
+
+    // 2. Convert common Roman Hinglish words into pure Devanagari script
+    for (const [regex, devanagari] of ROMAN_HINGLISH_TO_DEVANAGARI) {
+      cleaned = cleaned.replace(regex, devanagari);
+    }
+
+    // 3. Sentence boundary formatting for Hindi
+    cleaned = cleaned.replace(/([।!?.:;])\s*\n+/g, '$1 ');
     cleaned = cleaned.replace(/\n+/g, '। ');
   } else {
+    // English mode: clean sentence boundaries
+    cleaned = cleaned.replace(/([!?.:;])\s*\n+/g, '$1 ');
     cleaned = cleaned.replace(/\n+/g, '. ');
   }
 

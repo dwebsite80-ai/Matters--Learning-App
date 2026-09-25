@@ -117,7 +117,10 @@ export async function processTiaChat(body: TiaChatRequestBody): Promise<TiaChatR
   let lessonTitle = '';
 
   // Check explicit course parameters or context
-  const rawCourse = body.course ?? body.currentCourse ?? body.context?.subjectName;
+  const rawCourse =
+    body.course ??
+    body.currentCourse ??
+    (isHindi ? body.context?.subjectName_hi || body.context?.subjectName : body.context?.subjectName);
   if (rawCourse && typeof rawCourse === 'string' && rawCourse.trim()) {
     courseName = rawCourse.trim();
   } else if (rawCourse && typeof rawCourse === 'object' && rawCourse.name) {
@@ -125,11 +128,14 @@ export async function processTiaChat(body: TiaChatRequestBody): Promise<TiaChatR
     if (rawCourse.description) courseDescription = String(rawCourse.description).trim();
   } else if (body.context?.subjectId) {
     const scope = getCourseScope(body.context.subjectId, body.context);
-    courseName = scope.name;
-    courseDescription = scope.description;
+    courseName = isHindi ? scope.name_hi || scope.name : scope.name;
+    courseDescription = isHindi ? scope.description_hi || scope.description : scope.description;
   }
 
-  const rawLesson = body.lesson ?? body.currentLesson ?? body.context?.lessonTitle;
+  const rawLesson =
+    body.lesson ??
+    body.currentLesson ??
+    (isHindi ? body.context?.lessonTitle_hi || body.context?.lessonTitle : body.context?.lessonTitle);
   if (rawLesson && typeof rawLesson === 'string' && rawLesson.trim()) {
     lessonTitle = rawLesson.trim();
   } else if (rawLesson && typeof rawLesson === 'object' && rawLesson.title) {

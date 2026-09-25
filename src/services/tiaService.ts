@@ -48,16 +48,16 @@ export async function getLessonExplanation(
     : context?.lessonTitle || 'this topic';
 
   const hook = isHindi
-    ? context?.lessonHook_hi || context?.lessonHook || ''
+    ? context?.lessonHook_hi || ''
     : context?.lessonHook || '';
 
   const firstSection = context?.sections?.[0];
   const sectionContent = isHindi
-    ? firstSection?.content_hi || firstSection?.content
+    ? firstSection?.content_hi || ''
     : firstSection?.content;
 
   const exampleScenario = isHindi
-    ? context?.practicalExample?.scenario_hi || context?.practicalExample?.scenario
+    ? context?.practicalExample?.scenario_hi || ''
     : context?.practicalExample?.scenario;
 
   let explanationText = '';
@@ -117,10 +117,25 @@ export async function getLessonExplanation(
     ];
   }
 
+  const speechText = isHindi
+    ? cleanTiaSpeechText(
+        simpler
+          ? `अरे तनाव मत लीजिए! चलो ${lessonTitle} को बिल्कुल आसान और सीधे शब्दों में समझते हैं। किताबी मुश्किल बातों को छोड़िए, मुख्य बात यह है कि ${cleanTiaSpeechText(sectionContent || 'उन छोटे व्यावहारिक कदमों पर ध्यान दें जो आपको बड़ा फायदा और मानसिक शांति देते हैं', true)}। इसे एक बार सही से समझ लिया, तो आगे कभी किसी से पूछने की ज़रूरत नहीं पड़ेगी! क्या एक मिनट का छोटा सा क्विज़ खेलें?`
+          : `चलो, ${lessonTitle} को ऐसे समझते हैं जैसे दो दोस्त चाय की चुस्की लेते हुए बात कर रहे हों। ${hook ? `${cleanTiaSpeechText(hook, true)}। ` : ''}मुख्य विचार यह है कि ${cleanTiaSpeechText(sectionContent || 'हर समझदारी भरा फैसला बुनियादी नियमों को समझकर ही लिया जाता है', true)}। असल ज़िंदगी में इसका उदाहरण देखें तो ${cleanTiaSpeechText(exampleScenario || 'व्यावहारिक नियमों को समझकर आप नुकसान से बचते हैं', true)}। बात समझ आई या दिमाग थोड़ा चकरा गया? बताइए तो इसे और मज़ाकिया बनाऊँ या एक झटपट क्विज़ पूछूँ?`,
+        true
+      )
+    : cleanTiaSpeechText(
+        simpler
+          ? `Don't worry, let's break ${lessonTitle} down into bite-sized pieces! Think of it this way: instead of heavy textbook jargon, the core idea is super simple: ${cleanTiaSpeechText(sectionContent || 'Focusing on high-leverage practical principles that protect your time and money', false)}. Understand it once with logic, and you'll never stress about memorizing it! Should we test this with a super quick 1-minute quiz?`
+          : `Alright, let's understand ${lessonTitle} like friends having chai together! ${hook ? `${cleanTiaSpeechText(hook, false)} ` : ''}The big idea is that ${cleanTiaSpeechText(sectionContent || 'every smart decision starts with knowing the underlying rules before jumping in', false)}. For a real-life example: ${cleanTiaSpeechText(exampleScenario || 'imagine buying an appliance; understanding basic warranty rights protects you', false)}. Did that click or did your brain take a detour? Say the word and I can make it funny or throw a quick quiz question at you!`,
+        false
+      );
+
   return {
     id: generateId(),
     sender: 'tia',
     text: explanationText,
+    speechText,
     mode: 'explain',
     timestamp: Date.now(),
     quickActions,
@@ -212,10 +227,15 @@ export async function generateFunnyExplanation(
     ];
   }
 
+  const speechText = isHindi
+    ? cleanTiaSpeechText(funnyBody, true)
+    : cleanTiaSpeechText(funnyBody, false);
+
   return {
     id: generateId(),
     sender: 'tia',
     text: fullText,
+    speechText,
     mode: 'funny',
     timestamp: Date.now(),
     quickActions,
@@ -250,10 +270,21 @@ export async function generateQuizQuestion(
       ? `संकेत: ${lessonTitle} के मुख्य निष्कर्ष को याद कीजिए!`
       : `Hint: Recall the core takeaway about ${lessonTitle.toLowerCase()}!`;
 
+    const speechText = isHindi
+      ? cleanTiaSpeechText(
+          `चलो देखते हैं ${lessonTitle} आपको कितना याद रहा। ${qText}। आराम से सोचकर अपना उत्तर बोलिए।`,
+          true
+        )
+      : cleanTiaSpeechText(
+          `Alright scholar, let's test your memory on ${lessonTitle}. ${qText}. Speak your answer or choose an option.`,
+          false
+        );
+
     return {
       id: generateId(),
       sender: 'tia',
       text: tiaPrompt,
+      speechText,
       mode: 'quiz',
       timestamp: Date.now(),
       quizData: {
@@ -295,10 +326,16 @@ export async function generateQuizQuestion(
       hint = 'हस्ताक्षर या भुगतान करने से पहले तथ्यों की जाँच करना!';
     }
 
+    const speechText = cleanTiaSpeechText(
+      `चलो विद्वान जी, आपके लिए एक झटपट सवाल। ${qText}। माइक दबाकर बोलिए।`,
+      true
+    );
+
     return {
       id: generateId(),
       sender: 'tia',
       text: `चलो विद्वान जी, आपके लिए एक झटपट सवाल! 🧠\n\n**${qText}**\n\nमाइक दबाकर बोलिए या टाइप कीजिए। कोई दबाव नहीं, कोई मार्क्स नहीं कटेंगे! 😄`,
+      speechText,
       mode: 'quiz',
       timestamp: Date.now(),
       quizData: {
@@ -327,10 +364,16 @@ export async function generateQuizQuestion(
       hint = 'Verify rights and check the facts before signing or paying!';
     }
 
+    const speechText = cleanTiaSpeechText(
+      `Alright scholar, one quick question for you. ${qText}. Speak your thought below.`,
+      false
+    );
+
     return {
       id: generateId(),
       sender: 'tia',
       text: `Alright scholar, one quick question for you! 🧠\n\n**${qText}**\n\nSpeak your thought or type below. No pressure, no marks deducted! 😄`,
+      speechText,
       mode: 'quiz',
       timestamp: Date.now(),
       quizData: {
@@ -538,10 +581,15 @@ export async function getSpeakingPracticePrompt(
     ];
   }
 
+  const speechText = isHindi
+    ? cleanTiaSpeechText(`टिया का स्पीकिंग जिम। ${selectedPrompt}। पूरे विश्वास से बोलिए, मैं सुनकर सुझाव दूँगी।`, true)
+    : cleanTiaSpeechText(`Tia's speaking gym. ${selectedPrompt}. Speak naturally, I'll listen and give you feedback.`, false);
+
   return {
     id: generateId(),
     sender: 'tia',
     text: fullText,
+    speechText,
     mode: 'speaking_practice',
     timestamp: Date.now(),
     quickActions,
@@ -591,10 +639,13 @@ export async function evaluateSpeakingAnswer(
     ];
   }
 
+  const speechText = cleanTiaSpeechText(feedback, isHindi);
+
   return {
     id: generateId(),
     sender: 'tia',
     text: feedback,
+    speechText,
     mode: 'speaking_practice',
     timestamp: Date.now(),
     quickActions,
@@ -649,10 +700,18 @@ export async function generateRevisionQuestions(
         "I'm ready to continue reading",
       ];
 
+  const speechText = cleanTiaSpeechText(
+    isHindi
+      ? `${lessonTitle} का त्वरित पुनरीक्षण। ${takeaways.slice(0, 3).join('। ')}। क्या 5 सवालों का रैपिड-फायर क्विज़ खेलें?`
+      : `Quick memory refresh for ${lessonTitle}. ${takeaways.slice(0, 3).join('. ')}. Want to do a rapid-fire quiz?`,
+    isHindi
+  );
+
   return {
     id: generateId(),
     sender: 'tia',
     text,
+    speechText,
     mode: 'revision',
     timestamp: Date.now(),
     quickActions,
@@ -807,7 +866,7 @@ export async function sendTextMessage(
           id: generateId(),
           sender: 'tia',
           text: extracted.text,
-          speechText: extracted.speechText || extracted.text,
+          speechText: cleanTiaSpeechText(extracted.speechText || extracted.text, isHindi),
           timestamp: Date.now(),
           quickActions: extracted.quickActions || [],
         };
@@ -830,12 +889,14 @@ export async function sendTextMessage(
 
   // 2. Failure Fallback: ONLY reaches here when network request failed or returned non-200.
   console.warn('[Tia Frontend] Network/API call failed or returned empty; using graceful connection fallback.');
-  const courseName = context?.subjectName || (isHindi ? 'वर्तमान कोर्स' : 'current course');
+  const courseName = isHindi
+    ? context?.subjectName_hi || context?.subjectName || 'वर्तमान कोर्स'
+    : context?.subjectName || 'current course';
   const fallbackText = isHindi
-    ? 'Oops, Tia ka connection thoda slow ho gaya 😅. Ek baar phir try karo.'
+    ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया 😅। एक बार फिर पूछिए।'
     : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!";
   const fallbackSpeech = isHindi
-    ? 'Oops, Tia ka connection thoda slow ho gaya. Ek baar phir try karo.'
+    ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया। एक बार फिर पूछिए।'
     : "Oops, Tia's connection hit a slight bump. Please try asking again!";
 
   return {
