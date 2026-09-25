@@ -1,6 +1,6 @@
 {
   "name": "Matters - Practical Microlearning",
-  "description": "A mobile-first daily microlearning app teaching practical knowledge in Law, Finance, Economics, First Aid, Survival Skills, Modern Farming, Case Studies, Time Management, and Personality Development.",
+  "description": "A mobile-first daily microlearning app teaching practical knowledge in Law, Finance, Economics, Philosophy, Paradoxes, First Aid, Survival Skills, Modern Farming, Case Studies, and Time Management.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -92,6 +92,10 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
           return '🔥 उत्तरजीविता कौशल';
         case 'modern-farming':
           return '🌱 आधुनिक कृषि';
+        case 'philosophy':
+          return '🧭 दर्शनशास्त्र';
+        case 'paradoxes':
+          return '🌀 विरोधाभास';
         default:
           return '📚 पाठ्यक्रम';
       }
@@ -123,6 +127,10 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         return '🔥 Survival Skills';
       case 'modern-farming':
         return '🌱 Modern Farming';
+      case 'philosophy':
+        return '🧭 Philosophy';
+      case 'paradoxes':
+        return '🌀 Paradoxes';
       default:
         return '📚 Course';
     }

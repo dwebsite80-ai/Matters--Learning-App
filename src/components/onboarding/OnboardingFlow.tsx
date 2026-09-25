@@ -21,6 +21,8 @@ import {
   HeartPulse,
   Flame,
   Sprout,
+  HelpCircle,
+  BrainCircuit,
 } from 'lucide-react';
 import { SubjectId, LearningLevel, DailyMinutes, PreferredTime, LearningGoal, UserPreferences } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -52,6 +54,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
     'first-aid',
     'survival-skills',
     'modern-farming',
+    'philosophy',
+    'paradoxes',
   ]);
   const [level, setLevel] = useState<LearningLevel>('Beginner');
   const [dailyMinutes, setDailyMinutes] = useState<DailyMinutes>(10);
@@ -236,6 +240,26 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
       title_hi: '🌱 आधुनिक एवं पुनर्योजी कृषि',
       desc_en: 'Soil health, precision drip, bio-inputs, IPM biological pest control, polyhouse & drones.',
       desc_hi: 'मृदा स्वास्थ्य, ड्रिप सिंचाई, वर्मीकम्पोस्ट, IPM कीट नियंत्रण, पॉलीहाउस एवं कृषि ड्रोन।',
+    },
+    {
+      id: 'philosophy' as SubjectId,
+      icon: HelpCircle,
+      iconBg: 'bg-[#E0E7FF]',
+      iconColor: 'text-indigo-900',
+      title_en: '🧭 Philosophy: Think Deeper',
+      title_hi: '🧭 दर्शन: गहराई से सोचें',
+      desc_en: 'Socrates, Stoic inner peace, Plato’s cave, moral ethics, Daoist flow, and life purpose.',
+      desc_hi: 'सुकरात, स्टोइक आत्म-नियंत्रण, प्लेटो की गुफा, नीतिशास्त्र, ताओवाद और सार्थक जीवन।',
+    },
+    {
+      id: 'paradoxes' as SubjectId,
+      icon: BrainCircuit,
+      iconBg: 'bg-[#FAE8FF]',
+      iconColor: 'text-fuchsia-900',
+      title_en: '🌀 Mind-Bending Paradoxes',
+      title_hi: '🌀 दिमाग हिला देने वाले विरोधाभास',
+      desc_en: 'Ship of Theseus, time travel loops, Simpson’s paradox, Fermi paradox, and game theory.',
+      desc_hi: 'थीसियस का जहाज, दादाजी का विरोधाभास, सिम्पसन का रहस्य, फर्मी सन्नाटा और गेम थ्योरी।',
     },
   ];
 

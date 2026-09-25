@@ -58,6 +58,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       'first-aid',
       'survival-skills',
       'modern-farming',
+      'philosophy',
+      'paradoxes',
     ]
   );
 
@@ -192,6 +194,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       label_hi: '🌱 आधुनिक एवं पुनर्योजी कृषि',
       desc_en: 'Soil health, precision drip, bio-inputs, IPM biological pest control, polyhouse & drones',
       desc_hi: 'मृदा स्वास्थ्य, ड्रिप सिंचाई, वर्मीकम्पोस्ट, IPM कीट नियंत्रण, पॉलीहाउस एवं कृषि ड्रोन',
+    },
+    {
+      id: 'philosophy' as SubjectId,
+      label_en: '🧭 Philosophy: Think Deeper',
+      label_hi: '🧭 दर्शन: गहराई से सोचें',
+      desc_en: 'Socrates, Stoic control, Plato’s cave, moral ethics, Daoist flow, logic, and existential meaning',
+      desc_hi: 'सुकरात, स्टोइक दर्शन, प्लेटो की गुफा, नीतिशास्त्र, ताओवाद, तर्कशास्त्र और सार्थक जीवन की राह',
+    },
+    {
+      id: 'paradoxes' as SubjectId,
+      label_en: '🌀 Mind-Bending Paradoxes',
+      label_hi: '🌀 दिमाग हिला देने वाले विरोधाभास',
+      desc_en: 'Ship of Theseus, time travel, Simpson’s paradox, Fermi paradox, game theory, and tolerance',
+      desc_hi: 'थीसियस का जहाज, दादाजी का विरोधाभास, सिम्पसन का रहस्य, फर्मी सन्नाटा और गेम थ्योरी',
     },
   ];
 

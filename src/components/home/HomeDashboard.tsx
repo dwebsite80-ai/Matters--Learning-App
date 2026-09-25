@@ -100,6 +100,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         return '🔥';
       case 'modern-farming':
         return '🌱';
+      case 'philosophy':
+        return '🧭';
+      case 'paradoxes':
+        return '🌀';
       default:
         return '📚';
     }

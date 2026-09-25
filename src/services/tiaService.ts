@@ -161,6 +161,10 @@ export async function generateFunnyExplanation(
       funnyBody = `सर्वाइवल का पहला असूल: टीवी शो देखकर जंगल में बिना सोचे-समझे कीड़े या कच्ची चीजें मत चबाओ! 🏕️🦎\n\n'Rule of Threes' याद रखो: 3 मिनट बिना हवा, 3 घंटे बिना शेल्टर (कड़ाके की ठंड में), 3 दिन बिना पानी, और 3 हफ्ते बिना खाने के। सबसे पहले शेल्टर और साफ़ पानी की व्यवस्था करो!`;
     } else if (subjectId === 'modern-farming') {
       funnyBody = `आधुनिक खेती का सीक्रेट: बिना सोचे-समझे खेत में अंधाधुंध केमिकल उड़ेलना मिट्टी के साथ अन्याय है! 🌱🌾\n\nअसली मॉडर्न फार्मर वो है जो मिट्टी का pH टेस्ट कराता है, ड्रिप इरिगेशन से 60% पानी बचाता है, और बायो-फर्टिलाइजर का इस्तेमाल करता है। अब खेती स्मार्ट साइंस से होती है!`;
+    } else if (subjectId === 'philosophy') {
+      funnyBody = `दर्शन का सबसे बड़ा राज़: यह कोई सफेद दाढ़ी वाले बाबाओं की बात नहीं, बल्कि खुद से कड़वे और सच्चे सवाल पूछने की कला है! 🧭💭\n\nसुकरात ने कहा था: "बिना परखा जीवन जीने लायक नहीं।" जब भी कोई कहे कि 'दुनिया ऐसी ही चलती है', तो एक दार्शनिक की तरह पूछो: 'क्यों? क्या इसका कोई सबूत है?' अपनी सोच के खुद मालिक बनो!`;
+    } else if (subjectId === 'paradoxes') {
+      funnyBody = `विरोधाभास का मजेदार सच: जब सच और झूठ आपस में ऐसा उलझ जाएं कि दिमाग हैंग हो जाए! 🌀🤯\n\nजैसे यह कहना: 'मैं अभी झूठ बोल रहा हूं!' अगर यह सच है तो झूठ निकला, और अगर झूठ है तो सच निकला! विरोधाभास हमें सिखाते हैं कि दुनिया हमारी उम्मीदों से ज्यादा रहस्यमयी है।`;
     } else {
       funnyBody = `**${lessonTitle}** को ऐसे देखो: ज़िंदगी 10% वो है जो होती है, और 90% वो है कि आप बिना घबराए कैसे रिएक्ट करते हैं! 😂\n\nलोग इसे रॉकेट साइंस समझते हैं, पर यह बस फॉर्मल जूतों में लिपटा हुआ कॉमन सेंस है। इस एक नियम को समझ लो और आप उन सब से 5 कदम आगे हो जाओगे जो सिर्फ रट्टा मारते हैं!`;
     }
@@ -190,6 +194,10 @@ export async function generateFunnyExplanation(
       funnyBody = `Rule #1 of Wilderness Survival: Do not eat random mushrooms or jump into wild rapids pretending to be Bear Grylls! 🏕️\n\nAlways memorize the 'Rule of Threes': 3 minutes without air, 3 hours without shelter in freezing cold, 3 days without water, and 3 weeks without food. Prioritize shelter and hydration before hunting wild beasts!`;
     } else if (subjectId === 'modern-farming') {
       funnyBody = `Modern farming reality check: Dumping synthetic fertilizers indiscriminately isn't helping your soil—it's exhausting the living microbiome! 🌱🌾\n\nSmart agriculture means testing your soil pH, saving 60% water through precision drip, and using organic bio-inputs. Farming today is high-precision engineering!`;
+    } else if (subjectId === 'philosophy') {
+      funnyBody = `Philosophy decoded: It's not about growing a long white beard and speaking in riddles! 🧭💭\n\nIt's literally the intellectual martial art of asking: 'Why do I believe what everyone tells me to believe?' Socrates was condemned because he made politicians admit they were talking nonsense. Question your assumptions!`;
+    } else if (subjectId === 'paradoxes') {
+      funnyBody = `Paradoxes in a nutshell: A logical brain-lock that forces your mind to reboot! 🌀🤯\n\nLike 'This statement is false'—if it's true, it's false, and if it's false, it's true! Paradoxes expose the blind spots in human certainty and train you to think with radical nuance.`;
     } else {
       funnyBody = `Look at **${lessonTitle}** like this: Life is 10% what happens and 90% how you react without panicking! 😂\n\nMost people treat this like rocket science, but it's really just common sense dressed up in sharp shoes. Master this one rule and you're miles ahead of everyone who just memorizes definitions!`;
     }

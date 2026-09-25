@@ -15,6 +15,8 @@ import {
   HeartPulse,
   Flame,
   Sprout,
+  BrainCircuit,
+  HelpCircle,
 } from 'lucide-react';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -56,6 +58,10 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
         return Flame;
       case 'modern-farming':
         return Sprout;
+      case 'philosophy':
+        return HelpCircle;
+      case 'paradoxes':
+        return BrainCircuit;
       default:
         return BookOpen;
     }
@@ -108,6 +114,10 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
               ? 'bg-[#FFEDD5] text-orange-900'
               : sub.id === 'modern-farming'
               ? 'bg-[#DCFCE7] text-emerald-900'
+              : sub.id === 'philosophy'
+              ? 'bg-[#E0E7FF] text-indigo-900'
+              : sub.id === 'paradoxes'
+              ? 'bg-[#FAE8FF] text-fuchsia-900'
               : 'bg-[#FFFBEB] text-amber-900';
 
           const subName = language === 'hi' && sub.name_hi ? sub.name_hi : sub.name;

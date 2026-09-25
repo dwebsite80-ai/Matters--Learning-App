@@ -11,7 +11,9 @@ export type SubjectId =
   | 'time-management'
   | 'first-aid'
   | 'survival-skills'
-  | 'modern-farming';
+  | 'modern-farming'
+  | 'philosophy'
+  | 'paradoxes';
 
 export type AppLanguage = 'en' | 'hi';
 
