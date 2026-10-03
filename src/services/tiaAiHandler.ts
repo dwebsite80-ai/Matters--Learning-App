@@ -4,15 +4,27 @@ import { cleanTiaSpeechText } from './tiaLanguageConfig';
 import { TiaLessonContext, TiaMessage } from '../types';
 
 export function getGeminiApiKey(): string | undefined {
+  const env = process.env;
   const rawKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.GOOGLE_GENAI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.API_KEY;
+    env.GEMINI_API_KEY ||
+    env.VITE_GEMINI_API_KEY ||
+    env.GOOGLE_GENAI_API_KEY ||
+    env.GOOGLE_API_KEY ||
+    env.API_KEY ||
+    env.GEMINI_KEY ||
+    env.gemini_api_key ||
+    env.google_api_key;
 
   if (!rawKey) return undefined;
-  const trimmed = rawKey.trim();
+  let trimmed = rawKey.trim();
+  // Strip surrounding single/double quotes if accidentally included in environment variable dashboard inputs
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+
   // Filter out placeholder template strings
   if (
     !trimmed ||

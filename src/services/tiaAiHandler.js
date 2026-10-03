@@ -29759,9 +29759,13 @@ function cleanTiaSpeechText(text, isHindi) {
 
 // src/services/tiaAiHandler.ts
 function getGeminiApiKey() {
-  const rawKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
+  const env = process.env;
+  const rawKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || env.GOOGLE_API_KEY || env.API_KEY || env.GEMINI_KEY || env.gemini_api_key || env.google_api_key;
   if (!rawKey) return void 0;
-  const trimmed = rawKey.trim();
+  let trimmed = rawKey.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') || trimmed.startsWith("'") && trimmed.endsWith("'")) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
   if (!trimmed || trimmed === "MY_GEMINI_API_KEY" || trimmed === "YOUR_API_KEY" || trimmed.startsWith("MY_")) {
     return void 0;
   }
