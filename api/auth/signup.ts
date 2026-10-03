@@ -1,4 +1,4 @@
-import { processSignup } from '../../src/services/authServerHandler.ts';
+import { processSignup } from '../../src/services/authServerHandler.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

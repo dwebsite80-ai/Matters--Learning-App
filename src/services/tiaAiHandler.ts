@@ -95,7 +95,7 @@ export async function processTiaChat(body: TiaChatRequestBody): Promise<TiaChatR
 
   const userText = String(rawUserText).trim();
   const hasKey = Boolean(getGeminiApiKey());
-  console.log(`[Tia AI] Request received | Question: "${userText}" | Lang: ${body.language || 'hi'} | GEMINI_API_KEY present: ${hasKey}`);
+  console.log(`[Tia Backend] Question received: "${userText}" | Lang: ${body.language || 'hi'} | GEMINI_API_KEY present: ${hasKey}`);
 
   if (!userText) {
     return {
@@ -254,7 +254,7 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
 
   for (let i = 0; i < modelsToTry.length; i++) {
     const modelName = modelsToTry[i];
-    console.log(`[Tia AI] Gemini request started | Model: ${modelName} | Prompt length: ${userContextPrompt.length}`);
+    console.log(`[Tia Backend] Gemini request started | Model: ${modelName} | Question: "${userText.slice(0, 80)}" | Prompt length: ${userContextPrompt.length}`);
     try {
       response = await gemini.models.generateContent({
         model: modelName,
@@ -267,7 +267,7 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
         },
       });
       if (response?.text) {
-        console.log(`[Tia AI] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`);
+        console.log(`[Tia Backend] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`);
         break;
       }
     } catch (err: any) {
