@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Flame, Brain, Database, Languages } from 'lucide-react';
+import { Sparkles, Flame, Brain, Languages } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -12,7 +12,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenSchemaModal }) => {
-  const { user, isConfiguredWithSupabase } = useAuth();
+  const { user } = useAuth();
   const { stats, streakStatus, currentStreak: ctxStreak, previousBrokenStreak } = useLearning();
   const { language, setLanguage, t } = useLanguage();
 
@@ -161,22 +161,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenS
                 <span className="text-xs sm:text-sm">🧠</span>
                 <span className="font-bold text-[#1A5E8C] text-[11px] sm:text-xs">{totalXp} XP</span>
               </div>
-
-              {/* Supabase / DB Status Pill */}
-              {onOpenSchemaModal && (
-                <button
-                  onClick={onOpenSchemaModal}
-                  className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                    isConfiguredWithSupabase
-                      ? 'bg-[#E6F4EA] text-emerald-900 border-emerald-300'
-                      : 'bg-[#F5F5F0] text-gray-700 border-black/5 hover:border-black/20'
-                  }`}
-                  title="View Supabase Database Schema"
-                >
-                  <Database className="w-3 h-3 text-gray-600" />
-                  <span>{isConfiguredWithSupabase ? 'Supabase Live' : 'Schema'}</span>
-                </button>
-              )}
 
               {/* Profile Avatar Button (hidden on mobile where bottom navigation has Profile tab) */}
               <button

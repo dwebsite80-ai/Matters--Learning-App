@@ -1,4 +1,4 @@
-import { getGeminiApiKey } from '../src/services/tiaAiHandler';
+import { getGeminiApiKey } from '../src/services/tiaAiHandler.ts';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

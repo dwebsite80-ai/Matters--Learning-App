@@ -1,4 +1,4 @@
-import { processTiaChat, getGeminiApiKey } from '../../src/services/tiaAiHandler';
+import { processTiaChat, getGeminiApiKey } from '../../src/services/tiaAiHandler.ts';
 
 export default async function handler(req: any, res: any) {
   // CORS support

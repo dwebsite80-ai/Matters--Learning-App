@@ -8,7 +8,6 @@ import {
   Sun,
   LogOut,
   Sparkles,
-  Database,
   CheckCircle2,
   Save,
   Flame,
@@ -23,11 +22,11 @@ import { useLanguage } from '../../context/LanguageContext';
 import { LearningLevel, DailyMinutes, PreferredTime, SubjectId } from '../../types';
 
 interface ProfileViewProps {
-  onOpenSchemaModal: () => void;
+  onOpenSchemaModal?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) => {
-  const { user, preferences, logOut, isConfiguredWithSupabase } = useAuth();
+  const { user, preferences, logOut } = useAuth();
   const { stats, savePreferences, streakStatus, currentStreak: ctxStreak, longestStreak: ctxLongest } = useLearning();
   const { language, setLanguage, t } = useLanguage();
 
@@ -497,35 +496,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
               <span>{language === 'hi' ? 'प्राथमिकताएँ सहेजें' : 'Update Preferences'}</span>
             </>
           )}
-        </button>
-      </div>
-
-      {/* Supabase Schema & Database Integration Tooling */}
-      <div className="bg-[#1A1A1A] text-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-amber-300" />
-            <h3 className="font-serif italic text-lg text-white">
-              {language === 'hi' ? 'स्थानीय MVP एवं स्कीमा संरचना' : 'Frontend MVP & Storage Mode'}
-            </h3>
-          </div>
-          <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-            {language === 'hi' ? 'लोकल स्टोरेज सक्रिय' : 'Frontend MVP Active'}
-          </span>
-        </div>
-
-        <p className="text-xs text-white/70 leading-relaxed font-light">
-          {language === 'hi'
-            ? 'यह संस्करण सभी 6 पाठ्यक्रमों (60 पाठ, 300 प्रश्न) के साथ पूरी तरह से फ्रंटएंड पर काम करता है। किसी डेटाबेस या सर्वर क्रेडेंशियल की आवश्यकता नहीं है।'
-            : 'This version runs completely frontend-only with local storage persistence across all 6 courses (60 lessons, 300 MCQs) and bilingual English/Hindi support.'}
-        </p>
-
-        <button
-          onClick={onOpenSchemaModal}
-          id="view-supabase-sql-btn"
-          className="w-full py-3.5 px-6 rounded-full text-xs font-bold bg-white text-[#1A1A1A] hover:bg-gray-100 transition-all uppercase tracking-widest"
-        >
-          {language === 'hi' ? 'डेटा संरचना एवं विवरण देखें' : 'View Data Architecture & SQL Schema'}
         </button>
       </div>
 
