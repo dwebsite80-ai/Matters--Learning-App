@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ArrowLeft,
-  ArrowRight,
   Clock,
   Award,
   Sparkles,
@@ -9,7 +8,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   HelpCircle,
-  BookOpen,
 } from 'lucide-react';
 import { Lesson, SubjectId, TiaMode } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
@@ -152,17 +150,17 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 animate-fadeIn">
       {/* Header with Exit and Progress */}
-      <div className="space-y-3">
+      <div className="space-y-3 bg-white/80 p-4 rounded-3xl border border-black/[0.06] backdrop-blur-xl shadow-2xs">
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-black transition-colors px-3 py-1.5 rounded-full border border-black/5 bg-white cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-black/60 hover:text-black transition-all px-3.5 py-1.5 rounded-full border border-black/[0.08] bg-white cursor-pointer shadow-2xs hover:bg-[#FAFAF8] hover:scale-105 active:scale-95"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{language === 'hi' ? 'पाठ से बाहर आएं' : 'Exit Lesson'}</span>
           </button>
 
-          <div className="flex items-center gap-2 text-xs font-mono font-medium text-gray-500">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-black/70 bg-black/[0.03] px-3 py-1 rounded-full border border-black/[0.04]">
             <span>
               {language === 'hi'
                 ? `चरण ${currentStep + 1} / ${totalSteps}`
@@ -172,25 +170,25 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-black/[0.04] h-2 rounded-full overflow-hidden">
           <div
-            className="bg-[#1A1A1A] h-full rounded-full transition-all duration-300 ease-out"
+            className="bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
       {/* Lesson Meta Banner */}
-      <div className="flex items-center justify-between text-xs text-gray-500 border-b border-black/5 pb-3">
-        <span className="font-bold text-[#1A1A1A] bg-[#F5F5F0] px-3 py-1 rounded-full border border-black/5">
+      <div className="flex items-center justify-between text-xs text-black/60 border-b border-black/[0.06] pb-3.5">
+        <span className="font-semibold text-[#090D16] bg-black/[0.03] px-3.5 py-1 rounded-full border border-black/[0.05]">
           {getSubjectBadge(lesson.subject_id)}
         </span>
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-gray-400" />
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-black/40" />
             {lesson.estimated_minutes} {language === 'hi' ? 'मिनट' : 'min read'}
           </span>
-          <span className="flex items-center gap-1 font-mono">
+          <span className="flex items-center gap-1.5 font-mono">
             <Award className="w-3.5 h-3.5 text-amber-500" />
             {language === 'hi'
               ? (lesson.difficulty === 'Beginner' ? 'सरल' : lesson.difficulty === 'Intermediate' ? 'मध्यम' : 'उन्नत')
@@ -200,68 +198,68 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       </div>
 
       {/* Tia AI Learning Companion Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-2.5 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-[#FFFBEB] via-[#FFF5F5] to-[#F0FDF4] border border-black/5 shadow-2xs">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between flex-wrap gap-3 p-4 sm:p-5 rounded-[28px] sm:rounded-3xl bg-white border border-black/[0.06] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:border-black/15 transition-all">
+        <div className="flex items-center gap-3.5">
           <TiaAvatar state="idle" size="sm" />
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-xs text-[#1A1A1A]">
-                {language === 'hi' ? 'टिया एआई मार्गदर्शक' : 'Tia Learning Companion'}
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs sm:text-sm text-[#090D16]">
+                {language === 'hi' ? 'टिया एआई मार्गदर्शक' : 'Tia AI Tutor'}
               </span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-200/50 text-[#8C5E1A]">
-                {language === 'hi' ? 'एआई आवाज़' : 'AI Voice'}
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-100/90 text-amber-900 font-bold border border-amber-300/80 shadow-2xs">
+                {language === 'hi' ? 'वॉइस' : 'Voice'}
               </span>
             </div>
-            <span className="text-[11px] text-gray-600 block">
-              {language === 'hi' ? 'कोई भी संदेह पूछें या मजेदार अंदाज में समझें' : 'Stuck or want a fun breakdown?'}
+            <span className="text-[11px] text-black/60 block mt-0.5 font-light">
+              {language === 'hi' ? 'कोई भी संदेह पूछें या मजेदार अंदाज में समझें' : 'Need a simple or funny breakdown?'}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onOpenTia?.('explain')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-black hover:text-white border border-black/10 text-xs font-bold text-[#1A1A1A] transition-all cursor-pointer shadow-2xs active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/[0.03] hover:bg-[#090D16] hover:text-white border border-black/[0.08] text-xs font-semibold text-[#090D16] transition-all cursor-pointer shadow-2xs active:scale-95"
           >
             <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-            <span>{language === 'hi' ? 'टिया से समझें' : 'Explain with Tia'}</span>
+            <span>{language === 'hi' ? 'सरल व्याख्या' : 'Explain Simply'}</span>
           </button>
           <button
             onClick={() => onOpenTia?.('funny')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-black hover:text-white border border-black/10 text-xs font-bold text-[#1A1A1A] transition-all cursor-pointer shadow-2xs active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/[0.03] hover:bg-[#090D16] hover:text-white border border-black/[0.08] text-xs font-semibold text-[#090D16] transition-all cursor-pointer shadow-2xs active:scale-95"
           >
             <span>😂</span>
-            <span>{language === 'hi' ? 'मजेदार बनाएं' : 'Make It Funny'}</span>
+            <span>{language === 'hi' ? 'मजेदार अंदाज़' : 'Make It Funny'}</span>
           </button>
         </div>
       </div>
 
       {/* Step 0: The Relatable Hook */}
       {currentStep === 0 && (
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-6 animate-fadeIn">
+        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 animate-fadeIn">
           <div>
-            <span className="text-[10px] font-bold text-[#8C5E1A] uppercase tracking-widest bg-[#FEF2E0] px-3 py-1 rounded-full border border-[#F5D7A1]">
+            <span className="text-[10px] font-bold text-amber-900 uppercase tracking-widest bg-amber-50 px-3.5 py-1 rounded-full border border-amber-200/90 font-mono shadow-2xs">
               {language === 'hi' ? 'वास्तविक जीवन संदर्भ' : 'The Real-Life Hook'}
             </span>
-            <h1 className="text-2xl sm:text-4xl font-serif italic text-[#1A1A1A] tracking-tight mt-3 leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-serif italic text-[#090D16] tracking-tight mt-4 leading-tight font-medium">
               {lessonTitle}
             </h1>
             {lessonSubtitle && (
-              <p className="text-xs sm:text-sm text-gray-500 mt-1.5 font-light">
+              <p className="text-xs sm:text-sm text-black/60 mt-2.5 font-light leading-relaxed">
                 {lessonSubtitle}
               </p>
             )}
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#F5F5F0] border-l-4 border-[#1A1A1A] text-[#1A1A1A] text-base font-serif italic leading-relaxed">
+          <div className="p-6 sm:p-8 rounded-3xl bg-[#FAFAF8] border-l-4 border-[#090D16] text-[#090D16] text-base sm:text-lg font-serif italic leading-relaxed shadow-2xs">
             <p>"{lessonHook}"</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-black/5 flex items-start gap-3.5">
-            <Lightbulb className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-700 leading-relaxed font-light">
+          <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3.5 shadow-2xs">
+            <Lightbulb className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+            <p className="text-xs sm:text-sm text-amber-950 leading-relaxed font-light">
               {language === 'hi'
-                ? 'इस 10-मिनट के सूक्ष्म-पाठ में, आप इस विषय के व्यावहारिक नियम और निर्णय लेने के सही तरीके सीखेंगे।'
-                : 'In this 10-minute micro-lesson, you will learn the exact practical mechanism behind this situation and how to protect yourself or make better decisions.'}
+                ? 'इस सूक्ष्म-पाठ में, आप इस विषय के व्यावहारिक नियम और निर्णय लेने के सही तरीके सीखेंगे।'
+                : 'In this micro-lesson, you will learn the exact practical mechanism behind this situation and how to protect yourself or make better decisions.'}
             </p>
           </div>
         </div>
@@ -269,7 +267,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* Steps 1..N: Concept Sections */}
       {currentStep >= 1 && currentStep <= totalSections && (
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-5 animate-fadeIn">
+        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 animate-fadeIn">
           {(() => {
             const section = lesson.sections[currentStep - 1];
             const secTitle = language === 'hi' && section.title_hi ? section.title_hi : section.title;
@@ -278,22 +276,22 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
             return (
               <>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-xs">
+                <div className="flex items-center gap-3.5 pb-4 border-b border-black/[0.06]">
+                  <div className="w-8 h-8 rounded-full bg-[#090D16] text-white flex items-center justify-center font-bold text-xs font-mono shadow-xs">
                     {currentStep}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-serif italic text-[#1A1A1A]">
+                  <h2 className="text-xl sm:text-2xl font-serif italic text-[#090D16] font-medium">
                     {secTitle}
                   </h2>
                 </div>
 
-                <p className="text-sm sm:text-base text-gray-700 leading-relaxed font-light whitespace-pre-line">
+                <p className="text-sm sm:text-base text-black/80 leading-relaxed font-light whitespace-pre-line">
                   {secContent}
                 </p>
 
                 {secHighlight && (
-                  <div className="p-5 rounded-2xl bg-[#F5F5F0] border border-black/5 text-[#1A1A1A] text-xs font-semibold leading-relaxed flex items-start gap-3">
-                    <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="p-5 sm:p-6 rounded-2xl bg-violet-50/80 border border-violet-200/90 text-violet-950 text-xs sm:text-sm font-medium leading-relaxed flex items-start gap-3.5 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
                     <span>{secHighlight}</span>
                   </div>
                 )}
@@ -305,45 +303,45 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* Step N+1: Practical Scenario & Analysis */}
       {currentStep === totalSections + 1 && (
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-5 animate-fadeIn">
-          <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
-            <HelpCircle className="w-4 h-4" />
+        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 animate-fadeIn">
+          <div className="flex items-center gap-2 text-black/50 text-[10px] font-bold uppercase tracking-widest font-mono">
+            <HelpCircle className="w-4 h-4 text-violet-600" />
             <span>{language === 'hi' ? 'व्यावहारिक परिस्थिति विश्लेषण' : 'Practical Scenario Analysis'}</span>
           </div>
 
-          <h2 className="text-2xl font-serif italic text-[#1A1A1A]">
+          <h2 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] font-medium tracking-tight">
             {language === 'hi' ? 'वास्तविक जीवन में अनुप्रयोग' : 'Real-World Application'}
           </h2>
 
-          <div className="p-5 rounded-2xl bg-[#F5F5F0] border border-black/5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+          <div className="p-6 rounded-3xl bg-[#FAFAF8] border border-black/[0.06] shadow-2xs">
+            <span className="text-[10px] font-bold text-black/50 uppercase tracking-widest font-mono">
               {language === 'hi' ? 'परिस्थिति' : 'The Scenario'}
             </span>
-            <p className="text-xs sm:text-sm text-gray-800 mt-1 leading-relaxed font-light">
+            <p className="text-xs sm:text-sm text-black/85 mt-2 leading-relaxed font-light">
               {language === 'hi' && lesson.practical_example.scenario_hi
                 ? lesson.practical_example.scenario_hi
                 : lesson.practical_example.scenario}
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#E6F4EA] border border-emerald-200">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">
+          <div className="p-6 rounded-3xl bg-emerald-50/70 border border-emerald-200/80 shadow-2xs">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest font-mono">
               {language === 'hi' ? 'विश्लेषण' : 'The Analysis'}
             </span>
-            <p className="text-xs sm:text-sm text-emerald-950 mt-1 leading-relaxed font-light">
+            <p className="text-xs sm:text-sm text-emerald-950 mt-2 leading-relaxed font-light">
               {language === 'hi' && lesson.practical_example.analysis_hi
                 ? lesson.practical_example.analysis_hi
                 : lesson.practical_example.analysis}
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#FEF2E0] border border-[#F5D7A1] flex items-start gap-3">
-            <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+          <div className="p-6 rounded-3xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3.5 shadow-2xs">
+            <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
             <div>
-              <span className="text-[10px] font-bold text-[#8C5E1A] uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-amber-900 uppercase tracking-widest font-mono">
                 {language === 'hi' ? 'कार्रवाई योग्य नियम' : 'Actionable Rule'}
               </span>
-              <p className="text-xs sm:text-sm text-[#8C5E1A] mt-0.5 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-amber-950 mt-1 leading-relaxed font-medium">
                 {language === 'hi' && lesson.practical_example.actionable_tip_hi
                   ? lesson.practical_example.actionable_tip_hi
                   : lesson.practical_example.actionable_tip}
@@ -355,17 +353,17 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* Step N+2: Practical Activity (if present) */}
       {hasActivity && currentStep === activityStepIndex && lesson.practical_activity && (
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-6 animate-fadeIn">
+        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 animate-fadeIn">
           <div>
-            <span className="text-[10px] font-bold text-[#1A5E8C] uppercase tracking-widest bg-[#E0F2FE] px-3 py-1 rounded-full border border-sky-200">
+            <span className="text-[10px] font-bold text-sky-900 uppercase tracking-widest bg-sky-50 px-3.5 py-1 rounded-full border border-sky-200 font-mono shadow-2xs">
               {language === 'hi' ? 'व्यावहारिक अभ्यास (3-5 मिनट)' : `Practical Activity (${lesson.practical_activity.time_minutes || 5} mins)`}
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] mt-2">
+            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] mt-3.5 font-medium tracking-tight">
               {language === 'hi' && lesson.practical_activity.title_hi
                 ? lesson.practical_activity.title_hi
                 : lesson.practical_activity.title}
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1 font-light leading-relaxed">
+            <p className="text-xs sm:text-sm text-black/60 mt-1.5 font-light leading-relaxed">
               {language === 'hi' && lesson.practical_activity.description_hi
                 ? lesson.practical_activity.description_hi
                 : lesson.practical_activity.description}
@@ -375,7 +373,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
           {/* Action Steps */}
           {lesson.practical_activity.steps && lesson.practical_activity.steps.length > 0 && (
             <div className="space-y-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-black/50 uppercase tracking-wider block font-mono">
                 {language === 'hi' ? 'चरणबद्ध कार्यविधि:' : 'Step-by-Step Instructions:'}
               </span>
               {(language === 'hi' && lesson.practical_activity.steps_hi && lesson.practical_activity.steps_hi.length > 0
@@ -384,12 +382,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
               ).map((step, sIdx) => (
                 <div
                   key={sIdx}
-                  className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#FAF9F6] border border-black/5 hover:border-black/10 transition-colors"
+                  className="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-[#FAFAF8] border border-black/[0.06] hover:border-black/15 transition-colors shadow-2xs"
                 >
-                  <div className="w-6 h-6 rounded-full bg-[#1A1A1A] text-white text-xs font-mono font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-[#090D16] text-white text-xs font-mono font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                     {sIdx + 1}
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-800 font-light leading-relaxed">
+                  <p className="text-xs sm:text-sm text-black/85 font-light leading-relaxed">
                     {step}
                   </p>
                 </div>
@@ -397,9 +395,9 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
             </div>
           )}
 
-          <div className="p-4 rounded-2xl bg-[#E6F4EA] border border-emerald-200 flex items-center gap-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 flex items-center gap-3.5 shadow-2xs">
             <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-            <p className="text-xs text-emerald-900 font-medium">
+            <p className="text-xs text-emerald-950 font-medium">
               {language === 'hi'
                 ? 'इस गतिविधि को अभी करें। अभ्यास करने से सीखी गई बातें स्थायी स्मृति में परिवर्तित होती हैं।'
                 : 'Complete this activity now before proceeding. Real-world practice anchors conceptual knowledge.'}
@@ -410,15 +408,15 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* Step: Key Takeaways & Summary */}
       {currentStep === takeawaysStepIndex && (
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-6 animate-fadeIn">
+        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 animate-fadeIn">
           <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-[#E6F4EA] px-3 py-1 rounded-full border border-emerald-200">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200 font-mono shadow-2xs">
               {language === 'hi' ? 'निष्कर्ष' : 'Summary'}
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] mt-2">
+            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] mt-3 font-medium tracking-tight">
               {language === 'hi' ? 'महत्वपूर्ण सीख' : 'Key Takeaways'}
             </h2>
-            <p className="text-xs text-gray-500 mt-1 font-light">
+            <p className="text-xs sm:text-sm text-black/60 mt-1.5 font-light">
               {language === 'hi'
                 ? 'दैनिक जीवन और परीक्षा हेतु इन मुख्य बिंदुओं को स्मरण रखें:'
                 : 'Remember these core practical principles for everyday decisions:'}
@@ -432,10 +430,10 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
             ).map((point, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#F5F5F0] border border-black/5"
+                className="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-[#FAFAF8] border border-black/[0.06] shadow-2xs"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
-                <span className="text-xs sm:text-sm text-gray-800 font-light leading-relaxed">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span className="text-xs sm:text-sm text-black/85 font-light leading-relaxed">
                   {point}
                 </span>
               </div>
@@ -444,17 +442,17 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
           {/* Next Lesson Teaser */}
           {nextLesson && (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-[#FFFBEB] via-[#FEF3C7]/40 to-[#FFF7ED] border border-amber-200/80 text-[#1A1A1A] space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-[#8C5E1A] uppercase">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <div className="p-6 rounded-3xl bg-amber-50/70 border border-amber-200/80 text-[#090D16] space-y-2 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-900 uppercase font-mono">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
                 <span>{language === 'hi' ? 'अगला पाठ (टीज़र)' : 'Coming Up Next · Teaser'}</span>
               </div>
-              <h3 className="font-serif italic font-bold text-base sm:text-lg text-[#1A1A1A]">
+              <h3 className="font-serif italic font-bold text-base sm:text-lg text-[#090D16]">
                 {language === 'hi' && nextLesson.title_hi
                   ? nextLesson.title_hi
                   : (nextLesson.title_en || nextLesson.title)}
               </h3>
-              <p className="text-xs text-gray-600 font-light leading-relaxed">
+              <p className="text-xs text-black/65 font-light leading-relaxed">
                 {language === 'hi' && (nextLesson.subtitle_hi || nextLesson.hook_hi)
                   ? (nextLesson.subtitle_hi || nextLesson.hook_hi)
                   : (nextLesson.subtitle_en || nextLesson.subtitle || nextLesson.hook_en || nextLesson.hook)}
@@ -462,26 +460,26 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
             </div>
           )}
 
-          <div className="p-5 rounded-2xl bg-[#1A1A1A] text-white flex items-center justify-between">
+          <div className="p-6 rounded-3xl bg-[#090D16] text-white flex items-center justify-between shadow-lg">
             <div>
-              <span className="text-[10px] font-semibold text-white/60 uppercase tracking-widest">
+              <span className="text-[10px] font-mono font-semibold text-white/60 uppercase tracking-widest">
                 {language === 'hi' ? 'प्रश्नोत्तरी के लिए तैयार' : 'Ready for Quiz'}
               </span>
-              <p className="text-sm font-bold text-white">
+              <p className="text-sm font-bold text-white mt-1">
                 {language === 'hi' ? 'प्रश्नों के उत्तर दें और +20 XP प्राप्त करें' : 'Answer questions to earn +20 XP'}
               </p>
             </div>
-            <Sparkles className="w-5 h-5 text-amber-300" />
+            <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
           </div>
         </div>
       )}
 
       {/* Tia Helper Prompt */}
-      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 py-1">
+      <div className="flex items-center justify-center gap-2 text-xs text-black/55 py-1">
         <span>{language === 'hi' ? 'कोई संदेह है?' : 'Confused about anything here?'}</span>
         <button
           onClick={() => onOpenTia?.('chat')}
-          className="font-bold text-[#1A1A1A] hover:underline flex items-center gap-1 cursor-pointer"
+          className="font-bold text-[#090D16] hover:text-violet-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span>{language === 'hi' ? 'टिया से पूछें 🎙️' : 'Ask Tia 🎙️'}</span>
@@ -492,7 +490,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={handlePrev}
-          className="py-3.5 px-6 rounded-full border border-black/10 bg-white hover:bg-[#F5F5F0] font-bold text-xs text-[#1A1A1A] transition-colors cursor-pointer"
+          className="py-4 px-6 rounded-full border border-black/[0.1] bg-white hover:bg-black/[0.03] font-bold text-xs text-[#090D16] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
         >
           {currentStep === 0
             ? (language === 'hi' ? 'बाहर आएं' : 'Exit')
@@ -502,7 +500,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         <button
           onClick={handleNext}
           id="lesson-next-btn"
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black active:scale-95 transition-all shadow-md cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black hover:scale-[1.01] active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
         >
           <span>
             {currentStep === totalSteps - 1

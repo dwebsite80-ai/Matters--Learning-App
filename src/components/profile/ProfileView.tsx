@@ -3,17 +3,9 @@ import {
   User,
   AtSign,
   Calendar,
-  Clock,
-  Award,
-  Sun,
   LogOut,
-  Sparkles,
   CheckCircle2,
   Save,
-  Flame,
-  Brain,
-  Shield,
-  Layers,
   Languages,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -211,15 +203,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fadeIn">
-      <div className="border-b border-black/5 pb-5">
-        <span className="text-[10px] uppercase tracking-widest text-[#888] font-semibold block mb-1">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
+      {/* Header */}
+      <div className="border-b border-black/[0.06] pb-6">
+        <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold block mb-1 font-mono">
           {language === 'hi' ? 'खाता एवं प्राथमिकताएँ' : 'Account & Preferences'}
         </span>
-        <h1 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] tracking-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#121212] tracking-tight font-medium">
           {language === 'hi' ? 'प्रोफ़ाइल एवं अध्ययन सेटिंग्स' : 'Profile & Habits'}
         </h1>
-        <p className="text-xs text-gray-500 mt-1 max-w-xl font-light">
+        <p className="text-xs sm:text-sm text-black/60 mt-1.5 max-w-xl font-light leading-relaxed">
           {language === 'hi'
             ? 'अपनी अध्ययन भाषा, दैनिक सीखने का लक्ष्य और सक्रिय विषयों का प्रबंधन करें।'
             : 'Manage your language preference, daily learning goals, pacing level, and active subject pool.'}
@@ -227,57 +220,57 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       </div>
 
       {/* User Card */}
-      <div className="bg-white rounded-[28px] sm:rounded-[32px] border border-black/5 p-6 sm:p-8 shadow-sm">
+      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-[#1A1A1A] text-white font-serif italic font-bold text-2xl flex items-center justify-center shadow-xs">
+          <div className="w-16 h-16 rounded-full bg-[#121212] text-white font-serif italic font-bold text-2xl flex items-center justify-center shadow-sm">
             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
 
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl sm:text-2xl font-serif italic text-[#1A1A1A] truncate">
+            <h2 className="text-xl sm:text-2xl font-serif italic text-[#121212] truncate font-medium">
               {user?.name || 'Knowledge Seeker'}
             </h2>
-            <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5 truncate font-light">
-              <AtSign className="w-3.5 h-3.5 text-gray-400" />
-              <span className="font-mono text-gray-700">{user?.username || 'learner'}</span>
+            <p className="text-xs text-black/60 flex items-center gap-1.5 mt-0.5 truncate font-light">
+              <AtSign className="w-3.5 h-3.5 text-black/40" />
+              <span className="font-mono text-black/80">{user?.username || 'learner'}</span>
             </p>
-            <p className="text-[11px] text-gray-400 flex items-center gap-1.5 mt-1 font-mono">
-              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+            <p className="text-[11px] text-black/45 flex items-center gap-1.5 mt-1 font-mono">
+              <Calendar className="w-3.5 h-3.5 text-black/40" />
               <span>{language === 'hi' ? 'सदस्यता:' : 'Member since'} {formattedDate}</span>
             </p>
           </div>
         </div>
 
         {/* Mini stats row */}
-        <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-black/5 text-center">
+        <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-black/[0.06] text-center">
           <div className={`p-4 rounded-2xl border ${
             streakStatus === 'broken'
-              ? 'bg-[#FDF2F2] border-[#F8B4B4]'
-              : 'bg-[#FEF2E0] border-[#F5D7A1]'
+              ? 'bg-rose-50 border-rose-200'
+              : 'bg-amber-50/80 border-amber-200'
           }`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${
-              streakStatus === 'broken' ? 'text-[#9B1C1C]' : 'text-[#8C5E1A]'
+            <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
+              streakStatus === 'broken' ? 'text-rose-800' : 'text-amber-800'
             }`}>
               {language === 'hi' ? 'दैनिक स्ट्रीक' : 'Streak'}
             </span>
-            <p className={`text-2xl font-serif italic mt-0.5 ${
-              streakStatus === 'broken' ? 'text-[#9B1C1C]' : 'text-[#8C5E1A]'
+            <p className={`text-2xl sm:text-3xl font-serif italic mt-0.5 font-medium ${
+              streakStatus === 'broken' ? 'text-rose-900' : 'text-amber-950'
             }`}>
               {streakStatus === 'broken'
                 ? (language === 'hi' ? '0 दिन (टूटी)' : '0 Days (Broken)')
                 : `${currentStreak} ${language === 'hi' ? 'दिन' : 'Days'}`}
             </p>
             {longestStreak > 0 && (
-              <span className="text-[10px] text-gray-500 font-mono block mt-1">
+              <span className="text-[10px] text-black/50 font-mono block mt-1">
                 {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Best: ${longestStreak}d`}
               </span>
             )}
           </div>
-          <div className="p-4 rounded-2xl bg-[#E0F2FE] border border-[#A1D7F5]">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#1A5E8C]">
+          <div className="p-4 rounded-2xl bg-violet-50/80 border border-violet-200/80">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-800 font-mono">
               {language === 'hi' ? 'नॉलेज XP' : 'Knowledge'}
             </span>
-            <p className="text-2xl font-serif italic text-[#1A5E8C] mt-0.5">
+            <p className="text-2xl sm:text-3xl font-serif italic text-violet-950 mt-0.5 font-medium">
               {stats?.total_xp || 0} XP
             </p>
           </div>
@@ -285,70 +278,70 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
       </div>
 
       {/* Language Preference Selector */}
-      <div className="bg-white rounded-[28px] sm:rounded-[32px] border border-black/5 p-6 sm:p-8 shadow-sm space-y-4">
+      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-[#1A1A1A] text-white flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-[#121212] text-white flex items-center justify-center shadow-2xs">
             <Languages className="w-4 h-4 text-amber-300" />
           </div>
           <div>
-            <h3 className="font-serif italic text-lg sm:text-xl text-[#1A1A1A]">
+            <h3 className="font-serif italic text-lg sm:text-xl text-[#121212] font-medium">
               {language === 'hi' ? 'भाषा चयन (Language Preference)' : 'Learning Language (भाषा चयन)'}
             </h3>
-            <p className="text-xs text-gray-500 font-light">
+            <p className="text-xs text-black/60 font-light">
               {language === 'hi'
-                ? 'सभी 60 पाठ, सारांश, मुख्य बिंदु और 300 प्रश्न हिन्दी और अंग्रेजी दोनों में उपलब्ध हैं।'
-                : 'All 60 lessons, case studies, takeaways, and 300 MCQs are seamlessly available in English and Hindi.'}
+                ? 'सभी पाठ, सारांश, मुख्य बिंदु और प्रश्नोत्तरी हिन्दी और अंग्रेजी दोनों में उपलब्ध हैं।'
+                : 'All lessons, real-life examples, takeaways, and questions are seamlessly available in English and Hindi.'}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
           <button
             type="button"
             onClick={() => setLanguage('en')}
-            className={`py-3.5 px-4 rounded-2xl text-xs font-bold border transition-all text-left flex items-center justify-between ${
+            className={`p-4 rounded-2xl text-xs font-semibold border transition-all text-left flex items-center justify-between cursor-pointer ${
               language === 'en'
-                ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white shadow-xs'
-                : 'border-black/10 hover:border-black/20 bg-white text-gray-700'
+                ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
+                : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
             }`}
           >
             <div>
-              <p className="font-serif italic text-sm">English</p>
-              <p className={`text-[10px] ${language === 'en' ? 'text-gray-300' : 'text-gray-400'}`}>
-                Standard Exam & Life Guide
+              <p className="font-serif italic text-base font-bold">English</p>
+              <p className={`text-[11px] mt-0.5 font-light ${language === 'en' ? 'text-white/70' : 'text-black/50'}`}>
+                Standard Exam & Practical Life Guide
               </p>
             </div>
-            {language === 'en' && <CheckCircle2 className="w-4 h-4 text-white" />}
+            {language === 'en' && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
           </button>
 
           <button
             type="button"
             onClick={() => setLanguage('hi')}
-            className={`py-3.5 px-4 rounded-2xl text-xs font-bold border transition-all text-left flex items-center justify-between ${
+            className={`p-4 rounded-2xl text-xs font-semibold border transition-all text-left flex items-center justify-between cursor-pointer ${
               language === 'hi'
-                ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white shadow-xs'
-                : 'border-black/10 hover:border-black/20 bg-white text-gray-700'
+                ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
+                : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
             }`}
           >
             <div>
-              <p className="font-serif italic text-sm">हिन्दी (Hindi)</p>
-              <p className={`text-[10px] ${language === 'hi' ? 'text-gray-300' : 'text-gray-400'}`}>
+              <p className="font-serif italic text-base font-bold">हिन्दी (Hindi)</p>
+              <p className={`text-[11px] mt-0.5 font-light ${language === 'hi' ? 'text-white/70' : 'text-black/50'}`}>
                 पूर्ण हिन्दी अनुवाद एवं परीक्षा सामग्री
               </p>
             </div>
-            {language === 'hi' && <CheckCircle2 className="w-4 h-4 text-white" />}
+            {language === 'hi' && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
           </button>
         </div>
       </div>
 
       {/* Learning Preferences Editor */}
-      <div className="bg-white rounded-[28px] sm:rounded-[32px] border border-black/5 p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic text-xl text-[#1A1A1A]">
-            {language === 'hi' ? 'दैनिक अध्ययन लक्ष्य एवं योजना' : 'Learning Preferences'}
+          <h3 className="font-serif italic text-xl sm:text-2xl text-[#121212] font-medium">
+            {language === 'hi' ? 'दैनिक अध्ययन लक्ष्य एवं योजना' : 'Learning Habits'}
           </h3>
           {savedSuccess && (
-            <span className="text-xs font-medium text-emerald-800 flex items-center gap-1 bg-[#E6F4EA] px-3 py-1 rounded-full border border-emerald-200">
+            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               <CheckCircle2 className="w-3.5 h-3.5" /> {language === 'hi' ? 'सहेजा गया!' : 'Saved!'}
             </span>
           )}
@@ -356,7 +349,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
 
         {/* 1. Daily Learning Commitment */}
         <div>
-          <label className="block text-xs font-bold text-[#1A1A1A] uppercase tracking-widest mb-2">
+          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
             {language === 'hi' ? 'दैनिक समय प्रतिबद्धता' : 'Daily Commitment'}
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -365,10 +358,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
                 key={mins}
                 type="button"
                 onClick={() => setDailyMinutes(mins as DailyMinutes)}
-                className={`py-3 px-4 rounded-2xl text-xs font-bold border transition-all ${
+                className={`py-3 px-4 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
                   dailyMinutes === mins
-                    ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white shadow-xs'
-                    : 'border-black/10 hover:border-black/20 bg-white text-gray-700'
+                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
+                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
                 }`}
               >
                 {mins} {language === 'hi' ? 'मिनट / प्रतिदिन' : 'Minutes / day'}
@@ -379,7 +372,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
 
         {/* 2. Baseline Level */}
         <div>
-          <label className="block text-xs font-bold text-[#1A1A1A] uppercase tracking-widest mb-2">
+          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
             {language === 'hi' ? 'अध्ययन स्तर' : 'Pacing Level'}
           </label>
           <div className="grid grid-cols-3 gap-3">
@@ -388,10 +381,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
                 key={lvl}
                 type="button"
                 onClick={() => setLevel(lvl)}
-                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all ${
+                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
                   level === lvl
-                    ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white shadow-xs'
-                    : 'border-black/10 hover:border-black/20 bg-white text-gray-700'
+                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
+                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
                 }`}
               >
                 {lvl === 'Beginner'
@@ -412,7 +405,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
 
         {/* 3. Preferred Time */}
         <div>
-          <label className="block text-xs font-bold text-[#1A1A1A] uppercase tracking-widest mb-2">
+          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
             {language === 'hi' ? 'पसंदीदा अध्ययन समय' : 'Preferred Learning Time'}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -421,10 +414,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
                 key={t}
                 type="button"
                 onClick={() => setPreferredTime(t)}
-                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all ${
+                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
                   preferredTime === t
-                    ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white shadow-xs'
-                    : 'border-black/10 hover:border-black/20 bg-white text-gray-700'
+                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
+                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
                 }`}
               >
                 {t === 'Morning'
@@ -449,12 +442,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
 
         {/* 4. Active Subjects */}
         <div>
-          <label className="block text-xs font-bold text-[#1A1A1A] uppercase tracking-widest mb-2">
+          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
             {language === 'hi'
-              ? 'दैनिक मिशन पूल में सक्रिय विषय (सभी 6 विषय उपलब्ध)'
-              : 'Active Subjects In Daily Mission Pool (All 6 Available)'}
+              ? 'दैनिक मिशन पूल में सक्रिय विषय'
+              : 'Active Domains In Daily Mission Pool'}
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {SUBJECT_OPTIONS.map((s) => {
               const active = selectedSubjects.includes(s.id);
               return (
@@ -463,19 +456,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
                   onClick={() => toggleSubject(s.id)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start justify-between text-xs font-medium ${
                     active
-                      ? 'border-[#1A1A1A] bg-[#F5F5F0] text-[#1A1A1A]'
-                      : 'border-black/5 text-gray-400 bg-white hover:border-black/20'
+                      ? 'border-[#121212] bg-[#FAFAF8] text-[#121212] shadow-2xs'
+                      : 'border-black/[0.06] text-black/40 bg-white hover:border-black/20'
                   }`}
                 >
                   <div className="pr-2">
-                    <span className="font-serif italic text-sm block font-bold text-[#1A1A1A]">
+                    <span className="font-serif italic text-sm block font-bold text-[#121212]">
                       {language === 'hi' ? s.label_hi : s.label_en}
                     </span>
-                    <p className="text-[11px] text-gray-500 mt-1 font-light leading-relaxed">
+                    <p className="text-[11px] text-black/60 mt-1 font-light leading-relaxed">
                       {language === 'hi' ? s.desc_hi : s.desc_en}
                     </p>
                   </div>
-                  {active && <CheckCircle2 className="w-4 h-4 text-[#1A1A1A] flex-shrink-0 mt-0.5" />}
+                  {active && <CheckCircle2 className="w-4 h-4 text-[#121212] flex-shrink-0 mt-0.5" />}
                 </div>
               );
             })}
@@ -486,7 +479,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
           onClick={handleSavePreferences}
           disabled={saving}
           id="save-preferences-btn"
-          className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black transition-all shadow-md disabled:opacity-50 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#121212] hover:bg-black transition-all shadow-md disabled:opacity-50 cursor-pointer"
         >
           {saving ? (
             <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -504,7 +497,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
         <button
           onClick={logOut}
           id="logout-btn"
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full border border-rose-200 bg-rose-50/80 hover:bg-rose-100/90 text-rose-800 text-xs font-bold transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>{language === 'hi' ? 'लॉग आउट' : 'Log Out of Matters'}</span>

@@ -3,11 +3,9 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
+  Award,
   Sparkles,
   Flame,
-  Brain,
-  Award,
-  RotateCcw,
 } from 'lucide-react';
 import { Question, Lesson, TiaMode } from '../../types';
 import { useLearning } from '../../context/LearningContext';
@@ -54,17 +52,17 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   if (totalQuestions === 0) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4 animate-fadeIn">
-        <h2 className="text-2xl font-serif italic text-[#1A1A1A]">
+        <h2 className="text-2xl font-serif italic text-[#121212]">
           {language === 'hi' ? 'कोई प्रश्न उपलब्ध नहीं है' : 'No Quiz Questions Available'}
         </h2>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-black/60">
           {language === 'hi'
             ? 'इस पाठ के लिए अभी अभ्यास प्रश्न उपलब्ध नहीं हैं।'
             : 'This lesson does not have interactive quiz questions attached.'}
         </p>
         <button
           onClick={onFinish}
-          className="px-6 py-3 bg-[#1A1A1A] text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-black transition-all cursor-pointer"
+          className="px-6 py-3 bg-[#121212] text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-black transition-all cursor-pointer shadow-md"
         >
           {language === 'hi' ? 'अध्ययन पर वापस लौटें' : 'Return to Learning'}
         </button>
@@ -149,19 +147,19 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
 
     return (
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6 text-center animate-fadeIn">
-        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/5 p-8 sm:p-10 shadow-sm space-y-6">
-          <div className="w-16 h-16 rounded-full bg-[#E6F4EA] text-emerald-800 flex items-center justify-center mx-auto shadow-xs">
-            <Award className="w-8 h-8" />
+        <div className="bg-white rounded-[36px] sm:rounded-[44px] border border-black/[0.06] p-8 sm:p-12 shadow-[0_16px_50px_-12px_rgba(9,13,22,0.1)] space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-200/90 text-emerald-800 flex items-center justify-center mx-auto shadow-2xs group hover:scale-105 transition-transform">
+            <Award className="w-10 h-10 text-emerald-600 animate-bounce" />
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-[#E6F4EA] px-3.5 py-1 rounded-full border border-emerald-200">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200 font-mono shadow-2xs">
               {language === 'hi' ? 'पाठ पूर्ण हुआ' : 'Lesson Complete'}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] mt-3 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-serif italic text-[#090D16] mt-4 tracking-tight font-medium leading-tight">
               {lessonTitle}
             </h1>
-            <p className="text-xs text-gray-500 mt-1 font-light">
+            <p className="text-xs sm:text-sm text-black/60 mt-2 font-light leading-relaxed max-w-sm mx-auto">
               {language === 'hi'
                 ? 'आपने आज एक महत्वपूर्ण व्यावहारिक दक्षता हासिल कर ली है!'
                 : 'You’ve built another essential practical competency today!'}
@@ -170,32 +168,32 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
 
           {/* Score & XP Rewards Banner */}
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="p-5 rounded-2xl bg-[#F5F5F0] border border-black/5">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#FAFAF8] border border-black/[0.06] shadow-2xs">
+              <span className="text-[10px] font-bold text-black/50 uppercase tracking-widest font-mono">
                 {language === 'hi' ? 'अंक (स्कोर)' : 'Score'}
               </span>
-              <p className="text-2xl font-serif italic text-[#1A1A1A] mt-0.5">
+              <p className="text-2xl sm:text-4xl font-serif italic text-[#090D16] mt-1 font-medium">
                 {correctCount} / {totalQuestions}
               </p>
-              <span className="text-[10px] font-mono font-medium text-gray-500">({scorePct}%)</span>
+              <span className="text-[11px] font-mono font-semibold text-black/50">({scorePct}%)</span>
             </div>
 
-            <div className="p-5 rounded-2xl bg-[#E0F2FE] border border-[#A1D7F5] text-[#1A5E8C]">
-              <span className="text-[10px] font-bold text-[#1A5E8C] uppercase tracking-widest">
+            <div className="p-5 sm:p-6 rounded-3xl bg-violet-50/90 border border-violet-200/90 text-violet-900 shadow-2xs">
+              <span className="text-[10px] font-bold text-violet-800 uppercase tracking-widest font-mono">
                 {language === 'hi' ? 'अर्जित XP' : 'Earned'}
               </span>
-              <p className="text-2xl font-serif italic text-[#1A5E8C] mt-0.5">
+              <p className="text-2xl sm:text-4xl font-serif italic text-violet-950 mt-1 font-medium">
                 +{xpResult?.xpGained || 25} XP
               </p>
-              <span className="text-[10px] font-medium text-[#1A5E8C]">
+              <span className="text-[11px] font-medium text-violet-700">
                 {language === 'hi' ? 'ज्ञान संवर्धन' : 'Knowledge Boost'}
               </span>
             </div>
           </div>
 
           {/* Streak Boost Note */}
-          <div className="p-4 rounded-2xl bg-[#FEF2E0] border border-[#F5D7A1] text-[#8C5E1A] flex items-center justify-center gap-2 text-xs font-bold">
-            <span className="text-base">🔥</span>
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-900 flex items-center justify-center gap-2.5 text-xs font-semibold shadow-2xs">
+            <Flame className="w-4 h-4 text-amber-600" />
             <span>
               {language === 'hi'
                 ? 'दैनिक अध्ययन स्ट्रीक बरकरार रही!'
@@ -206,7 +204,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           <button
             onClick={onFinish}
             id="quiz-finish-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black active:scale-95 transition-all shadow-md cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
           >
             <span>{language === 'hi' ? 'पाठ पूरा करें व वापस जाएं' : 'Complete Lesson & Return'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -229,34 +227,34 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 animate-fadeIn">
       {/* Header with Question Counter & Progress */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span className="text-[#1A1A1A] font-bold uppercase tracking-widest text-[10px]">
+      <div className="space-y-3 bg-white/80 p-4 rounded-3xl border border-black/[0.06] backdrop-blur-xl shadow-2xs">
+        <div className="flex items-center justify-between text-xs text-black/60">
+          <span className="text-[#090D16] font-bold uppercase tracking-widest text-[10px] font-mono bg-black/[0.03] px-3 py-1 rounded-full border border-black/[0.04]">
             {language === 'hi'
               ? `प्रश्नोत्तरी · प्रश्न ${currentIndex + 1} / ${totalQuestions}`
               : `Quiz · Question ${currentIndex + 1} of ${totalQuestions}`}
           </span>
-          <span className="font-mono text-[11px]">
+          <span className="font-mono text-[11px] font-bold text-amber-800 bg-amber-50/90 px-3 py-1 rounded-full border border-amber-200/90 shadow-2xs">
             {language === 'hi' ? '+5 XP प्रति प्रश्न' : '+5 XP per question'}
           </span>
         </div>
 
-        <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-black/[0.04] h-2 rounded-full overflow-hidden">
           <div
-            className="bg-[#1A1A1A] h-full rounded-full transition-all duration-300 ease-out"
+            className="bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Question Card */}
-      <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-black/5 p-6 sm:p-9 shadow-sm space-y-6">
-        <h2 className="text-xl sm:text-2xl font-serif italic text-[#1A1A1A] leading-snug">
+      <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-serif italic text-[#090D16] leading-snug font-medium">
           {qText}
         </h2>
 
         {/* 4 Options */}
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {[
             { key: 'A' as const, text: optA },
             { key: 'B' as const, text: optB },
@@ -266,43 +264,43 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             const isSelected = selectedOption === opt.key;
             const isCorrectAnswer = opt.key === currentQ.correct_answer;
 
-            let optionStyle = 'border-black/5 bg-[#FDFCFB] hover:border-black/20 hover:bg-[#F5F5F0] text-[#1A1A1A]';
+            let optionStyle = 'border-black/[0.08] bg-[#FAFAF8] hover:border-black/25 hover:bg-white text-[#090D16] shadow-2xs';
 
             if (isSubmitted) {
               if (isCorrectAnswer) {
-                optionStyle = 'border-emerald-500 bg-[#E6F4EA] text-emerald-950 font-medium';
+                optionStyle = 'border-emerald-500 bg-emerald-50/90 text-emerald-950 font-medium shadow-xs';
               } else if (isSelected && !isCorrectAnswer) {
-                optionStyle = 'border-rose-400 bg-rose-50 text-rose-950';
+                optionStyle = 'border-rose-400 bg-rose-50/90 text-rose-950 shadow-xs';
               } else {
-                optionStyle = 'border-black/5 bg-[#F5F5F0] text-gray-400 opacity-60';
+                optionStyle = 'border-black/[0.05] bg-black/[0.02] text-black/40 opacity-55';
               }
             } else if (isSelected) {
-              optionStyle = 'border-[#1A1A1A] bg-[#F5F5F0] text-[#1A1A1A] font-semibold shadow-xs';
+              optionStyle = 'border-[#090D16] bg-white text-[#090D16] font-semibold shadow-xs ring-2 ring-black/5';
             }
 
             return (
               <div
                 key={opt.key}
                 onClick={() => handleSelectOption(opt.key)}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3.5 ${optionStyle}`}
+                className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 cursor-pointer transition-all duration-200 flex items-start gap-3.5 ${optionStyle}`}
               >
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold font-mono flex-shrink-0 mt-0.5 shadow-2xs transition-all ${
                     isSubmitted
                       ? isCorrectAnswer
                         ? 'bg-emerald-600 text-white'
                         : isSelected
                         ? 'bg-rose-600 text-white'
-                        : 'bg-gray-200 text-gray-600'
+                        : 'bg-black/[0.08] text-black/60'
                       : isSelected
-                      ? 'bg-[#1A1A1A] text-white'
-                      : 'bg-white border border-black/10 text-gray-700'
+                      ? 'bg-[#090D16] text-white'
+                      : 'bg-white border border-black/[0.1] text-black/70'
                   }`}
                 >
                   {opt.key}
                 </div>
 
-                <div className="flex-1 text-xs sm:text-sm leading-relaxed font-light">
+                <div className="flex-1 text-xs sm:text-sm leading-relaxed font-light mt-0.5">
                   {opt.text}
                 </div>
 
@@ -323,13 +321,13 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
         {/* Immediate Feedback & Explanation Card */}
         {isSubmitted && (
           <div
-            className={`p-5 rounded-2xl border animate-fadeIn ${
+            className={`p-5 sm:p-6 rounded-3xl border animate-fadeIn ${
               selectedOption === currentQ.correct_answer
-                ? 'bg-[#E6F4EA] border-emerald-200 text-emerald-950'
-                : 'bg-[#FEF2E0] border-[#F5D7A1] text-[#8C5E1A]'
+                ? 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 shadow-2xs'
+                : 'bg-amber-50/90 border-amber-200/90 text-amber-950 shadow-2xs'
             }`}
           >
-            <div className="flex items-center gap-2 font-bold text-xs mb-1">
+            <div className="flex items-center gap-2 font-bold text-xs mb-2 font-mono">
               {selectedOption === currentQ.correct_answer ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
@@ -340,7 +338,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
               ) : (
                 <>
                   <XCircle className="w-4 h-4 text-amber-700" />
-                  <span className="text-[#8C5E1A]">
+                  <span className="text-amber-900">
                     {language === 'hi' ? 'महत्वपूर्ण सीख:' : 'Key Learning Takeaway:'}
                   </span>
                 </>
@@ -350,14 +348,14 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
               {explanationText}
             </p>
             {onOpenTia && (
-              <div className="mt-3 pt-2.5 border-t border-black/5 flex items-center justify-between">
-                <span className="text-[11px] opacity-75">
-                  {language === 'hi' ? 'संदेह है या और विस्तार से समझना है?' : 'Confused why this is the answer?'}
+              <div className="mt-4 pt-3.5 border-t border-black/[0.06] flex items-center justify-between">
+                <span className="text-[11px] text-black/60">
+                  {language === 'hi' ? 'संदेह है या और विस्तार से समझना है?' : 'Want a deeper breakdown?'}
                 </span>
                 <button
                   type="button"
                   onClick={() => onOpenTia('chat')}
-                  className="text-xs font-bold underline hover:opacity-80 flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-[#090D16] hover:text-violet-700 underline flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <span>🎙️ {language === 'hi' ? 'टिया से पूछें' : 'Ask Tia'}</span>
                 </button>
@@ -373,7 +371,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           <button
             type="button"
             onClick={() => onOpenTia('chat')}
-            className="text-xs text-gray-500 hover:text-black font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="text-xs text-black/60 hover:text-black font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span>💡 {language === 'hi' ? 'संकेत चाहिए? टिया से पूछें' : 'Need a hint? Ask Tia'}</span>
           </button>
@@ -387,7 +385,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             onClick={handleSubmitAnswer}
             disabled={!selectedOption}
             id="quiz-submit-answer-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black disabled:opacity-40 transition-all shadow-md cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black disabled:opacity-40 transition-all shadow-md cursor-pointer"
           >
             <span>{language === 'hi' ? 'उत्तर जमा करें' : 'Submit Answer'}</span>
             <CheckCircle2 className="w-4 h-4" />
@@ -397,7 +395,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             onClick={handleNextQuestion}
             disabled={savingProgress}
             id="quiz-next-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black active:scale-95 transition-all shadow-md cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
           >
             {savingProgress ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

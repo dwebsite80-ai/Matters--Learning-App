@@ -68,57 +68,30 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fadeIn">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-black/5 pb-5">
-        <span className="text-[10px] uppercase tracking-widest text-[#888] font-semibold block mb-1">
-          {language === 'hi' ? 'संरचित पाठ्यक्रम' : 'Structured Curriculum'}
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] tracking-tight">
-          {language === 'hi' ? 'सभी मुख्य विषय' : 'Essential Subjects'}
+      <div className="border-b border-black/[0.06] pb-6">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+          <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold font-mono">
+            {language === 'hi' ? 'संरचित पाठ्यक्रम' : 'Structured Curriculum'}
+          </span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#090D16] tracking-tight font-medium">
+          {language === 'hi' ? 'सभी मुख्य विषय' : 'Essential Domains'}
         </h1>
-        <p className="text-xs text-gray-500 mt-1 max-w-xl font-light">
+        <p className="text-xs sm:text-sm text-black/60 mt-2 max-w-xl font-light leading-relaxed">
           {language === 'hi'
-            ? 'व्यावहारिक जीवन ज्ञान एवं प्रतियोगी परीक्षा की नींव, प्रत्येक विषय में 10 संरचित पाठ।'
-            : 'Practical life knowledge divided into 10 structured roadmap topics per domain.'}
+            ? 'व्यावहारिक जीवन ज्ञान एवं प्रतियोगी परीक्षा की नींव, प्रत्येक विषय में संरचित पाठ।'
+            : 'Essential practical wisdom divided into 10 structured roadmap topics per domain.'}
         </p>
       </div>
 
-      <div className="space-y-5">
+      {/* Grid of Subject Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
         {subjects.map((sub) => {
           const Icon = getIcon(sub.id);
           const progress = getSubjectProgress(sub.id);
-
-          const iconBg =
-            sub.id === 'law-rights'
-              ? 'bg-[#E6F4EA] text-emerald-800'
-              : sub.id === 'money-finance'
-              ? 'bg-[#FEF7E0] text-amber-800'
-              : sub.id === 'economics'
-              ? 'bg-[#F4EBF7] text-purple-800'
-              : sub.id === 'bihar-gk'
-              ? 'bg-[#FDF2F8] text-rose-800'
-              : sub.id === 'polity-constitution'
-              ? 'bg-[#F5F3FF] text-blue-800'
-              : sub.id === 'personality-development'
-              ? 'bg-[#E6FFFA] text-teal-800'
-              : sub.id === 'dressing-sense'
-              ? 'bg-[#EDE9FE] text-violet-800'
-              : sub.id === 'case-studies'
-              ? 'bg-[#FEF3C7] text-amber-900'
-              : sub.id === 'time-management'
-              ? 'bg-[#CCFBF1] text-teal-900'
-              : sub.id === 'first-aid'
-              ? 'bg-[#FEE2E2] text-red-800'
-              : sub.id === 'survival-skills'
-              ? 'bg-[#FFEDD5] text-orange-900'
-              : sub.id === 'modern-farming'
-              ? 'bg-[#DCFCE7] text-emerald-900'
-              : sub.id === 'philosophy'
-              ? 'bg-[#E0E7FF] text-indigo-900'
-              : sub.id === 'paradoxes'
-              ? 'bg-[#FAE8FF] text-fuchsia-900'
-              : 'bg-[#FFFBEB] text-amber-900';
 
           const subName = language === 'hi' && sub.name_hi ? sub.name_hi : sub.name;
           const subDesc = language === 'hi' && sub.description_hi ? sub.description_hi : sub.description;
@@ -127,60 +100,55 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
             <div
               key={sub.id}
               onClick={() => onSelectSubject(sub.id)}
-              className="bg-white rounded-[28px] sm:rounded-[32px] border border-black/5 p-6 sm:p-7 shadow-sm hover:border-black/20 transition-all cursor-pointer group"
+              className="bg-white rounded-[30px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08)] hover:border-black/20 transition-all duration-300 cursor-pointer group flex flex-col justify-between"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                <div
-                  className={`w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 shadow-xs`}
-                >
-                  <Icon className="w-7 h-7" />
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-[#FAFAF8] border border-black/[0.06] flex items-center justify-center text-black/80 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-700 group-hover:border-violet-200 shadow-2xs">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-mono font-bold text-black/60 bg-black/[0.04] px-3 py-1.5 rounded-full border border-black/[0.04] shadow-2xs">
+                    {progress.completedCount} / {progress.totalCount} {language === 'hi' ? 'पूर्ण' : 'Done'}
+                  </span>
                 </div>
 
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <h3 className="font-serif italic font-bold text-xl text-[#1A1A1A] group-hover:underline">
-                      {subName}
-                    </h3>
-                    <span className="text-xs font-mono text-gray-500 font-medium">
-                      {progress.completedCount} / {progress.totalCount} {language === 'hi' ? 'पाठ पूर्ण' : 'Lessons Complete'}
+                <h3 className="font-serif italic font-bold text-xl sm:text-2xl text-[#090D16] group-hover:text-violet-700 transition-colors">
+                  {subName}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-black/60 mt-2 leading-relaxed font-light line-clamp-2">
+                  {subDesc}
+                </p>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-black/[0.06]">
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-medium text-black/50 mb-1.5">
+                    <span>{language === 'hi' ? 'पूर्णता' : 'Mastery'}</span>
+                    <span className="font-bold text-black/80">{progress.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-black/[0.04] h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progress.percentage}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* CTA row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs text-black/55 font-medium">
+                    <BookOpen className="w-3.5 h-3.5 text-black/70" />
+                    <span>
+                      {progress.totalCount} {language === 'hi' ? 'मुख्य पाठ' : 'Lessons'}
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-600 mt-1.5 leading-relaxed font-light">
-                    {subDesc}
-                  </p>
-
-                  {/* Progress bar */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-[11px] font-mono font-medium text-gray-500 mb-1.5">
-                      <span>{language === 'hi' ? 'पूर्णता प्रतिशत' : 'Completion'}</span>
-                      <span>{progress.percentage}%</span>
-                    </div>
-                    <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#1A1A1A] rounded-full transition-all duration-500"
-                        style={{ width: `${progress.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* CTA row */}
-                  <div className="mt-4 pt-3.5 border-t border-black/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                      <BookOpen className="w-3.5 h-3.5 text-black" />
-                      <span>
-                        {progress.totalCount} {language === 'hi' ? 'मुख्य व्यावहारिक पाठ' : 'Core Practical Topics'}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#1A1A1A] text-white hover:bg-black group-hover:scale-105 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>{language === 'hi' ? 'पाठ्यक्रम देखें' : 'Explore Roadmap'}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#090D16] group-hover:text-violet-700 transition-colors">
+                    <span>{language === 'hi' ? 'रोडमैप देखें' : 'View Roadmap'}</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -188,22 +156,25 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
         })}
       </div>
 
-      {/* Future Subjects Preview */}
-      <div className="bg-[#1A1A1A] text-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-7 relative overflow-hidden">
-        <div className="flex items-center gap-2 text-white/50 text-[10px] uppercase font-bold tracking-widest mb-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          <span>{language === 'hi' ? 'आगामी रिलीज़' : 'Upcoming Releases'}</span>
+      {/* Upcoming Modules Preview Card */}
+      <div className="bg-[#090D16] text-white rounded-[32px] sm:rounded-[40px] p-7 sm:p-10 relative overflow-hidden border border-white/[0.1] shadow-xl">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-gradient-to-br from-amber-500/20 via-violet-600/25 to-transparent rounded-full blur-[90px] pointer-events-none" />
+        <div className="relative z-10 max-w-2xl">
+          <div className="flex items-center gap-2 text-amber-300 text-[10px] uppercase font-bold tracking-widest mb-3 font-mono">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <span>{language === 'hi' ? 'आगामी रिलीज़' : 'Upcoming Expansion'}</span>
+          </div>
+          <h4 className="font-serif italic text-2xl sm:text-3xl text-white font-normal leading-snug">
+            {language === 'hi'
+              ? 'साइबर सुरक्षा, आपातकालीन प्राथमिक उपचार और नागरिक अधिकार'
+              : 'Cyber Defense, Emergency Preparedness & High-Stakes Negotiation'}
+          </h4>
+          <p className="text-xs sm:text-sm text-white/75 mt-3 font-light leading-relaxed">
+            {language === 'hi'
+              ? 'दैनिक जीवन के निर्णयों को और अधिक सशक्त बनाने के लिए आगामी व्यावहारिक मॉड्यूल।'
+              : 'Curated practical micro-modules being prepared to further accelerate real-life decision-making capabilities.'}
+          </p>
         </div>
-        <h4 className="font-serif italic text-xl text-white">
-          {language === 'hi'
-            ? 'साइबर सुरक्षा, आपातकालीन प्राथमिक उपचार और नागरिक अधिकार'
-            : 'Cyber Safety, Emergency First Aid & Negotiation'}
-        </h4>
-        <p className="text-xs text-white/70 mt-1 max-w-xl font-light">
-          {language === 'hi'
-            ? 'दैनिक जीवन के निर्णयों को और अधिक सशक्त बनाने के लिए आगामी व्यावहारिक मॉड्यूल।'
-            : 'Upcoming practical modules scheduled for roll-out to test further real-life decision capabilities.'}
-        </p>
       </div>
     </div>
   );

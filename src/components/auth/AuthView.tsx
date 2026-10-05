@@ -21,7 +21,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Prevent duplicate submits / concurrent clicks synchronously
     if (inFlightRef.current || isSubmitting) {
       console.warn('[Auth Frontend] Submission ignored: another request is already in-flight.');
       return;
@@ -32,7 +31,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
 
     const cleanUsername = normalizeUsername(username);
 
-    // Client-side validations
     if (!cleanUsername) {
       setErrorMsg('Username me sirf letters, numbers aur underscore use karo.');
       return;
@@ -126,36 +124,36 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] flex flex-col justify-center py-12 px-4 sm:px-6 animate-fadeIn">
+    <div className="min-h-screen bg-[#FAFAF8] flex flex-col justify-center py-12 px-4 sm:px-6 animate-fadeIn">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Icon & Heading */}
         <div className="text-center">
-          <div className="mx-auto w-14 h-14 rounded-full bg-[#1A1A1A] flex items-center justify-center text-white shadow-xs">
-            <span className="font-serif italic font-black text-2xl">M</span>
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-[#121212] flex items-center justify-center text-white shadow-sm">
+            <span className="font-serif italic font-bold text-2xl">M</span>
           </div>
-          <h1 className="mt-4 text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] tracking-tight">
+          <h1 className="mt-4 text-3xl sm:text-4xl font-serif italic text-[#121212] tracking-tight font-medium">
             Matters
           </h1>
-          <p className="mt-2 text-xs sm:text-sm text-gray-500 font-light max-w-xs mx-auto leading-relaxed">
+          <p className="mt-2 text-xs sm:text-sm text-black/60 font-light max-w-xs mx-auto leading-relaxed">
             “Learn what actually matters — 10–20 minutes a day.”
           </p>
         </div>
 
         {/* Feature Badges */}
-        <div className="mt-5 flex items-center justify-center gap-3 text-[11px] text-gray-500 font-light">
-          <span className="flex items-center gap-1.5 bg-[#F5F5F0] px-3 py-1 rounded-full border border-black/5">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#1A1A1A]" /> Practical Competence
+        <div className="mt-5 flex items-center justify-center gap-2.5 text-[11px] text-black/60 font-light">
+          <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-black/[0.06] shadow-2xs font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-black" /> Practical Competence
           </span>
-          <span className="flex items-center gap-1.5 bg-[#F5F5F0] px-3 py-1 rounded-full border border-black/5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#1A1A1A]" /> Daily Microlearning
+          <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-black/[0.06] shadow-2xs font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5 text-black" /> Daily Microlearning
           </span>
         </div>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 sm:px-8 border border-black/5 rounded-[32px] sm:rounded-[36px] shadow-sm">
+        <div className="bg-white py-8 px-6 sm:px-8 border border-black/[0.06] rounded-[32px] sm:rounded-[36px] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.08)]">
           {/* Mode Switcher Tabs */}
-          <div className="flex border-b border-black/5 mb-6">
+          <div className="flex bg-black/[0.03] p-1 rounded-full border border-black/[0.04] mb-6">
             <button
               type="button"
               onClick={() => {
@@ -163,10 +161,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                 setErrorMsg(null);
                 setInfoMsg(null);
               }}
-              className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
+              className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold text-center rounded-full transition-all duration-200 cursor-pointer ${
                 mode === 'signup'
-                  ? 'border-[#1A1A1A] text-[#1A1A1A]'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                  ? 'bg-[#121212] text-white shadow-xs'
+                  : 'text-black/50 hover:text-black'
               }`}
             >
               Create Account
@@ -178,10 +176,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                 setErrorMsg(null);
                 setInfoMsg(null);
               }}
-              className={`flex-1 py-3 text-xs uppercase tracking-widest font-bold text-center border-b-2 transition-all ${
+              className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold text-center rounded-full transition-all duration-200 cursor-pointer ${
                 mode === 'login'
-                  ? 'border-[#1A1A1A] text-[#1A1A1A]'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                  ? 'bg-[#121212] text-white shadow-xs'
+                  : 'text-black/50 hover:text-black'
               }`}
             >
               Log In
@@ -190,14 +188,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
 
           {/* Feedback Messages */}
           {errorMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2 shadow-2xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-700" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {infoMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-[#E6F4EA] border border-emerald-200 text-emerald-950 text-xs flex items-start gap-2">
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex items-start gap-2 shadow-2xs">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-700" />
               <span>{infoMsg}</span>
             </div>
@@ -208,11 +206,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
             {/* Full Name (Sign Up only) */}
             {mode === 'signup' && (
               <div>
-                <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
+                <label className="block text-[10px] font-bold text-black/50 uppercase tracking-widest mb-1.5 font-mono">
                   Full Name
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-black/40">
                     <User className="w-4 h-4" />
                   </div>
                   <input
@@ -222,7 +220,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Anurag Sharma"
                     autoComplete="name"
-                    className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB]"
+                    className="block w-full pl-10 pr-4 py-3 border border-black/[0.08] rounded-2xl text-xs placeholder-black/35 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20 bg-[#FAFAF8] text-[#121212] transition-colors"
                   />
                 </div>
               </div>
@@ -230,11 +228,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
 
             {/* Username (Both Sign Up and Log In) */}
             <div>
-              <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
+              <label className="block text-[10px] font-bold text-black/50 uppercase tracking-widest mb-1.5 font-mono">
                 Username
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-black/40">
                   <AtSign className="w-4 h-4" />
                 </div>
                 <input
@@ -245,19 +243,19 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                   placeholder="anurag123"
                   autoCapitalize="none"
                   autoCorrect="off"
-                  autoComplete={mode === 'signup' ? 'username' : 'username'}
-                  className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB] font-mono"
+                  autoComplete="username"
+                  className="block w-full pl-10 pr-4 py-3 border border-black/[0.08] rounded-2xl text-xs placeholder-black/35 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20 bg-[#FAFAF8] text-[#121212] font-mono transition-colors"
                 />
               </div>
             </div>
 
             {/* Password (Both Sign Up and Log In) */}
             <div>
-              <label className="block text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest mb-1.5">
+              <label className="block text-[10px] font-bold text-black/50 uppercase tracking-widest mb-1.5 font-mono">
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-black/40">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -267,7 +265,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                  className="block w-full pl-10 pr-4 py-3 border border-black/10 rounded-2xl text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] focus:border-[#1A1A1A] bg-[#FDFCFB]"
+                  className="block w-full pl-10 pr-4 py-3 border border-black/[0.08] rounded-2xl text-xs placeholder-black/35 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20 bg-[#FAFAF8] text-[#121212] transition-colors"
                 />
               </div>
             </div>
@@ -277,7 +275,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
               type="submit"
               disabled={isSubmitting}
               id="auth-submit-btn"
-              className={`w-full mt-2 flex items-center justify-center gap-2 py-4 px-6 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-[#1A1A1A] hover:bg-black transition-all shadow-md ${
+              className={`w-full mt-2 flex items-center justify-center gap-2 py-3.5 px-6 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-[#121212] hover:bg-black transition-all shadow-md ${
                 isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
               }`}
             >
@@ -286,7 +284,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
               ) : (
                 <>
                   <span>
-                    {mode === 'signup' ? 'SIGN UP & START LEARNING' : 'LOG IN'}
+                    {mode === 'signup' ? 'Sign Up & Start Learning' : 'Log In'}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
@@ -298,10 +296,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-black/5" />
+                <div className="w-full border-t border-black/[0.06]" />
               </div>
-              <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                <span className="bg-white px-3 text-gray-400 font-medium">Or quick explore</span>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-mono">
+                <span className="bg-white px-3 text-black/40 font-medium">Or explore instantly</span>
               </div>
             </div>
 
@@ -311,21 +309,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccessSignup }) => {
                 onClick={handleDemoLogin}
                 disabled={isSubmitting}
                 id="demo-login-btn"
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full border border-black/10 bg-[#F5F5F0] hover:bg-[#EBEBE5] text-xs font-medium text-[#1A1A1A] transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full border border-black/[0.08] bg-[#FAFAF8] hover:bg-black/[0.04] text-xs font-semibold text-[#121212] transition-all cursor-pointer shadow-2xs"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                 <span>Explore with Demo Account (Anurag)</span>
               </button>
             </div>
-          </div>
-
-          {/* Connection Status Footnote */}
-          <div className="mt-5 text-center text-[11px] text-gray-400 font-light">
-            {isConfiguredWithSupabase ? (
-              <span className="text-emerald-800 font-medium">✓ Connected to live Supabase Backend</span>
-            ) : (
-              <span>Running with resilient local browser DB + Supabase schema ready</span>
-            )}
           </div>
         </div>
       </div>

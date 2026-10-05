@@ -9,7 +9,6 @@ import {
   BookOpen,
   ChevronRight,
   TrendingUp,
-  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
@@ -41,7 +40,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     longestStreak,
     previousBrokenStreak,
   } = useLearning();
-  const { language, t, localize } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Dynamic greeting based on current time
   const getGreeting = () => {
@@ -110,13 +109,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   const getSubjectLabel = (id: SubjectId, fallbackName: string) => {
-    const found = subjects.find(s => s.id === id);
+    const found = subjects.find((s) => s.id === id);
     if (language === 'hi' && found?.name_hi) return found.name_hi;
     return found?.name || fallbackName;
   };
 
   const getSubjectDesc = (id: SubjectId, fallbackDesc: string) => {
-    const found = subjects.find(s => s.id === id);
+    const found = subjects.find((s) => s.id === id);
     if (language === 'hi' && found?.description_hi) return found.description_hi;
     return found?.description || fallbackDesc;
   };
@@ -133,69 +132,78 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     })();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fadeIn">
-      {/* Header Greeting & Micro-copy */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-black/5 pb-5">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
+      {/* Header Greeting & Quick Stats */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-black/[0.06] pb-6">
         <div>
-          <span className="text-[10px] uppercase tracking-widest text-[#888] font-semibold block mb-1">
-            {language === 'hi' ? 'दैनिक सूक्ष्म-अध्ययन · 10–20 मिनट' : 'Daily Micro-Learning · 10–20 Mins'}
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] tracking-tight">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold font-mono">
+              {language === 'hi' ? 'दैनिक सूक्ष्म-अध्ययन · 10–20 मिनट' : 'Daily Micro-Learning · 10–20 Mins'}
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#090D16] tracking-tight font-medium">
             {getGreeting()}, {userName}
           </h1>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+
+        <div className="flex items-center gap-2.5 flex-wrap">
           <div
             onClick={() => setActiveTab('progress')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border cursor-pointer hover:opacity-90 transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all duration-200 cursor-pointer hover:scale-[1.03] active:scale-95 shadow-2xs ${
               streakStatus === 'broken'
-                ? 'bg-[#FDF2F2] border-[#F8B4B4] text-[#9B1C1C]'
+                ? 'bg-rose-50/90 border-rose-200 text-rose-800'
                 : streakStatus === 'continue_today'
-                ? 'bg-[#FEF9E7] border-[#F9E79F] text-[#7D6608]'
+                ? 'bg-amber-50/90 border-amber-200 text-amber-800'
                 : streakStatus === 'active'
-                ? 'bg-[#FEF2E0] border-[#F5D7A1] text-[#8C5E1A]'
-                : 'bg-gray-50 border-gray-200 text-gray-600'
+                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
+                : 'bg-black/[0.02] border-black/[0.06] text-black/70'
             }`}
             title={streakMessage}
           >
-            <span className="text-sm">{streakStatus === 'broken' ? '💔' : '🔥'}</span>
-            <span className="text-xs font-bold">
+            <Flame className={`w-4 h-4 ${streakStatus === 'broken' ? 'text-rose-500' : 'text-amber-500'}`} />
+            <span className="text-xs font-bold font-mono">
               {streakStatus === 'broken'
-                ? (language === 'hi' ? 'स्ट्रीक टूटी (0 दिन)' : 'Streak Broken (0d)')
-                : `${currentStreak} ${language === 'hi' ? 'दिन स्ट्रीक' : 'Day Streak'}`}
+                ? (language === 'hi' ? '0 दिन (टूटी)' : '0d (Broken)')
+                : `${currentStreak} ${language === 'hi' ? 'दिन' : 'Day Streak'}`}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 bg-[#E0F2FE] px-3.5 py-1.5 rounded-full border border-[#A1D7F5]">
-            <span className="text-sm">🧠</span>
-            <span className="text-xs font-bold text-[#1A5E8C]">{totalXp} XP</span>
+
+          <div
+            onClick={() => setActiveTab('progress')}
+            className="flex items-center gap-2 bg-violet-50/90 border border-violet-200/90 px-3.5 py-1.5 rounded-full cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-200 shadow-2xs group"
+            title="Total Knowledge XP"
+          >
+            <Sparkles className="w-4 h-4 text-violet-600 group-hover:rotate-12 transition-transform" />
+            <span className="text-xs font-bold text-violet-900 font-mono">{totalXp} XP</span>
           </div>
         </div>
       </div>
 
       {/* Streak Status Notification Banner */}
       {streakStatus === 'broken' && (
-        <div className="bg-[#FFF5F5] border border-[#FDE8E8] rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#9B1C1C] shadow-xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FDE8E8] flex items-center justify-center shrink-0 text-lg shadow-xs">
+        <div className="bg-rose-50/80 border border-rose-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-rose-900 shadow-2xs animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-rose-200">
               💔
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#9B1C1C]">
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-800 font-mono">
                   {language === 'hi' ? 'दैनिक स्ट्रीक टूट गई' : 'Streak Broken'}
                 </span>
-                <span className="text-[10px] bg-white border border-[#F8B4B4] px-2 py-0.5 rounded-full font-mono font-bold text-[#9B1C1C]">
+                <span className="text-[10px] bg-white border border-rose-200 px-2 py-0.5 rounded-full font-mono font-bold text-rose-800">
                   0 {language === 'hi' ? 'दिन' : 'days'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#9B1C1C]/90 mt-0.5 font-normal">
+              <p className="text-xs sm:text-sm text-rose-950/85 mt-0.5 font-light leading-relaxed">
                 {streakMessage}
               </p>
             </div>
           </div>
           {longestStreak > 0 && (
             <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-[#FDE8E8] text-[#9B1C1C] shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-rose-200 text-rose-800 shadow-2xs">
                 {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
               </span>
             </div>
@@ -204,28 +212,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       )}
 
       {streakStatus === 'continue_today' && (
-        <div className="bg-[#FEF9E7] border border-[#FCF3CF] rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#7D6608] shadow-xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FCF3CF] flex items-center justify-center shrink-0 text-lg shadow-xs">
+        <div className="bg-amber-50/80 border border-amber-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-900 shadow-2xs animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-amber-200">
               ⏳
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#7D6608]">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-800 font-mono">
                   {language === 'hi' ? 'स्ट्रीक जारी रखें' : 'Keep Your Streak Alive'}
                 </span>
-                <span className="text-[10px] bg-white border border-[#F9E79F] px-2 py-0.5 rounded-full font-mono font-bold text-[#7D6608]">
+                <span className="text-[10px] bg-white border border-amber-200 px-2 py-0.5 rounded-full font-mono font-bold text-amber-800">
                   {currentStreak} {language === 'hi' ? 'दिन' : 'days'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#7D6608]/90 mt-0.5 font-normal">
+              <p className="text-xs sm:text-sm text-amber-950/85 mt-0.5 font-light leading-relaxed">
                 {streakMessage}
               </p>
             </div>
           </div>
           {longestStreak > 0 && (
             <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-[#FCF3CF] text-[#7D6608] shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-amber-200 text-amber-800 shadow-2xs">
                 {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
               </span>
             </div>
@@ -234,28 +242,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       )}
 
       {streakStatus === 'active' && (
-        <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#166534] shadow-xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#DCFCE7] flex items-center justify-center shrink-0 text-lg shadow-xs">
+        <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-emerald-900 shadow-2xs animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-emerald-200">
               🔥
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#166534]">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 font-mono">
                   {language === 'hi' ? 'आज का लक्ष्य पूर्ण!' : "Today's Goal Achieved!"}
                 </span>
-                <span className="text-[10px] bg-white border border-[#BBF7D0] px-2 py-0.5 rounded-full font-mono font-bold text-[#166534]">
+                <span className="text-[10px] bg-white border border-emerald-200 px-2 py-0.5 rounded-full font-mono font-bold text-emerald-800">
                   {currentStreak} {language === 'hi' ? 'दिन' : 'days'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#166534]/90 mt-0.5 font-normal">
+              <p className="text-xs sm:text-sm text-emerald-950/85 mt-0.5 font-light leading-relaxed">
                 {streakMessage}
               </p>
             </div>
           </div>
           {longestStreak > 0 && (
             <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-[#DCFCE7] text-[#166534] shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-800 shadow-2xs">
                 {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
               </span>
             </div>
@@ -263,67 +271,54 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       )}
 
-      {streakStatus === 'not_started' && (
-        <div className="bg-[#F9FAFB] border border-black/5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-gray-700 shadow-xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 text-lg shadow-xs">
-              🌱
-            </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
-                {language === 'hi' ? 'दैनिक स्ट्रीक शुरू करें' : 'Start Your Streak'}
-              </span>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 font-normal">
-                {streakMessage}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Large Featured Hero Card: Today's Mission */}
       {todayMission && (
-        <div className="relative bg-[#1A1A1A] rounded-[28px] sm:rounded-[36px] text-white p-5 sm:p-8 md:p-10 overflow-hidden shadow-xl group transition-all">
-          {/* Subtle Orange Glow Ambient Blur */}
-          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-[#FF6321] rounded-full blur-[100px] opacity-25 pointer-events-none group-hover:opacity-35 transition-opacity" />
+        <div className="relative bg-[#090D16] rounded-[32px] sm:rounded-[40px] text-white p-7 sm:p-10 md:p-12 overflow-hidden shadow-[0_24px_70px_-15px_rgba(9,13,22,0.35)] border border-white/[0.1] group transition-all duration-300">
+          {/* Subtle Ambient Glows */}
+          <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-gradient-to-tr from-violet-600/35 via-purple-500/20 to-amber-500/25 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute -left-20 -top-20 w-72 h-72 bg-indigo-500/15 rounded-full blur-[80px] pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <span className="px-3.5 py-1 rounded-full border border-white/30 text-[10px] uppercase tracking-widest bg-white/10 backdrop-blur-md text-white font-semibold">
+            {/* Top Badge & Domain */}
+            <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+              <span className="px-3.5 py-1.5 rounded-full border border-white/20 text-[10px] uppercase tracking-widest bg-white/[0.08] backdrop-blur-md text-white font-semibold flex items-center gap-1.5 shadow-2xs font-mono">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
                 {t('home.todays_mission', language === 'hi' ? 'आज का मुख्य पाठ' : "Today's Mission")}
               </span>
-              <span className="text-xs font-mono text-white/70">
+              <span className="text-xs font-mono font-medium text-white/80 bg-white/[0.06] px-3.5 py-1.5 rounded-full border border-white/[0.08] shadow-2xs">
                 {getSubjectEmoji(todayMission.subject_id)} {getSubjectLabel(todayMission.subject_id, todayMission.subject_id)}
               </span>
             </div>
 
+            {/* Title & Description */}
             <div className="max-w-2xl">
-              <p className="text-[#D4D4D8] uppercase text-[11px] font-bold tracking-widest mb-1.5">
-                {language === 'hi' ? `पाठ संख्या #${todayMissionNumber}` : `Lesson #${todayMissionNumber}`}
+              <p className="text-amber-300 uppercase text-[11px] font-bold tracking-widest mb-2.5 font-mono">
+                {language === 'hi' ? `पाठ #${todayMissionNumber}` : `Lesson #${todayMissionNumber}`}
               </p>
-              <h2 className="text-2xl sm:text-4xl font-serif italic mb-3 leading-[1.15] text-white">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-serif italic mb-4 leading-[1.12] text-white font-normal tracking-tight">
                 {language === 'hi' && todayMission.title_hi ? todayMission.title_hi : todayMission.title}
               </h2>
               {(todayMission.subtitle_hi || todayMission.subtitle) && (
-                <p className="text-sm sm:text-base text-white/75 mb-6 font-light leading-relaxed">
+                <p className="text-sm sm:text-base text-white/80 mb-8 font-light leading-relaxed max-w-xl">
                   {language === 'hi' && todayMission.subtitle_hi ? todayMission.subtitle_hi : todayMission.subtitle}
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-white/10">
-              <div className="flex items-center gap-3 sm:gap-4 text-xs text-white/70 flex-wrap">
-                <span className="flex items-center gap-1.5 font-medium">
+            {/* Bottom Meta & CTA */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-white/[0.12]">
+              <div className="flex items-center gap-3.5 sm:gap-4 text-xs text-white/75 flex-wrap">
+                <span className="flex items-center gap-1.5 font-medium bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.08]">
                   <Clock className="w-3.5 h-3.5 text-white/60" />
                   {todayMission.estimated_minutes} {language === 'hi' ? 'मिनट' : 'min read'}
                 </span>
-                <span className="flex items-center gap-1.5 font-medium">
+                <span className="flex items-center gap-1.5 font-medium bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.08]">
                   <Award className="w-3.5 h-3.5 text-amber-300" />
                   {language === 'hi'
                     ? (todayMission.difficulty === 'Beginner' ? 'सरल' : todayMission.difficulty === 'Intermediate' ? 'मध्यम' : 'उन्नत')
                     : todayMission.difficulty}
                 </span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-white border border-white/20">
+                <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-violet-500/25 text-violet-200 border border-violet-400/40 font-mono shadow-2xs">
                   +20 XP
                 </span>
               </div>
@@ -331,35 +326,35 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <button
                 onClick={() => onStartLesson(todayMission)}
                 id="start-mission-btn"
-                className="w-full sm:w-auto bg-white text-[#1A1A1A] px-6 py-3 rounded-full font-bold text-xs hover:bg-[#F5F5F0] hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto bg-white text-[#090D16] px-8 py-4 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#FAFAF8] hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-[0_8px_24px_rgba(0,0,0,0.2)] flex items-center justify-center gap-2.5 cursor-pointer group/btn"
               >
                 <span>{language === 'hi' ? 'आज का पाठ शुरू करें' : "Start Today's Lesson"}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Second Row: Quick Review Card & Subject Progress Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Second Row: Quick Review & Curriculum Progress */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
         {/* Quick Review Card */}
-        <div className="bg-white border border-black/5 rounded-[28px] sm:rounded-[32px] p-6 flex flex-col justify-between shadow-sm hover:border-black/15 transition-all">
+        <div className="bg-white border border-black/[0.06] rounded-[30px] sm:rounded-[36px] p-6 sm:p-8 flex flex-col justify-between shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.07)] hover:border-black/15 transition-all duration-300">
           <div>
-            <div className="flex justify-between items-start mb-3">
+            <div className="flex justify-between items-start mb-3.5">
               <div>
-                <p className="text-[10px] uppercase font-bold text-[#888] tracking-widest">
-                  {language === 'hi' ? 'स्मृति अभ्यास' : 'Memory Workout'}
+                <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
+                  {language === 'hi' ? 'स्मृति अभ्यास' : 'Active Recall'}
                 </p>
-                <h3 className="text-xl font-serif italic text-[#1A1A1A] mt-0.5">
+                <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
                   {t('home.quick_revision')}
                 </h3>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-[#FEF2E0] flex items-center justify-center text-amber-800 text-base">
-                <RotateCcw className="w-4 h-4 text-amber-700" />
+              <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/70 flex items-center justify-center text-amber-800 shadow-2xs">
+                <RotateCcw className="w-5 h-5 text-amber-700" />
               </div>
             </div>
-            <p className="text-xs text-gray-600 leading-relaxed mb-6 font-light">
+            <p className="text-xs sm:text-sm text-black/65 leading-relaxed mb-6 font-light">
               {language === 'hi'
                 ? 'दैनिक व्यावहारिक प्रश्नों और अंतराल पुनरावृत्ति (Spaced Repetition) के माध्यम से सीखी गई बातों को सुदृढ़ करें।'
                 : "Reinforce what you've learned through rapid-fire real-life scenario questions using spaced repetition."}
@@ -369,56 +364,56 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <button
             onClick={onStartRevision}
             id="start-quick-revision-btn"
-            className="w-full py-3 border border-[#1A1A1A] rounded-full text-xs font-bold uppercase tracking-widest text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-6 border border-black/[0.12] rounded-full text-xs font-bold uppercase tracking-wider text-[#090D16] hover:bg-[#090D16] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 cursor-pointer shadow-2xs group/rev"
           >
             <span>{language === 'hi' ? '5-मिनट पुनरीक्षण शुरू करें' : 'Begin 5-Min Revision'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/rev:translate-x-0.5" />
           </button>
         </div>
 
         {/* Subject Progress Summary Card */}
-        <div className="bg-[#F5F5F0] border border-black/5 rounded-[28px] sm:rounded-[32px] p-6 flex flex-col justify-between">
+        <div className="bg-white border border-black/[0.06] rounded-[30px] sm:rounded-[36px] p-6 sm:p-8 flex flex-col justify-between shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.07)] hover:border-black/15 transition-all duration-300">
           <div>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="text-[10px] uppercase font-bold text-[#888] tracking-widest">
+                <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
                   {language === 'hi' ? 'पाठ्यक्रम प्रगति' : 'Curriculum Progress'}
                 </p>
-                <h3 className="text-xl font-serif italic text-[#1A1A1A] mt-0.5">
+                <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
                   {language === 'hi' ? 'ज्ञान दक्षता' : 'Knowledge Mastery'}
                 </h3>
               </div>
               <button
                 onClick={() => setActiveTab('progress')}
-                className="text-xs font-bold text-[#1A1A1A] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-violet-700 hover:text-violet-900 flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <span>{language === 'hi' ? 'प्रगति विवरण' : 'Analytics'}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="space-y-3.5 max-h-[190px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[190px] overflow-y-auto pr-1">
               {userSubjects.map((sub) => {
                 const progress = getSubjectProgress(sub.id);
                 return (
                   <div
                     key={sub.id}
                     onClick={() => onSelectSubject(sub.id)}
-                    className="cursor-pointer group"
+                    className="cursor-pointer group p-2 rounded-xl hover:bg-black/[0.02] transition-colors"
                   >
                     <div className="flex items-center justify-between text-xs mb-1.5">
-                      <div className="flex items-center gap-2 font-bold text-[#1A1A1A]">
-                        <span>{getSubjectEmoji(sub.id)}</span>
-                        <span className="group-hover:underline">{getSubjectLabel(sub.id, sub.name)}</span>
+                      <div className="flex items-center gap-2 font-semibold text-[#090D16]">
+                        <span className="text-sm">{getSubjectEmoji(sub.id)}</span>
+                        <span className="group-hover:text-violet-700 transition-colors">{getSubjectLabel(sub.id, sub.name)}</span>
                       </div>
-                      <span className="font-mono text-xs text-gray-500 font-medium">
+                      <span className="font-mono text-xs text-black/50 font-medium">
                         {progress.completedCount}/{progress.totalCount} ({progress.percentage}%)
                       </span>
                     </div>
 
-                    <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-black/[0.04] h-1.5 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#1A1A1A] rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 rounded-full transition-all duration-500"
                         style={{ width: `${progress.percentage}%` }}
                       />
                     </div>
@@ -428,80 +423,70 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-black/5 flex items-center justify-between text-xs text-gray-500">
+          <div className="pt-4 mt-4 border-t border-black/[0.06] flex items-center justify-between text-xs text-black/60">
             <span className="flex items-center gap-1.5 font-medium">
-              <BookOpen className="w-3.5 h-3.5 text-black" />
-              <strong className="text-black">{completedCount}</strong> {language === 'hi' ? 'पाठ पूर्ण हुए' : 'lessons completed'}
+              <BookOpen className="w-3.5 h-3.5 text-black/70" />
+              <strong className="text-[#090D16] font-semibold">{completedCount}</strong> {language === 'hi' ? 'पाठ पूर्ण हुए' : 'lessons completed'}
             </span>
             <span className="flex items-center gap-1.5 font-medium">
-              <TrendingUp className="w-3.5 h-3.5 text-black" />
-              <strong className="text-black">{totalXp}</strong> {language === 'hi' ? 'XP अर्जित' : 'XP earned'}
+              <TrendingUp className="w-3.5 h-3.5 text-black/70" />
+              <strong className="text-[#090D16] font-semibold">{totalXp}</strong> {language === 'hi' ? 'XP अर्जित' : 'XP earned'}
             </span>
           </div>
         </div>
       </div>
 
       {/* Curriculum Exploration Section */}
-      <div className="bg-white border border-black/5 rounded-[28px] sm:rounded-[36px] p-6 sm:p-8 space-y-5">
-        <div className="flex items-center justify-between">
+      <div className="bg-white border border-black/[0.06] rounded-[32px] sm:rounded-[40px] p-6 sm:p-9 space-y-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] uppercase font-bold text-[#888] tracking-widest">
+            <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
               {language === 'hi' ? 'उपलब्ध विषय' : 'Available Domains'}
             </p>
-            <h3 className="text-xl sm:text-2xl font-serif italic text-[#1A1A1A] mt-0.5">
-              {language === 'hi' ? `सभी ${subjects.length} विषयों का अन्वेषण करें` : `Explore ${subjects.length} Subjects`}
+            <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
+              {language === 'hi' ? `सभी ${subjects.length} विषयों का अन्वेषण करें` : `Explore All ${subjects.length} Domains`}
             </h3>
           </div>
           <button
             onClick={() => setActiveTab('learn')}
-            className="px-4 py-1.5 rounded-full text-xs font-bold border border-black/10 text-[#1A1A1A] hover:bg-[#F5F5F0] transition-colors cursor-pointer"
+            className="self-start sm:self-auto px-4 py-2 rounded-full text-xs font-bold border border-black/[0.1] text-[#090D16] hover:bg-black/[0.03] transition-colors cursor-pointer"
           >
             {language === 'hi' ? 'सभी पाठ्यक्रम देखें' : 'View All Roadmaps'}
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {subjects.map((sub) => {
             const progress = getSubjectProgress(sub.id);
-            const iconBg =
-              sub.id === 'law-rights'
-                ? 'bg-[#E6F4EA]'
-                : sub.id === 'money-finance'
-                ? 'bg-[#FEF7E0]'
-                : sub.id === 'economics'
-                ? 'bg-[#F4EBF7]'
-                : sub.id === 'bihar-special'
-                ? 'bg-[#FDF2F8]'
-                : sub.id === 'polity-constitution'
-                ? 'bg-[#F5F3FF]'
-                : 'bg-[#FFFBEB]';
-
             return (
               <div
                 key={sub.id}
                 onClick={() => onSelectSubject(sub.id)}
-                className="p-5 rounded-2xl border border-black/5 bg-[#FDFCFB] hover:border-black/20 cursor-pointer transition-all hover:-translate-y-0.5 group flex flex-col justify-between"
+                className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-black/[0.06] bg-[#FAFAF8]/70 hover:bg-white hover:border-black/20 hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)] cursor-pointer transition-all duration-200 group flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-2xl ${iconBg} flex items-center justify-center text-lg shadow-xs`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-black/[0.06] flex items-center justify-center text-2xl shadow-2xs group-hover:scale-105 group-hover:shadow-xs transition-all">
                       {getSubjectEmoji(sub.id)}
                     </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-500 bg-black/5 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 bg-black/[0.04] px-2.5 py-1 rounded-full border border-black/[0.04]">
                       {progress.percentage}%
                     </span>
                   </div>
-                  <h4 className="font-serif italic font-bold text-base text-[#1A1A1A] group-hover:underline">
+                  <h4 className="font-serif italic font-bold text-base sm:text-lg text-[#090D16] group-hover:text-violet-700 transition-colors">
                     {getSubjectLabel(sub.id, sub.name)}
                   </h4>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-black/60 mt-1 line-clamp-2 leading-relaxed font-light">
                     {getSubjectDesc(sub.id, sub.description)}
                   </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-xs font-bold text-[#1A1A1A]">
-                  <span>{progress.totalCount} {language === 'hi' ? 'पाठ' : 'Lessons'}</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                <div className="mt-4 pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs font-semibold text-[#090D16]">
+                  <span className="text-black/60 font-mono text-[11px]">{progress.totalCount} {language === 'hi' ? 'पाठ' : 'Lessons'}</span>
+                  <div className="flex items-center gap-1 text-black group-hover:text-violet-700 transition-colors">
+                    <span className="text-[11px] font-bold">{language === 'hi' ? 'खोलें' : 'Open'}</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
               </div>
             );
@@ -511,4 +496,3 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     </div>
   );
 };
-
