@@ -1,29 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  User,
-  AtSign,
   Calendar,
+  Pencil,
+  Globe,
+  Target,
+  Bell,
+  Moon,
+  ChevronRight,
+  Crown,
   LogOut,
-  CheckCircle2,
   Save,
-  Languages,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { LearningLevel, DailyMinutes, PreferredTime, SubjectId } from '../../types';
+import {
+  DailyMinutes,
+  LearningLevel,
+  PreferredTime,
+  SubjectId,
+  UserPreferences,
+} from '../../types';
+import { PROFILE_COVER_IMAGE, USER_AVATAR_IMAGE } from '../../data/courseImages';
 
 interface ProfileViewProps {
   onOpenSchemaModal?: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) => {
-  const { user, preferences, logOut } = useAuth();
-  const { stats, savePreferences, streakStatus, currentStreak: ctxStreak, longestStreak: ctxLongest } = useLearning();
-  const { language, setLanguage, t } = useLanguage();
+export const ProfileView: React.FC<ProfileViewProps> = () => {
+  const { user, preferences, updatePreferences, logOut } = useAuth();
+  const { stats, currentStreak: ctxStreak } = useLearning();
+  const { language, setLanguage } = useLanguage();
 
-  const currentStreak = ctxStreak ?? stats?.current_streak ?? 0;
-  const longestStreak = ctxLongest ?? stats?.longest_streak ?? 0;
+  const [activeTab, setActiveTab] = useState<'preferences' | 'achievements' | 'account'>('preferences');
 
   const [dailyMinutes, setDailyMinutes] = useState<DailyMinutes>(
     preferences?.daily_minutes || 10
@@ -35,474 +45,324 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onOpenSchemaModal }) =
     preferences?.preferred_time || 'Morning'
   );
   const [selectedSubjects, setSelectedSubjects] = useState<SubjectId[]>(
-    preferences?.selected_subjects || [
-      'law-rights',
-      'money-finance',
-      'economics',
-      'bihar-gk',
-      'polity-constitution',
-      'history-movement',
-      'personality-development',
-      'dressing-sense',
-      'case-studies',
-      'time-management',
-      'first-aid',
-      'survival-skills',
-      'modern-farming',
-      'philosophy',
-      'paradoxes',
-    ]
+    preferences?.selected_subjects || ['law-rights', 'money-finance', 'economics']
   );
-
   const [saving, setSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
-  const toggleSubject = (subId: SubjectId) => {
-    if (selectedSubjects.includes(subId)) {
-      if (selectedSubjects.length > 1) {
-        setSelectedSubjects(selectedSubjects.filter((s) => s !== subId));
-      }
-    } else {
-      setSelectedSubjects([...selectedSubjects, subId]);
+  const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
+  const totalXp = stats?.total_xp || 1250;
+  const lessonsCompleted = stats?.lessons_completed_count || 12;
+
+  // Sync state if preferences change externally
+  useEffect(() => {
+    if (preferences) {
+      setDailyMinutes(preferences.daily_minutes);
+      setLevel(preferences.level);
+      setPreferredTime(preferences.preferred_time);
+      setSelectedSubjects(preferences.selected_subjects || []);
     }
-  };
+  }, [preferences]);
 
   const handleSavePreferences = async () => {
     setSaving(true);
     setSavedSuccess(false);
     try {
-      await savePreferences({
+      const updated: Partial<UserPreferences> = {
         daily_minutes: dailyMinutes,
-        level,
+        level: level,
         preferred_time: preferredTime,
         selected_subjects: selectedSubjects,
-      });
+      };
+      await updatePreferences(updated);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (e) {
-      console.error('Error saving profile settings', e);
+    } catch (err) {
+      console.error('Failed to update preferences:', err);
     } finally {
       setSaving(false);
     }
   };
 
-  const formattedDate = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      })
-    : 'Recently';
-
-  const SUBJECT_OPTIONS = [
-    {
-      id: 'law-rights' as SubjectId,
-      label_en: '⚖️ Law & Rights',
-      label_hi: '⚖️ कानून एवं अधिकार',
-      desc_en: 'FIR, arrest protections, cyber laws, tenancy & consumer remedies',
-      desc_hi: 'एफआईआर, गिरफ्तारी के अधिकार, साइबर अपराध 1930, उपभोक्ता संरक्षण',
-    },
-    {
-      id: 'money-finance' as SubjectId,
-      label_en: '💰 Money & Finance',
-      label_hi: '💰 धन और वित्त',
-      desc_en: '50/30/20 budgeting, compound growth, tax slabs, credit scores & SIPs',
-      desc_hi: 'बजट निर्माण, चक्रवृद्धि ब्याज, ईएमआई, क्रेडिट स्कोर व म्यूचुअल फंड एसआईपी',
-    },
-    {
-      id: 'economics' as SubjectId,
-      label_en: '📊 Economics',
-      label_hi: '📊 अर्थशास्त्र',
-      desc_en: 'Supply & demand, inflation, RBI repo rates, GDP & market cycles',
-      desc_hi: 'मांग और आपूर्ति, मुद्रास्फीति, आरबीआई रेपो दर, जीडीपी व मंदी के प्रभाव',
-    },
-    {
-      id: 'bihar-gk' as SubjectId,
-      label_en: '🏛️ Bihar Special GK',
-      label_hi: '🏛️ बिहार सामान्य ज्ञान',
-      desc_en: 'History, geography, census, tourism, climate & Bihar administration',
-      desc_hi: 'बिहार का इतिहास, भूगोल, 2011 जनगणना, पर्यटन, जलवायु व प्रशासनिक ढांचा',
-    },
-    {
-      id: 'polity-constitution' as SubjectId,
-      label_en: '📜 Indian Polity & Constitution',
-      label_hi: '📜 भारतीय राजव्यवस्था एवं संविधान',
-      desc_en: 'Preamble, Fundamental Rights, Parliament, Supreme Court & Amendments',
-      desc_hi: 'प्रस्तावना, मौलिक अधिकार व कर्तव्य, संसद, सर्वोच्च न्यायालय व संशोधन',
-    },
-    {
-      id: 'history-movement' as SubjectId,
-      label_en: '🏺 Indian History & National Movement',
-      label_hi: '🏺 भारतीय इतिहास एवं राष्ट्रीय आंदोलन',
-      desc_en: 'Ancient India, Buddhism, 1857 Revolt, Champaran Satyagraha & 1947 Freedom',
-      desc_hi: 'सिंधु सभ्यता, मौर्य व गुप्त काल, 1857 क्रांति, चंपारण सत्याग्रह व स्वतंत्रता संग्राम',
-    },
-    {
-      id: 'personality-development' as SubjectId,
-      label_en: '✨ Personality Development',
-      label_hi: '✨ व्यक्तित्व विकास',
-      desc_en: 'First impressions, body language, EQ, public speaking & leadership presence',
-      desc_hi: 'पहला प्रभाव, शारीरिक भाषा, भावनात्मक संतुलन, मंच वक्तृत्व व नेतृत्व उपस्थिति',
-    },
-    {
-      id: 'dressing-sense' as SubjectId,
-      label_en: '👔 Dressing Sense',
-      label_hi: '👔 ड्रेसिंग सेंस एवं सलीका',
-      desc_en: 'Proportions, color harmony, capsule wardrobe, fabric care & smart dressing',
-      desc_hi: 'शारीरिक अनुपात, रंगों का सामंजस्य, कैप्सूल वॉर्डरोब, कपड़ों की देखभाल व सलीका',
-    },
-    {
-      id: 'case-studies' as SubjectId,
-      label_en: '💡 Case Studies: Real-World Business Stories',
-      label_hi: '💡 केस स्टडीज़: बिज़नेस और सफलता की कहानियां',
-      desc_en: 'Airbnb, Zerodha, Amul, Canva, OYO, Dhirubhai Ambani, Spanx & Patagonia',
-      desc_hi: 'Airbnb, Zerodha, Amul, Canva, OYO, धीरूभाई अंबानी, Spanx व Patagonia',
-    },
-    {
-      id: 'time-management' as SubjectId,
-      label_en: '⏱️ Time Management',
-      label_hi: '⏱️ समय प्रबंधन एवं कार्यकुशलता',
-      desc_en: 'Eisenhower matrix, Pomodoro, calendar blocking, saying no & GTD weekly review',
-      desc_hi: 'आइजनहावर मैट्रिक्स, पोमोडोरो, टाइम-ब्लॉकिंग, ना कहने की कला व GTD वीकली रिव्यू',
-    },
-    {
-      id: 'first-aid' as SubjectId,
-      label_en: '🩹 First Aid & Emergency Response',
-      label_hi: '🩹 प्राथमिक चिकित्सा एवं आपातकालीन प्रतिक्रिया',
-      desc_en: 'CPR, choking relief, severe bleeding tourniquets, stroke FAST, and burn trauma care',
-      desc_hi: 'सीपीआर, चोकिंग राहत, ब्लीडिंग नियंत्रण, स्ट्रोक FAST पहचान एवं बर्न प्राथमिक उपचार',
-    },
-    {
-      id: 'survival-skills' as SubjectId,
-      label_en: '🔥 Survival Skills',
-      label_hi: '🔥 उत्तरजीविता कौशल एवं आपदा प्रबंधन',
-      desc_en: 'Rule of Threes, solar still water purification, friction fire craft, and storm navigation',
-      desc_hi: '3 का नियम, जल शोधन, घर्षण से आग जलाना, शेल्टर निर्माण एवं आपदा नेविगेशन',
-    },
-    {
-      id: 'modern-farming' as SubjectId,
-      label_en: '🌱 Modern Farming',
-      label_hi: '🌱 आधुनिक एवं पुनर्योजी कृषि',
-      desc_en: 'Soil health, precision drip, bio-inputs, IPM biological pest control, polyhouse & drones',
-      desc_hi: 'मृदा स्वास्थ्य, ड्रिप सिंचाई, वर्मीकम्पोस्ट, IPM कीट नियंत्रण, पॉलीहाउस एवं कृषि ड्रोन',
-    },
-    {
-      id: 'philosophy' as SubjectId,
-      label_en: '🧭 Philosophy: Think Deeper',
-      label_hi: '🧭 दर्शन: गहराई से सोचें',
-      desc_en: 'Socrates, Stoic control, Plato’s cave, moral ethics, Daoist flow, logic, and existential meaning',
-      desc_hi: 'सुकरात, स्टोइक दर्शन, प्लेटो की गुफा, नीतिशास्त्र, ताओवाद, तर्कशास्त्र और सार्थक जीवन की राह',
-    },
-    {
-      id: 'paradoxes' as SubjectId,
-      label_en: '🌀 Mind-Bending Paradoxes',
-      label_hi: '🌀 दिमाग हिला देने वाले विरोधाभास',
-      desc_en: 'Ship of Theseus, time travel, Simpson’s paradox, Fermi paradox, game theory, and tolerance',
-      desc_hi: 'थीसियस का जहाज, दादाजी का विरोधाभास, सिम्पसन का रहस्य, फर्मी सन्नाटा और गेम थ्योरी',
-    },
-  ];
+  const avatarUrl =
+    (user as any)?.avatar_url ||
+    USER_AVATAR_IMAGE;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
-      {/* Header */}
-      <div className="border-b border-black/[0.06] pb-6">
-        <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold block mb-1 font-mono">
-          {language === 'hi' ? 'खाता एवं प्राथमिकताएँ' : 'Account & Preferences'}
-        </span>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#121212] tracking-tight font-medium">
-          {language === 'hi' ? 'प्रोफ़ाइल एवं अध्ययन सेटिंग्स' : 'Profile & Habits'}
-        </h1>
-        <p className="text-xs sm:text-sm text-black/60 mt-1.5 max-w-xl font-light leading-relaxed">
-          {language === 'hi'
-            ? 'अपनी अध्ययन भाषा, दैनिक सीखने का लक्ष्य और सक्रिय विषयों का प्रबंधन करें।'
-            : 'Manage your language preference, daily learning goals, pacing level, and active subject pool.'}
-        </p>
-      </div>
+    <div className="max-w-md mx-auto px-4 sm:px-5 py-2 space-y-4 animate-fadeIn pb-28">
+      {/* 1. PROFILE COVER (MATCHING REFERENCE MOCKUP SCREEN 5) */}
+      <section aria-label="Profile Header" className="relative">
+        <div className="relative rounded-3xl h-36 sm:h-44 w-full overflow-hidden shadow-sm border border-black/10">
+          <img
+            src={PROFILE_COVER_IMAGE}
+            alt="Profile Cover"
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        </div>
 
-      {/* User Card */}
-      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)]">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-[#121212] text-white font-serif italic font-bold text-2xl flex items-center justify-center shadow-sm">
-            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+        {/* Circular Avatar Overlapping Cover with Edit Pencil Badge */}
+        <div className="relative -mt-14 flex flex-col items-center text-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-md bg-[#090D16]">
+              <img
+                src={avatarUrl}
+                alt={user?.name || 'Anurag'}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Edit pencil icon */}
+            <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-xs border-2 border-white">
+              <Pencil className="w-3 h-3" />
+            </div>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl sm:text-2xl font-serif italic text-[#121212] truncate font-medium">
-              {user?.name || 'Knowledge Seeker'}
-            </h2>
-            <p className="text-xs text-black/60 flex items-center gap-1.5 mt-0.5 truncate font-light">
-              <AtSign className="w-3.5 h-3.5 text-black/40" />
-              <span className="font-mono text-black/80">{user?.username || 'learner'}</span>
+          {/* User Name & Info */}
+          <div className="mt-2 space-y-0.5">
+            <h1 className="text-xl sm:text-2xl font-serif italic text-[#090D16] font-bold">
+              {user?.name || 'Anurag'}
+            </h1>
+            <p className="text-xs text-slate-500 font-mono">
+              @{user?.username || 'anurag'} · <span className="font-bold text-violet-700">Level 2</span>
             </p>
-            <p className="text-[11px] text-black/45 flex items-center gap-1.5 mt-1 font-mono">
-              <Calendar className="w-3.5 h-3.5 text-black/40" />
-              <span>{language === 'hi' ? 'सदस्यता:' : 'Member since'} {formattedDate}</span>
+            <p className="text-[11px] text-slate-400 font-mono flex items-center justify-center gap-1 pt-0.5">
+              <Calendar className="w-3 h-3 text-slate-400" />
+              <span>Member since Aug 2026</span>
             </p>
           </div>
         </div>
+      </section>
 
-        {/* Mini stats row */}
-        <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-black/[0.06] text-center">
-          <div className={`p-4 rounded-2xl border ${
-            streakStatus === 'broken'
-              ? 'bg-rose-50 border-rose-200'
-              : 'bg-amber-50/80 border-amber-200'
-          }`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
-              streakStatus === 'broken' ? 'text-rose-800' : 'text-amber-800'
-            }`}>
-              {language === 'hi' ? 'दैनिक स्ट्रीक' : 'Streak'}
-            </span>
-            <p className={`text-2xl sm:text-3xl font-serif italic mt-0.5 font-medium ${
-              streakStatus === 'broken' ? 'text-rose-900' : 'text-amber-950'
-            }`}>
-              {streakStatus === 'broken'
-                ? (language === 'hi' ? '0 दिन (टूटी)' : '0 Days (Broken)')
-                : `${currentStreak} ${language === 'hi' ? 'दिन' : 'Days'}`}
+      {/* 2. THREE STAT CARDS (MATCHING REFERENCE MOCKUP SCREEN 5) */}
+      <section aria-label="Profile Stats">
+        <div className="grid grid-cols-3 gap-2.5">
+          {/* ⭐ 1,250 Total XP */}
+          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+            <span className="text-xl block">⭐</span>
+            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+              {totalXp}
             </p>
-            {longestStreak > 0 && (
-              <span className="text-[10px] text-black/50 font-mono block mt-1">
-                {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Best: ${longestStreak}d`}
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              Total XP
+            </span>
+          </div>
+
+          {/* 🔥 7 Streak */}
+          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+            <span className="text-xl block">🔥</span>
+            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+              {currentStreak}
+            </p>
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              Streak
+            </span>
+          </div>
+
+          {/* 📖 12 Lessons */}
+          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+            <span className="text-xl block">📖</span>
+            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+              {lessonsCompleted}
+            </p>
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              Lessons
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. TABS: PREFERENCES / ACHIEVEMENTS / ACCOUNT */}
+      <div className="flex bg-slate-100 p-1 rounded-2xl border border-black/[0.04]">
+        {[
+          { id: 'preferences' as const, label: 'Preferences' },
+          { id: 'achievements' as const, label: 'Achievements' },
+          { id: 'account' as const, label: 'Account' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === tab.id
+                ? 'bg-violet-700 text-white shadow-xs font-bold'
+                : 'text-slate-500 hover:text-black'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 4. PREFERENCES TAB (MATCHING REFERENCE MOCKUP SCREEN 5) */}
+      {activeTab === 'preferences' && (
+        <div className="space-y-2.5">
+          {/* Learning Language Row */}
+          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center shrink-0">
+                <Globe className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-semibold text-[#090D16]">
+                Learning Language
               </span>
-            )}
-          </div>
-          <div className="p-4 rounded-2xl bg-violet-50/80 border border-violet-200/80">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-800 font-mono">
-              {language === 'hi' ? 'नॉलेज XP' : 'Knowledge'}
-            </span>
-            <p className="text-2xl sm:text-3xl font-serif italic text-violet-950 mt-0.5 font-medium">
-              {stats?.total_xp || 0} XP
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Language Preference Selector */}
-      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#121212] text-white flex items-center justify-center shadow-2xs">
-            <Languages className="w-4 h-4 text-amber-300" />
-          </div>
-          <div>
-            <h3 className="font-serif italic text-lg sm:text-xl text-[#121212] font-medium">
-              {language === 'hi' ? 'भाषा चयन (Language Preference)' : 'Learning Language (भाषा चयन)'}
-            </h3>
-            <p className="text-xs text-black/60 font-light">
-              {language === 'hi'
-                ? 'सभी पाठ, सारांश, मुख्य बिंदु और प्रश्नोत्तरी हिन्दी और अंग्रेजी दोनों में उपलब्ध हैं।'
-                : 'All lessons, real-life examples, takeaways, and questions are seamlessly available in English and Hindi.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-          <button
-            type="button"
-            onClick={() => setLanguage('en')}
-            className={`p-4 rounded-2xl text-xs font-semibold border transition-all text-left flex items-center justify-between cursor-pointer ${
-              language === 'en'
-                ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
-                : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
-            }`}
-          >
-            <div>
-              <p className="font-serif italic text-base font-bold">English</p>
-              <p className={`text-[11px] mt-0.5 font-light ${language === 'en' ? 'text-white/70' : 'text-black/50'}`}>
-                Standard Exam & Practical Life Guide
-              </p>
             </div>
-            {language === 'en' && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
-          </button>
 
-          <button
-            type="button"
-            onClick={() => setLanguage('hi')}
-            className={`p-4 rounded-2xl text-xs font-semibold border transition-all text-left flex items-center justify-between cursor-pointer ${
-              language === 'hi'
-                ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
-                : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
-            }`}
-          >
-            <div>
-              <p className="font-serif italic text-base font-bold">हिन्दी (Hindi)</p>
-              <p className={`text-[11px] mt-0.5 font-light ${language === 'hi' ? 'text-white/70' : 'text-black/50'}`}>
-                पूर्ण हिन्दी अनुवाद एवं परीक्षा सामग्री
-              </p>
+            {/* Segmented language toggle */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-black/[0.06]">
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  language === 'en'
+                    ? 'bg-white text-violet-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-black'
+                }`}
+              >
+                {language === 'en' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
+                <span>English</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('hi')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  language === 'hi'
+                    ? 'bg-white text-violet-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-black'
+                }`}
+              >
+                {language === 'hi' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
+                <span>हिंदी</span>
+              </button>
             </div>
-            {language === 'hi' && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Learning Preferences Editor */}
-      <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="font-serif italic text-xl sm:text-2xl text-[#121212] font-medium">
-            {language === 'hi' ? 'दैनिक अध्ययन लक्ष्य एवं योजना' : 'Learning Habits'}
-          </h3>
-          {savedSuccess && (
-            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {language === 'hi' ? 'सहेजा गया!' : 'Saved!'}
-            </span>
-          )}
-        </div>
-
-        {/* 1. Daily Learning Commitment */}
-        <div>
-          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
-            {language === 'hi' ? 'दैनिक समय प्रतिबद्धता' : 'Daily Commitment'}
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            {[10, 20].map((mins) => (
-              <button
-                key={mins}
-                type="button"
-                onClick={() => setDailyMinutes(mins as DailyMinutes)}
-                className={`py-3 px-4 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
-                  dailyMinutes === mins
-                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
-                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
-                }`}
-              >
-                {mins} {language === 'hi' ? 'मिनट / प्रतिदिन' : 'Minutes / day'}
-              </button>
-            ))}
           </div>
-        </div>
 
-        {/* 2. Baseline Level */}
-        <div>
-          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
-            {language === 'hi' ? 'अध्ययन स्तर' : 'Pacing Level'}
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {(['Beginner', 'Intermediate', 'Advanced'] as LearningLevel[]).map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                onClick={() => setLevel(lvl)}
-                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
-                  level === lvl
-                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
-                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
-                }`}
-              >
-                {lvl === 'Beginner'
-                  ? language === 'hi'
-                    ? 'आरंभिक'
-                    : 'Beginner'
-                  : lvl === 'Intermediate'
-                  ? language === 'hi'
-                    ? 'मध्यम'
-                    : 'Intermediate'
-                  : language === 'hi'
-                  ? 'उन्नत'
-                  : 'Advanced'}
-              </button>
-            ))}
+          {/* Daily Goal Row */}
+          <div
+            onClick={() => {
+              const next = dailyMinutes === 10 ? 20 : 10;
+              setDailyMinutes(next as DailyMinutes);
+              handleSavePreferences();
+            }}
+            className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center shrink-0">
+                <Target className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[#090D16]">Daily Goal</p>
+                <p className="text-[11px] text-slate-400 font-light">{dailyMinutes === 10 ? '2 lessons per day' : '3 lessons per day'}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
-        </div>
 
-        {/* 3. Preferred Time */}
-        <div>
-          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
-            {language === 'hi' ? 'पसंदीदा अध्ययन समय' : 'Preferred Learning Time'}
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {(['Morning', 'Afternoon', 'Evening', 'Custom'] as PreferredTime[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setPreferredTime(t)}
-                className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
-                  preferredTime === t
-                    ? 'border-[#121212] bg-[#121212] text-white shadow-xs'
-                    : 'border-black/[0.08] hover:border-black/20 bg-[#FAFAF8] text-[#121212]'
-                }`}
-              >
-                {t === 'Morning'
-                  ? language === 'hi'
-                    ? 'सुबह'
-                    : 'Morning'
-                  : t === 'Afternoon'
-                  ? language === 'hi'
-                    ? 'दोपहर'
-                    : 'Afternoon'
-                  : t === 'Evening'
-                  ? language === 'hi'
-                    ? 'शाम'
-                    : 'Evening'
-                  : language === 'hi'
-                  ? 'कस्टम'
-                  : 'Custom'}
-              </button>
-            ))}
+          {/* Notifications Row */}
+          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[#090D16]">Notifications</p>
+                <p className="text-[11px] text-slate-400 font-light">Lesson reminders and updates</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
-        </div>
 
-        {/* 4. Active Subjects */}
-        <div>
-          <label className="block text-xs font-bold text-black/50 uppercase tracking-widest mb-2 font-mono">
-            {language === 'hi'
-              ? 'दैनिक मिशन पूल में सक्रिय विषय'
-              : 'Active Domains In Daily Mission Pool'}
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {SUBJECT_OPTIONS.map((s) => {
-              const active = selectedSubjects.includes(s.id);
-              return (
+          {/* Appearance Row */}
+          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <Moon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[#090D16]">Appearance</p>
+                <p className="text-[11px] text-slate-400 font-light">Light Mode</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          </div>
+
+          {/* 5. LEVEL 2 ACHIEVEMENT CARD AT BOTTOM (MATCHING REFERENCE MOCKUP SCREEN 5) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#090D16] via-[#1E1138] to-[#120B24] text-white shadow-md border border-white/[0.08] space-y-2 relative overflow-hidden">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#FBBF24] text-slate-950 flex items-center justify-center shadow-xs">
+                <Crown className="w-4 h-4 fill-slate-950" />
+              </div>
+              <div>
+                <h4 className="font-serif italic font-bold text-sm text-white">Level 2</h4>
+                <p className="text-[10px] text-slate-300 font-light">
+                  Keep learning to unlock new achievements!
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1 pt-1">
+              <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                 <div
-                  key={s.id}
-                  onClick={() => toggleSubject(s.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start justify-between text-xs font-medium ${
-                    active
-                      ? 'border-[#121212] bg-[#FAFAF8] text-[#121212] shadow-2xs'
-                      : 'border-black/[0.06] text-black/40 bg-white hover:border-black/20'
-                  }`}
-                >
-                  <div className="pr-2">
-                    <span className="font-serif italic text-sm block font-bold text-[#121212]">
-                      {language === 'hi' ? s.label_hi : s.label_en}
-                    </span>
-                    <p className="text-[11px] text-black/60 mt-1 font-light leading-relaxed">
-                      {language === 'hi' ? s.desc_hi : s.desc_en}
-                    </p>
-                  </div>
-                  {active && <CheckCircle2 className="w-4 h-4 text-[#121212] flex-shrink-0 mt-0.5" />}
-                </div>
-              );
-            })}
+                  className="h-full bg-gradient-to-r from-purple-500 to-[#FBBF24] rounded-full"
+                  style={{ width: '53%' }}
+                />
+              </div>
+              <p className="text-[10px] font-mono text-slate-300 text-right">
+                265 / 500 XP
+              </p>
+            </div>
           </div>
         </div>
+      )}
 
-        <button
-          onClick={handleSavePreferences}
-          disabled={saving}
-          id="save-preferences-btn"
-          className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#121212] hover:bg-black transition-all shadow-md disabled:opacity-50 cursor-pointer"
-        >
-          {saving ? (
-            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              <span>{language === 'hi' ? 'प्राथमिकताएँ सहेजें' : 'Update Preferences'}</span>
-            </>
-          )}
-        </button>
-      </div>
+      {/* ACHIEVEMENTS TAB */}
+      {activeTab === 'achievements' && (
+        <div className="p-4 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-3">
+          <h3 className="font-serif italic font-bold text-sm text-[#090D16]">
+            Milestones Unlocked
+          </h3>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { icon: '🌱', title: 'First Step', desc: '1st lesson completed', unlocked: true },
+              { icon: '🔥', title: 'Consistency', desc: '7-day streak', unlocked: true },
+              { icon: '⭐', title: 'Century Club', desc: '1,000+ XP earned', unlocked: true },
+              { icon: '🏆', title: 'Scholar', desc: '5 domains studied', unlocked: true },
+            ].map((m, idx) => (
+              <div key={idx} className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-center space-y-0.5">
+                <span className="text-xl block">{m.icon}</span>
+                <p className="font-serif italic font-bold text-xs text-amber-950">{m.title}</p>
+                <span className="text-[9px] text-amber-800 font-mono block">{m.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Log Out Button */}
-      <div className="pt-2">
-        <button
-          onClick={logOut}
-          id="logout-btn"
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full border border-rose-200 bg-rose-50/80 hover:bg-rose-100/90 text-rose-800 text-xs font-bold transition-colors cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>{language === 'hi' ? 'लॉग आउट' : 'Log Out of Matters'}</span>
-        </button>
-      </div>
+      {/* ACCOUNT TAB */}
+      {activeTab === 'account' && (
+        <div className="p-4 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-3">
+          <h3 className="font-serif italic font-bold text-sm text-[#090D16]">
+            Account Info
+          </h3>
+          <div className="space-y-2 text-xs">
+            <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
+              <span className="text-slate-400">Name</span>
+              <strong className="text-[#090D16]">{user?.name || 'Anurag'}</strong>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
+              <span className="text-slate-400">Username</span>
+              <strong className="text-[#090D16] font-mono">@{user?.username || 'anurag'}</strong>
+            </div>
+          </div>
+
+          <button
+            onClick={logOut}
+            id="logout-btn"
+            className="w-full py-3 px-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs font-bold transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 mt-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Log Out</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

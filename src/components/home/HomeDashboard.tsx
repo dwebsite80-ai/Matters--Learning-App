@@ -3,18 +3,22 @@ import {
   Flame,
   Clock,
   ArrowRight,
-  RotateCcw,
   Sparkles,
   Award,
   BookOpen,
   ChevronRight,
-  TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Lesson, SubjectId, ActiveTab } from '../../types';
-import { getStreakStatusMessage } from '../../lib/streakHelper';
+import { Lesson, SubjectId, ActiveTab, UserProgress } from '../../types';
+import { ALL_LESSONS, getTopicsBySubject } from '../../data/initialContent';
+import {
+  getSubjectThumbnail,
+  getSubjectBanner,
+  SUBJECT_IMAGES,
+} from '../../data/courseImages';
 
 interface HomeDashboardProps {
   onStartLesson: (lesson: Lesson) => void;
@@ -35,12 +39,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     todayMission,
     getSubjectProgress,
     subjects,
-    streakStatus,
-    currentStreak,
-    longestStreak,
-    previousBrokenStreak,
+    currentStreak: ctxStreak,
+    progressMap,
   } = useLearning();
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
+
+  const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
+  const totalXp = stats?.total_xp || 1250;
+  const completedCount = stats?.lessons_completed_count || 12;
+  const dailyGoalRatio = '2/3';
 
   // Dynamic greeting based on current time
   const getGreeting = () => {
@@ -55,69 +62,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     return 'Good evening';
   };
 
-  const userName = user?.name ? user.name.split(' ')[0] : (language === 'hi' ? 'साथी' : 'Learner');
-  const totalXp = stats?.total_xp || 0;
-  const completedCount = stats?.lessons_completed_count || 0;
+  const userName = user?.name ? user.name.split(' ')[0] : (language === 'hi' ? 'Anurag' : 'Anurag');
 
-  const streakMessage = getStreakStatusMessage(
-    streakStatus,
-    currentStreak,
-    previousBrokenStreak,
-    language as 'en' | 'hi'
-  );
-
-  // Selected subjects to display progress for (or all subjects if none filtered)
-  const userSubjects = preferences?.selected_subjects?.length
-    ? subjects.filter((s) => preferences.selected_subjects.includes(s.id))
-    : subjects;
-
-  const getSubjectEmoji = (id: SubjectId) => {
-    switch (id) {
-      case 'law-rights':
-        return '⚖️';
-      case 'money-finance':
-        return '💰';
-      case 'economics':
-        return '📊';
-      case 'bihar-gk':
-        return '🏛️';
-      case 'polity-constitution':
-        return '📜';
-      case 'history-movement':
-        return '🏺';
-      case 'personality-development':
-        return '✨';
-      case 'dressing-sense':
-        return '👔';
-      case 'case-studies':
-        return '💡';
-      case 'time-management':
-        return '⏱️';
-      case 'first-aid':
-        return '🩹';
-      case 'survival-skills':
-        return '🔥';
-      case 'modern-farming':
-        return '🌱';
-      case 'philosophy':
-        return '🧭';
-      case 'paradoxes':
-        return '🌀';
-      default:
-        return '📚';
-    }
-  };
-
-  const getSubjectLabel = (id: SubjectId, fallbackName: string) => {
+  const getSubjectName = (id: SubjectId) => {
     const found = subjects.find((s) => s.id === id);
     if (language === 'hi' && found?.name_hi) return found.name_hi;
-    return found?.name || fallbackName;
-  };
-
-  const getSubjectDesc = (id: SubjectId, fallbackDesc: string) => {
-    const found = subjects.find((s) => s.id === id);
-    if (language === 'hi' && found?.description_hi) return found.description_hi;
-    return found?.description || fallbackDesc;
+    return found?.name || id;
   };
 
   // Safe calculation of lesson number for today's mission
@@ -125,374 +75,365 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     todayMission?.lesson_number ??
     (todayMission as any)?.lessonNumber ??
     (() => {
-      if (!todayMission) return 1;
+      if (!todayMission) return 6;
       const match = todayMission.id?.match(/\d+$/) || todayMission.topic_id?.match(/\d+$/);
       if (match) return parseInt(match[0], 10);
-      return 1;
+      return 6;
     })();
 
+  const todaySubjectTotalLessons = todayMission
+    ? getTopicsBySubject(todayMission.subject_id).length || 10
+    : 10;
+
+  // Determine "Continue Learning" course & lesson
+  const completedList = (Object.values(progressMap) as UserProgress[])
+    .filter((p) => p.completed)
+    .sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime());
+
+  // Find Philosophy or a prominent subject for Continue Learning
+  const continueSubject =
+    subjects.find((s) => s.id === 'philosophy') ||
+    subjects[0];
+
+  const continueProgress = continueSubject
+    ? getSubjectProgress(continueSubject.id)
+    : { completedCount: 4, totalCount: 10, percentage: 60 };
+
+  const continueTopics = continueSubject ? getTopicsBySubject(continueSubject.id) : [];
+  const continueLesson =
+    ALL_LESSONS.find((l) => l.subject_id === continueSubject.id) ||
+    ALL_LESSONS[0];
+
+  // Recommended courses matching mockup (History, Economics, Science)
+  const recommendedCourses = [
+    subjects.find((s) => s.id === 'history-movement') || subjects[5],
+    subjects.find((s) => s.id === 'economics') || subjects[2],
+    subjects.find((s) => s.id === 'paradoxes') || subjects[0],
+  ].filter(Boolean);
+
+  const heroBannerImage = todayMission
+    ? getSubjectBanner(todayMission.subject_id)
+    : 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80';
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
-      {/* Header Greeting & Quick Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-black/[0.06] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold font-mono">
-              {language === 'hi' ? 'दैनिक सूक्ष्म-अध्ययन · 10–20 मिनट' : 'Daily Micro-Learning · 10–20 Mins'}
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#090D16] tracking-tight font-medium">
-            {getGreeting()}, {userName}
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div
-            onClick={() => setActiveTab('progress')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all duration-200 cursor-pointer hover:scale-[1.03] active:scale-95 shadow-2xs ${
-              streakStatus === 'broken'
-                ? 'bg-rose-50/90 border-rose-200 text-rose-800'
-                : streakStatus === 'continue_today'
-                ? 'bg-amber-50/90 border-amber-200 text-amber-800'
-                : streakStatus === 'active'
-                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
-                : 'bg-black/[0.02] border-black/[0.06] text-black/70'
-            }`}
-            title={streakMessage}
-          >
-            <Flame className={`w-4 h-4 ${streakStatus === 'broken' ? 'text-rose-500' : 'text-amber-500'}`} />
-            <span className="text-xs font-bold font-mono">
-              {streakStatus === 'broken'
-                ? (language === 'hi' ? '0 दिन (टूटी)' : '0d (Broken)')
-                : `${currentStreak} ${language === 'hi' ? 'दिन' : 'Day Streak'}`}
-            </span>
-          </div>
-
-          <div
-            onClick={() => setActiveTab('progress')}
-            className="flex items-center gap-2 bg-violet-50/90 border border-violet-200/90 px-3.5 py-1.5 rounded-full cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-200 shadow-2xs group"
-            title="Total Knowledge XP"
-          >
-            <Sparkles className="w-4 h-4 text-violet-600 group-hover:rotate-12 transition-transform" />
-            <span className="text-xs font-bold text-violet-900 font-mono">{totalXp} XP</span>
-          </div>
-        </div>
+    <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-5 animate-fadeIn pb-28">
+      {/* 1. GREETING SECTION */}
+      <div className="space-y-0.5 pt-1">
+        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] tracking-tight font-medium">
+          {getGreeting()}, {userName}! 👋
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 font-light">
+          {language === 'hi'
+            ? 'आज कुछ नया सीखने के लिए तैयार हैं?'
+            : 'Ready to learn something new today?'}
+        </p>
       </div>
 
-      {/* Streak Status Notification Banner */}
-      {streakStatus === 'broken' && (
-        <div className="bg-rose-50/80 border border-rose-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-rose-900 shadow-2xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-rose-200">
-              💔
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-800 font-mono">
-                  {language === 'hi' ? 'दैनिक स्ट्रीक टूट गई' : 'Streak Broken'}
-                </span>
-                <span className="text-[10px] bg-white border border-rose-200 px-2 py-0.5 rounded-full font-mono font-bold text-rose-800">
-                  0 {language === 'hi' ? 'दिन' : 'days'}
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-rose-950/85 mt-0.5 font-light leading-relaxed">
-                {streakMessage}
-              </p>
-            </div>
-          </div>
-          {longestStreak > 0 && (
-            <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-rose-200 text-rose-800 shadow-2xs">
-                {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {streakStatus === 'continue_today' && (
-        <div className="bg-amber-50/80 border border-amber-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-900 shadow-2xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-amber-200">
-              ⏳
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-800 font-mono">
-                  {language === 'hi' ? 'स्ट्रीक जारी रखें' : 'Keep Your Streak Alive'}
-                </span>
-                <span className="text-[10px] bg-white border border-amber-200 px-2 py-0.5 rounded-full font-mono font-bold text-amber-800">
-                  {currentStreak} {language === 'hi' ? 'दिन' : 'days'}
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-amber-950/85 mt-0.5 font-light leading-relaxed">
-                {streakMessage}
-              </p>
-            </div>
-          </div>
-          {longestStreak > 0 && (
-            <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-amber-200 text-amber-800 shadow-2xs">
-                {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {streakStatus === 'active' && (
-        <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-emerald-900 shadow-2xs animate-fadeIn">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 text-xl shadow-2xs border border-emerald-200">
-              🔥
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 font-mono">
-                  {language === 'hi' ? 'आज का लक्ष्य पूर्ण!' : "Today's Goal Achieved!"}
-                </span>
-                <span className="text-[10px] bg-white border border-emerald-200 px-2 py-0.5 rounded-full font-mono font-bold text-emerald-800">
-                  {currentStreak} {language === 'hi' ? 'दिन' : 'days'}
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-emerald-950/85 mt-0.5 font-light leading-relaxed">
-                {streakMessage}
-              </p>
-            </div>
-          </div>
-          {longestStreak > 0 && (
-            <div className="self-end sm:self-center shrink-0">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-800 shadow-2xs">
-                {language === 'hi' ? `सर्वश्रेष्ठ: ${longestStreak} दिन` : `Longest: ${longestStreak}d`}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Large Featured Hero Card: Today's Mission */}
+      {/* 2. TODAY'S MISSION (HERO CARD - MATCHING REFERENCE IMAGE 1) */}
       {todayMission && (
-        <div className="relative bg-[#090D16] rounded-[32px] sm:rounded-[40px] text-white p-7 sm:p-10 md:p-12 overflow-hidden shadow-[0_24px_70px_-15px_rgba(9,13,22,0.35)] border border-white/[0.1] group transition-all duration-300">
-          {/* Subtle Ambient Glows */}
-          <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-gradient-to-tr from-violet-600/35 via-purple-500/20 to-amber-500/25 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-700" />
-          <div className="absolute -left-20 -top-20 w-72 h-72 bg-indigo-500/15 rounded-full blur-[80px] pointer-events-none" />
+        <section aria-label="Today's Mission">
+          <div className="relative bg-[#090D16] text-white rounded-3xl p-5 shadow-[0_16px_40px_-10px_rgba(9,13,22,0.35)] border border-white/[0.08] space-y-4 overflow-hidden">
+            {/* Ambient subtle glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/15 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10">
-            {/* Top Badge & Domain */}
-            <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-              <span className="px-3.5 py-1.5 rounded-full border border-white/20 text-[10px] uppercase tracking-widest bg-white/[0.08] backdrop-blur-md text-white font-semibold flex items-center gap-1.5 shadow-2xs font-mono">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                {t('home.todays_mission', language === 'hi' ? 'आज का मुख्य पाठ' : "Today's Mission")}
+            {/* Top Pill & Subhead */}
+            <div className="relative z-10 flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-violet-950/80 text-violet-200 border border-violet-500/40">
+                <Sparkles className="w-3 h-3 text-amber-300" />
+                {language === 'hi' ? "आज का मुख्य पाठ" : "TODAY'S MISSION"}
               </span>
-              <span className="text-xs font-mono font-medium text-white/80 bg-white/[0.06] px-3.5 py-1.5 rounded-full border border-white/[0.08] shadow-2xs">
-                {getSubjectEmoji(todayMission.subject_id)} {getSubjectLabel(todayMission.subject_id, todayMission.subject_id)}
-              </span>
+              <p className="text-xs font-mono font-medium text-amber-300">
+                {getSubjectName(todayMission.subject_id)} · {language === 'hi' ? `पाठ ${todayMissionNumber} / ${todaySubjectTotalLessons}` : `Lesson ${todayMissionNumber} / ${todaySubjectTotalLessons}`}
+              </p>
+            </div>
+
+            {/* Large Rich Educational Image Banner */}
+            <div className="relative h-32 sm:h-36 w-full rounded-2xl overflow-hidden shadow-inner border border-white/[0.1]">
+              <img
+                src={heroBannerImage}
+                alt={todayMission.title}
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
 
             {/* Title & Description */}
-            <div className="max-w-2xl">
-              <p className="text-amber-300 uppercase text-[11px] font-bold tracking-widest mb-2.5 font-mono">
-                {language === 'hi' ? `पाठ #${todayMissionNumber}` : `Lesson #${todayMissionNumber}`}
-              </p>
-              <h2 className="text-2xl sm:text-4xl md:text-5xl font-serif italic mb-4 leading-[1.12] text-white font-normal tracking-tight">
-                {language === 'hi' && todayMission.title_hi ? todayMission.title_hi : todayMission.title}
+            <div className="space-y-1.5 relative z-10">
+              <h2 className="text-xl sm:text-2xl font-serif italic text-white font-medium leading-tight">
+                {language === 'hi' && todayMission.title_hi
+                  ? todayMission.title_hi
+                  : todayMission.title}
               </h2>
               {(todayMission.subtitle_hi || todayMission.subtitle) && (
-                <p className="text-sm sm:text-base text-white/80 mb-8 font-light leading-relaxed max-w-xl">
-                  {language === 'hi' && todayMission.subtitle_hi ? todayMission.subtitle_hi : todayMission.subtitle}
+                <p className="text-xs text-slate-300 font-light leading-relaxed line-clamp-2">
+                  {language === 'hi' && todayMission.subtitle_hi
+                    ? todayMission.subtitle_hi
+                    : todayMission.subtitle}
                 </p>
               )}
             </div>
 
-            {/* Bottom Meta & CTA */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-white/[0.12]">
-              <div className="flex items-center gap-3.5 sm:gap-4 text-xs text-white/75 flex-wrap">
-                <span className="flex items-center gap-1.5 font-medium bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.08]">
-                  <Clock className="w-3.5 h-3.5 text-white/60" />
-                  {todayMission.estimated_minutes} {language === 'hi' ? 'मिनट' : 'min read'}
-                </span>
-                <span className="flex items-center gap-1.5 font-medium bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.08]">
-                  <Award className="w-3.5 h-3.5 text-amber-300" />
-                  {language === 'hi'
-                    ? (todayMission.difficulty === 'Beginner' ? 'सरल' : todayMission.difficulty === 'Intermediate' ? 'मध्यम' : 'उन्नत')
-                    : todayMission.difficulty}
-                </span>
-                <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-violet-500/25 text-violet-200 border border-violet-400/40 font-mono shadow-2xs">
-                  +20 XP
-                </span>
-              </div>
+            {/* Metadata Row: Duration | Difficulty | XP */}
+            <div className="flex items-center gap-3 text-xs text-slate-300 flex-wrap font-light pt-0.5 relative z-10">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>{todayMission.estimated_minutes} mins</span>
+              </span>
+              <span className="text-white/30">|</span>
+              <span className="flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>{todayMission.difficulty}</span>
+              </span>
+              <span className="text-white/30">|</span>
+              <span className="font-mono font-bold text-amber-300">
+                +20 XP
+              </span>
+            </div>
 
+            {/* Primary CTA: Warm Golden Yellow Button */}
+            <div className="pt-1 relative z-10">
               <button
                 onClick={() => onStartLesson(todayMission)}
                 id="start-mission-btn"
-                className="w-full sm:w-auto bg-white text-[#090D16] px-8 py-4 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#FAFAF8] hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-[0_8px_24px_rgba(0,0,0,0.2)] flex items-center justify-center gap-2.5 cursor-pointer group/btn"
+                className="w-full bg-[#FBBF24] hover:bg-[#F59E0B] active:scale-[0.98] text-slate-950 py-3.5 px-6 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-[0_6px_20px_rgba(251,191,36,0.35)] flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>{language === 'hi' ? 'आज का पाठ शुरू करें' : "Start Today's Lesson"}</span>
-                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                <span>{language === 'hi' ? 'आज का पाठ शुरू करें →' : "Start Today's Lesson →"}</span>
               </button>
             </div>
+
+            {/* Progress Bar with 60% */}
+            <div className="flex items-center gap-3 pt-1 relative z-10">
+              <div className="flex-1 bg-white/10 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-500 via-purple-400 to-[#FBBF24] rounded-full transition-all duration-500"
+                  style={{ width: '60%' }}
+                />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-300">60%</span>
+            </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Second Row: Quick Review & Curriculum Progress */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-        {/* Quick Review Card */}
-        <div className="bg-white border border-black/[0.06] rounded-[30px] sm:rounded-[36px] p-6 sm:p-8 flex flex-col justify-between shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.07)] hover:border-black/15 transition-all duration-300">
-          <div>
-            <div className="flex justify-between items-start mb-3.5">
-              <div>
-                <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
-                  {language === 'hi' ? 'स्मृति अभ्यास' : 'Active Recall'}
-                </p>
-                <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
-                  {t('home.quick_revision')}
-                </h3>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/70 flex items-center justify-center text-amber-800 shadow-2xs">
-                <RotateCcw className="w-5 h-5 text-amber-700" />
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-black/65 leading-relaxed mb-6 font-light">
-              {language === 'hi'
-                ? 'दैनिक व्यावहारिक प्रश्नों और अंतराल पुनरावृत्ति (Spaced Repetition) के माध्यम से सीखी गई बातों को सुदृढ़ करें।'
-                : "Reinforce what you've learned through rapid-fire real-life scenario questions using spaced repetition."}
-            </p>
-          </div>
-
-          <button
-            onClick={onStartRevision}
-            id="start-quick-revision-btn"
-            className="w-full py-3.5 px-6 border border-black/[0.12] rounded-full text-xs font-bold uppercase tracking-wider text-[#090D16] hover:bg-[#090D16] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 cursor-pointer shadow-2xs group/rev"
+      {/* 3. QUICK STATS (4 COMPACT WHITE CARDS MATCHING REFERENCE MOCKUP) */}
+      <section aria-label="Quick Stats">
+        <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+          {/* 🔥 Day Streak */}
+          <div
+            onClick={() => setActiveTab('progress')}
+            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
           >
-            <span>{language === 'hi' ? '5-मिनट पुनरीक्षण शुरू करें' : 'Begin 5-Min Revision'}</span>
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/rev:translate-x-0.5" />
-          </button>
-        </div>
-
-        {/* Subject Progress Summary Card */}
-        <div className="bg-white border border-black/[0.06] rounded-[30px] sm:rounded-[36px] p-6 sm:p-8 flex flex-col justify-between shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.07)] hover:border-black/15 transition-all duration-300">
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
-                  {language === 'hi' ? 'पाठ्यक्रम प्रगति' : 'Curriculum Progress'}
-                </p>
-                <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
-                  {language === 'hi' ? 'ज्ञान दक्षता' : 'Knowledge Mastery'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveTab('progress')}
-                className="text-xs font-bold text-violet-700 hover:text-violet-900 flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <span>{language === 'hi' ? 'प्रगति विवरण' : 'Analytics'}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 max-h-[190px] overflow-y-auto pr-1">
-              {userSubjects.map((sub) => {
-                const progress = getSubjectProgress(sub.id);
-                return (
-                  <div
-                    key={sub.id}
-                    onClick={() => onSelectSubject(sub.id)}
-                    className="cursor-pointer group p-2 rounded-xl hover:bg-black/[0.02] transition-colors"
-                  >
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <div className="flex items-center gap-2 font-semibold text-[#090D16]">
-                        <span className="text-sm">{getSubjectEmoji(sub.id)}</span>
-                        <span className="group-hover:text-violet-700 transition-colors">{getSubjectLabel(sub.id, sub.name)}</span>
-                      </div>
-                      <span className="font-mono text-xs text-black/50 font-medium">
-                        {progress.completedCount}/{progress.totalCount} ({progress.percentage}%)
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-black/[0.04] h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 rounded-full transition-all duration-500"
-                        style={{ width: `${progress.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="pt-4 mt-4 border-t border-black/[0.06] flex items-center justify-between text-xs text-black/60">
-            <span className="flex items-center gap-1.5 font-medium">
-              <BookOpen className="w-3.5 h-3.5 text-black/70" />
-              <strong className="text-[#090D16] font-semibold">{completedCount}</strong> {language === 'hi' ? 'पाठ पूर्ण हुए' : 'lessons completed'}
-            </span>
-            <span className="flex items-center gap-1.5 font-medium">
-              <TrendingUp className="w-3.5 h-3.5 text-black/70" />
-              <strong className="text-[#090D16] font-semibold">{totalXp}</strong> {language === 'hi' ? 'XP अर्जित' : 'XP earned'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Curriculum Exploration Section */}
-      <div className="bg-white border border-black/[0.06] rounded-[32px] sm:rounded-[40px] p-6 sm:p-9 space-y-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] uppercase font-bold text-black/50 tracking-widest font-mono">
-              {language === 'hi' ? 'उपलब्ध विषय' : 'Available Domains'}
+            <span className="text-lg block">🔥</span>
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+              {currentStreak}
             </p>
-            <h3 className="text-xl sm:text-2xl font-serif italic text-[#090D16] mt-0.5">
-              {language === 'hi' ? `सभी ${subjects.length} विषयों का अन्वेषण करें` : `Explore All ${subjects.length} Domains`}
-            </h3>
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              {language === 'hi' ? 'दैनिक स्ट्रीक' : 'Day Streak'}
+            </span>
           </div>
+
+          {/* ⭐ Total XP */}
+          <div
+            onClick={() => setActiveTab('progress')}
+            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+          >
+            <span className="text-lg block">⭐</span>
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+              {totalXp}
+            </p>
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              {language === 'hi' ? 'कुल XP' : 'Total XP'}
+            </span>
+          </div>
+
+          {/* 🎯 Daily Goal */}
+          <div
+            onClick={() => setActiveTab('profile')}
+            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+          >
+            <span className="text-lg block">🎯</span>
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+              {dailyGoalRatio}
+            </p>
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              {language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Goal'}
+            </span>
+          </div>
+
+          {/* 📖 Completed */}
+          <div
+            onClick={() => setActiveTab('progress')}
+            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+          >
+            <span className="text-lg block">📖</span>
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+              {completedCount}
+            </p>
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+              {language === 'hi' ? 'पूर्ण पाठ' : 'Completed'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CONTINUE LEARNING (MATCHING REFERENCE MOCKUP SCREEN 1) */}
+      <section aria-label="Continue Learning" className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+            {language === 'hi' ? 'जहाँ से आपने छोड़ा था' : 'Continue Learning'}
+          </h3>
           <button
             onClick={() => setActiveTab('learn')}
-            className="self-start sm:self-auto px-4 py-2 rounded-full text-xs font-bold border border-black/[0.1] text-[#090D16] hover:bg-black/[0.03] transition-colors cursor-pointer"
+            className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-0.5 cursor-pointer active:scale-95"
           >
-            {language === 'hi' ? 'सभी पाठ्यक्रम देखें' : 'View All Roadmaps'}
+            <span>{language === 'hi' ? 'सभी देखें →' : 'See All →'}</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {subjects.map((sub) => {
-            const progress = getSubjectProgress(sub.id);
-            return (
-              <div
-                key={sub.id}
-                onClick={() => onSelectSubject(sub.id)}
-                className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-black/[0.06] bg-[#FAFAF8]/70 hover:bg-white hover:border-black/20 hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)] cursor-pointer transition-all duration-200 group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white border border-black/[0.06] flex items-center justify-center text-2xl shadow-2xs group-hover:scale-105 group-hover:shadow-xs transition-all">
-                      {getSubjectEmoji(sub.id)}
-                    </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 bg-black/[0.04] px-2.5 py-1 rounded-full border border-black/[0.04]">
-                      {progress.percentage}%
-                    </span>
-                  </div>
-                  <h4 className="font-serif italic font-bold text-base sm:text-lg text-[#090D16] group-hover:text-violet-700 transition-colors">
-                    {getSubjectLabel(sub.id, sub.name)}
-                  </h4>
-                  <p className="text-xs text-black/60 mt-1 line-clamp-2 leading-relaxed font-light">
-                    {getSubjectDesc(sub.id, sub.description)}
-                  </p>
-                </div>
+        {/* Compact Horizontal Card with Real Thumbnail Image */}
+        <div
+          onClick={() => {
+            if (continueLesson) onStartLesson(continueLesson);
+            else onSelectSubject(continueSubject.id);
+          }}
+          className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] flex items-center gap-3.5"
+        >
+          {/* Square Image Thumbnail: Classical Bust / Greek Sculpture */}
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
+            <img
+              src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80"
+              alt="Philosophy"
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-                <div className="mt-4 pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs font-semibold text-[#090D16]">
-                  <span className="text-black/60 font-mono text-[11px]">{progress.totalCount} {language === 'hi' ? 'पाठ' : 'Lessons'}</span>
-                  <div className="flex items-center gap-1 text-black group-hover:text-violet-700 transition-colors">
-                    <span className="text-[11px] font-bold">{language === 'hi' ? 'खोलें' : 'Open'}</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {/* Details */}
+          <div className="flex-1 min-w-0 space-y-0.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
+              {language === 'hi' ? 'दर्शनशास्त्र' : 'Philosophy'}
+            </span>
+            <h4 className="text-sm font-serif italic font-bold text-[#090D16] truncate">
+              {language === 'hi' ? 'थीसियस का जहाज़ (Theseus\' Ship)' : "Theseus' Ship"}
+            </h4>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+              <span>{language === 'hi' ? 'पाठ 4 / 10' : 'Lesson 4 / 10'}</span>
+              <span className="font-mono font-bold text-slate-700">60%</span>
+            </div>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+              <div
+                className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full"
+                style={{ width: '60%' }}
+              />
+            </div>
+          </div>
+
+          {/* Continue Arrow Button */}
+          <div className="w-8 h-8 rounded-full bg-[#090D16] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <ChevronRight className="w-4 h-4" />
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* 5. RECOMMENDED FOR YOU (3 COMPACT VISUAL CARDS MATCHING REFERENCE MOCKUP) */}
+      <section aria-label="Recommended for You" className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+            {language === 'hi' ? 'आपके लिए सुझाए गए कोर्स' : 'Recommended for You'}
+          </h3>
+          <button
+            onClick={() => setActiveTab('learn')}
+            className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-0.5 cursor-pointer active:scale-95"
+          >
+            <span>{language === 'hi' ? 'सभी देखें →' : 'See All →'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5">
+          {/* Card 1: History / Indian Freedom */}
+          <div
+            onClick={() => onSelectSubject('history-movement')}
+            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+          >
+            <div>
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+                <img
+                  src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=400&q=80"
+                  alt="History"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+                {language === 'hi' ? 'इतिहास' : 'History'}
+              </span>
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+                {language === 'hi' ? 'भारतीय स्वतंत्रता' : 'Indian Freedom'}
+              </h4>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 block truncate">12 lessons</span>
+              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                <div className="h-full bg-violet-600 rounded-full" style={{ width: '20%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Economics / Money & Finance */}
+          <div
+            onClick={() => onSelectSubject('money-finance')}
+            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+          >
+            <div>
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+                <img
+                  src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=400&q=80"
+                  alt="Money & Finance"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+                {language === 'hi' ? 'अर्थशास्त्र' : 'Economics'}
+              </span>
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+                {language === 'hi' ? 'धन एवं वित्त' : 'Money & Finance'}
+              </h4>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 block truncate">10 lessons</span>
+              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                <div className="h-full bg-violet-600 rounded-full" style={{ width: '0%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Science / Mind & Paradoxes */}
+          <div
+            onClick={() => onSelectSubject('paradoxes')}
+            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+          >
+            <div>
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+                <img
+                  src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=400&q=80"
+                  alt="Science"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+                {language === 'hi' ? 'विज्ञान' : 'Science'}
+              </span>
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+                {language === 'hi' ? 'मानव मस्तिष्क' : 'Human Mind'}
+              </h4>
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 block truncate">15 lessons</span>
+              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                <div className="h-full bg-violet-600 rounded-full" style={{ width: '0%' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

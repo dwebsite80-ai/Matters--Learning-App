@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, BookOpen, RotateCcw, BarChart3, User } from 'lucide-react';
 import { ActiveTab } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface BottomNavProps {
   activeTab: ActiveTab;
@@ -8,33 +9,55 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
-  const navItems: { tab: ActiveTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { tab: 'home', label: 'Home', icon: Home },
-    { tab: 'learn', label: 'Curriculum', icon: BookOpen },
-    { tab: 'revision', label: 'Revision', icon: RotateCcw },
-    { tab: 'progress', label: 'Stats', icon: BarChart3 },
-    { tab: 'profile', label: 'Profile', icon: User },
+  const { language } = useLanguage();
+
+  const navItems: {
+    tab: ActiveTab;
+    label_en: string;
+    label_hi: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    { tab: 'home', label_en: 'Home', label_hi: 'होम', icon: Home },
+    { tab: 'learn', label_en: 'Courses', label_hi: 'कोर्स', icon: BookOpen },
+    { tab: 'revision', label_en: 'Revision', label_hi: 'रिवीजन', icon: RotateCcw },
+    { tab: 'progress', label_en: 'Progress', label_hi: 'प्रगति', icon: BarChart3 },
+    { tab: 'profile', label_en: 'Profile', label_hi: 'प्रोफ़ाइल', icon: User },
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-5 left-0 right-0 z-40 px-4 flex justify-center pointer-events-none">
-      <div className="bg-white/92 backdrop-blur-2xl border border-black/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.16)] px-2 py-1.5 rounded-full flex items-center gap-1 pointer-events-auto max-w-sm w-full justify-between">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-2xl border-t border-black/[0.08] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1 px-2 w-full transition-all"
+      aria-label="Mobile Navigation"
+    >
+      <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
+          const label = language === 'hi' ? item.label_hi : item.label_en;
+
           return (
             <button
               key={item.tab}
               onClick={() => setActiveTab(item.tab)}
               id={`bottom-nav-${item.tab}`}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 min-h-[48px] rounded-2xl transition-all duration-200 cursor-pointer select-none active:scale-95 ${
                 isActive
-                  ? 'bg-[#090D16] text-white shadow-xs scale-[1.02]'
-                  : 'text-black/50 hover:text-black hover:bg-black/[0.03] active:scale-95'
+                  ? 'text-violet-700 font-bold'
+                  : 'text-slate-400 hover:text-slate-700 font-medium'
               }`}
+              aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              {isActive && <span className="text-[11px] font-bold tracking-tight">{item.label}</span>}
+              <div
+                className={`relative px-3.5 py-1 rounded-full transition-all duration-200 ${
+                  isActive ? 'bg-violet-100/90 text-violet-800' : 'text-slate-400'
+                }`}
+              >
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              </div>
+              <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? 'font-bold text-violet-900' : 'text-slate-500'}`}>
+                {label}
+              </span>
             </button>
           );
         })}
@@ -42,3 +65,4 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     </nav>
   );
 };
+

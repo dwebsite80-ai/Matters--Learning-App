@@ -219,7 +219,7 @@ function MainAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] flex flex-col pb-24 md:pb-12 overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-[#FAFAF8] text-[#121212] flex flex-col pb-24 md:pb-12 overflow-x-hidden w-full max-w-full">
       {/* Top Header Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -228,7 +228,7 @@ function MainAppContent() {
       />
 
       {/* Main View Area */}
-      <main className="flex-1 w-full pt-16 sm:pt-20">
+      <main className="flex-1 w-full pt-14 sm:pt-16">
         {/* Active Quiz Player */}
         {activeQuizLesson ? (
           <QuizPlayer

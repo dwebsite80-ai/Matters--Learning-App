@@ -93,3 +93,17 @@
   animation: pulseGlow 4s ease-in-out infinite;
 }
 
+/* Hide scrollbar for category pills on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth mobile touch behaviors */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+

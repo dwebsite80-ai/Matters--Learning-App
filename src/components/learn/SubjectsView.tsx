@@ -1,26 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Scale,
-  Coins,
-  TrendingUp,
   ChevronRight,
-  BookOpen,
-  Sparkles,
-  Landmark,
-  ShieldCheck,
-  Compass,
-  Shirt,
-  Lightbulb,
-  Clock,
-  HeartPulse,
-  Flame,
-  Sprout,
-  BrainCircuit,
-  HelpCircle,
+  Search,
+  X,
 } from 'lucide-react';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { SubjectId } from '../../types';
+import { getSubjectThumbnail } from '../../data/courseImages';
 
 interface SubjectsViewProps {
   onSelectSubject: (subjectId: SubjectId) => void;
@@ -30,151 +17,171 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
   const { subjects, getSubjectProgress } = useLearning();
   const { language } = useLanguage();
 
-  const getIcon = (id: SubjectId) => {
-    switch (id) {
-      case 'law-rights':
-        return Scale;
-      case 'money-finance':
-        return Coins;
-      case 'economics':
-        return TrendingUp;
-      case 'bihar-gk':
-        return Landmark;
-      case 'polity-constitution':
-        return ShieldCheck;
-      case 'history-movement':
-        return Compass;
-      case 'personality-development':
-        return Sparkles;
-      case 'dressing-sense':
-        return Shirt;
-      case 'case-studies':
-        return Lightbulb;
-      case 'time-management':
-        return Clock;
-      case 'first-aid':
-        return HeartPulse;
-      case 'survival-skills':
-        return Flame;
-      case 'modern-farming':
-        return Sprout;
-      case 'philosophy':
-        return HelpCircle;
-      case 'paradoxes':
-        return BrainCircuit;
-      default:
-        return BookOpen;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const categories = [
+    { id: 'all', label_en: 'All', label_hi: 'सभी' },
+    { id: 'philosophy', label_en: 'Philosophy', label_hi: 'दर्शनशास्त्र', ids: ['philosophy', 'paradoxes'] },
+    { id: 'finance', label_en: 'Finance', label_hi: 'वित्त', ids: ['money-finance', 'economics', 'case-studies'] },
+    { id: 'law', label_en: 'Law & Rights', label_hi: 'विधि व अधिकार', ids: ['law-rights', 'polity-constitution'] },
+    { id: 'history', label_en: 'History', label_hi: 'इतिहास', ids: ['history-movement', 'bihar-gk'] },
+    { id: 'science', label_en: 'Science', label_hi: 'विज्ञान', ids: ['modern-farming', 'survival-skills', 'first-aid'] },
+    { id: 'society', label_en: 'Society', label_hi: 'समाज', ids: ['personality-development', 'dressing-sense', 'time-management'] },
+  ];
+
+  // Filter subjects based on search query and category pill
+  const filteredSubjects = subjects.filter((sub) => {
+    // 1. Category filter
+    if (selectedCategory !== 'all') {
+      const activeCat = categories.find((c) => c.id === selectedCategory);
+      if (activeCat?.ids && !activeCat.ids.includes(sub.id)) {
+        return false;
+      }
     }
-  };
+
+    // 2. Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchName = sub.name.toLowerCase().includes(q);
+      const matchNameHi = sub.name_hi && sub.name_hi.toLowerCase().includes(q);
+      const matchDesc = sub.description.toLowerCase().includes(q);
+      const matchDescHi = sub.description_hi && sub.description_hi.toLowerCase().includes(q);
+      if (!matchName && !matchNameHi && !matchDesc && !matchDescHi) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 animate-fadeIn">
-      {/* Header */}
-      <div className="border-b border-black/[0.06] pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
-          <span className="text-[10px] uppercase tracking-widest text-black/50 font-bold font-mono">
-            {language === 'hi' ? 'संरचित पाठ्यक्रम' : 'Structured Curriculum'}
-          </span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#090D16] tracking-tight font-medium">
-          {language === 'hi' ? 'सभी मुख्य विषय' : 'Essential Domains'}
+    <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-4 animate-fadeIn pb-28">
+      {/* 1. HEADER */}
+      <div className="space-y-0.5 pt-1">
+        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] tracking-tight font-medium">
+          {language === 'hi' ? 'अपने लिए कुछ नया सीखें' : 'Learn Something New For Yourself'}
         </h1>
-        <p className="text-xs sm:text-sm text-black/60 mt-2 max-w-xl font-light leading-relaxed">
+        <p className="text-xs text-slate-500 font-light">
           {language === 'hi'
-            ? 'व्यावहारिक जीवन ज्ञान एवं प्रतियोगी परीक्षा की नींव, प्रत्येक विषय में संरचित पाठ।'
-            : 'Essential practical wisdom divided into 10 structured roadmap topics per domain.'}
+            ? 'ज्ञान, विचार और कौशल — एक ही जगह'
+            : 'Knowledge, Ideas & Skills — All in One Place'}
         </p>
       </div>
 
-      {/* Grid of Subject Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-        {subjects.map((sub) => {
-          const Icon = getIcon(sub.id);
-          const progress = getSubjectProgress(sub.id);
+      {/* 2. SEARCH BAR */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <Search className="w-4 h-4" />
+        </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={language === 'hi' ? 'कोर्स खोजें...' : 'Search courses...'}
+          className="w-full pl-10 pr-9 py-2.5 bg-white rounded-2xl border border-black/[0.08] text-xs text-[#090D16] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-2xs"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-black cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
-          const subName = language === 'hi' && sub.name_hi ? sub.name_hi : sub.name;
-          const subDesc = language === 'hi' && sub.description_hi ? sub.description_hi : sub.description;
-
+      {/* 3. HORIZONTAL CATEGORY PILLS */}
+      <div className="overflow-x-auto no-scrollbar -mx-4 px-4 flex items-center gap-1.5 py-1">
+        {categories.map((cat) => {
+          const isActive = selectedCategory === cat.id;
+          const label = language === 'hi' ? cat.label_hi : cat.label_en;
           return (
-            <div
-              key={sub.id}
-              onClick={() => onSelectSubject(sub.id)}
-              className="bg-white rounded-[30px] sm:rounded-[36px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08)] hover:border-black/20 transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
+                isActive
+                  ? 'bg-violet-700 text-white shadow-xs'
+                  : 'bg-white border border-black/[0.08] text-slate-600 hover:text-black hover:border-black/20'
+              }`}
             >
-              <div>
-                <div className="flex items-start justify-between gap-4 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-[#FAFAF8] border border-black/[0.06] flex items-center justify-center text-black/80 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-700 group-hover:border-violet-200 shadow-2xs">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <span className="text-[11px] font-mono font-bold text-black/60 bg-black/[0.04] px-3 py-1.5 rounded-full border border-black/[0.04] shadow-2xs">
-                    {progress.completedCount} / {progress.totalCount} {language === 'hi' ? 'पूर्ण' : 'Done'}
-                  </span>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. VERTICAL COURSE LIST (MATCHING REFERENCE MOCKUP SCREEN 2) */}
+      <div className="space-y-3 pt-1">
+        {filteredSubjects.length === 0 ? (
+          <div className="text-center py-10 bg-white rounded-2xl border border-black/[0.06] p-5 space-y-2">
+            <p className="text-sm font-semibold text-slate-600">
+              {language === 'hi' ? 'कोई मेल खाता कोर्स नहीं मिला' : 'No matching courses found'}
+            </p>
+            <p className="text-xs text-slate-400">
+              {language === 'hi' ? 'कृपया अन्य कीवर्ड खोजें।' : 'Try another search keyword.'}
+            </p>
+          </div>
+        ) : (
+          filteredSubjects.map((sub) => {
+            const progress = getSubjectProgress(sub.id);
+            const subName = language === 'hi' && sub.name_hi ? sub.name_hi : sub.name;
+            const subDesc = language === 'hi' && sub.description_hi ? sub.description_hi : sub.description;
+            const thumbnail = getSubjectThumbnail(sub.id);
+
+            return (
+              <div
+                key={sub.id}
+                onClick={() => onSelectSubject(sub.id)}
+                className="p-3 sm:p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md transition-all cursor-pointer active:scale-[0.99] flex items-center gap-3.5 group"
+              >
+                {/* [Large Square High-Quality Photographic Thumbnail] */}
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
+                  <img
+                    src={thumbnail}
+                    alt={subName}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
 
-                <h3 className="font-serif italic font-bold text-xl sm:text-2xl text-[#090D16] group-hover:text-violet-700 transition-colors">
-                  {subName}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-black/60 mt-2 leading-relaxed font-light line-clamp-2">
-                  {subDesc}
-                </p>
-              </div>
-
-              <div className="mt-6 pt-5 border-t border-black/[0.06]">
-                {/* Progress bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-[11px] font-mono font-medium text-black/50 mb-1.5">
-                    <span>{language === 'hi' ? 'पूर्णता' : 'Mastery'}</span>
-                    <span className="font-bold text-black/80">{progress.percentage}%</span>
+                {/* [Course Information] */}
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="font-serif italic font-bold text-sm sm:text-base text-[#090D16] group-hover:text-violet-700 transition-colors truncate">
+                      {subName}
+                    </h3>
                   </div>
-                  <div className="w-full bg-black/[0.04] h-1.5 rounded-full overflow-hidden">
+
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-light">
+                    {subDesc}
+                  </p>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                    <span className="font-mono">
+                      {progress.totalCount} {language === 'hi' ? 'पाठ' : 'lessons'}
+                    </span>
+                    <span className="font-mono font-bold text-slate-600">
+                      {progress.percentage}%
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-0.5">
                     <div
-                      className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full transition-all duration-500"
                       style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
                 </div>
 
-                {/* CTA row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-black/55 font-medium">
-                    <BookOpen className="w-3.5 h-3.5 text-black/70" />
-                    <span>
-                      {progress.totalCount} {language === 'hi' ? 'मुख्य पाठ' : 'Lessons'}
-                    </span>
-                  </div>
-
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#090D16] group-hover:text-violet-700 transition-colors">
-                    <span>{language === 'hi' ? 'रोडमैप देखें' : 'View Roadmap'}</span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
+                {/* Circular Arrow Button */}
+                <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-500 shrink-0 group-hover:bg-[#090D16] group-hover:text-white transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Upcoming Modules Preview Card */}
-      <div className="bg-[#090D16] text-white rounded-[32px] sm:rounded-[40px] p-7 sm:p-10 relative overflow-hidden border border-white/[0.1] shadow-xl">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-gradient-to-br from-amber-500/20 via-violet-600/25 to-transparent rounded-full blur-[90px] pointer-events-none" />
-        <div className="relative z-10 max-w-2xl">
-          <div className="flex items-center gap-2 text-amber-300 text-[10px] uppercase font-bold tracking-widest mb-3 font-mono">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            <span>{language === 'hi' ? 'आगामी रिलीज़' : 'Upcoming Expansion'}</span>
-          </div>
-          <h4 className="font-serif italic text-2xl sm:text-3xl text-white font-normal leading-snug">
-            {language === 'hi'
-              ? 'साइबर सुरक्षा, आपातकालीन प्राथमिक उपचार और नागरिक अधिकार'
-              : 'Cyber Defense, Emergency Preparedness & High-Stakes Negotiation'}
-          </h4>
-          <p className="text-xs sm:text-sm text-white/75 mt-3 font-light leading-relaxed">
-            {language === 'hi'
-              ? 'दैनिक जीवन के निर्णयों को और अधिक सशक्त बनाने के लिए आगामी व्यावहारिक मॉड्यूल।'
-              : 'Curated practical micro-modules being prepared to further accelerate real-life decision-making capabilities.'}
-          </p>
-        </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
