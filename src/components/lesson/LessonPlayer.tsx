@@ -223,7 +223,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       {/* 2. LARGE EDUCATIONAL IMAGE / BANNER (MATCHING SPECIFICATION) */}
       <div className="relative h-36 sm:h-48 w-full rounded-3xl overflow-hidden shadow-sm border border-black/10">
         <img
-          src={getLessonImage(currentLessonIndex, lesson.subject_id)}
+          src={getLessonImage(lesson, lesson.subject_id, lessonTitle)}
           alt={lessonTitle}
           className="w-full h-full object-cover object-center"
         />

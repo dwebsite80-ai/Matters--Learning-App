@@ -125,7 +125,7 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
           const cardMinutes = lesson?.estimatedMinutes ?? lesson?.estimated_minutes ?? topic.estimated_minutes ?? 10;
           const cardDifficulty = lesson?.difficulty ?? topic.difficulty ?? 'Beginner';
           const lessonNumber = index + 1;
-          const lessonImg = getLessonImage(index, subjectId);
+          const lessonImg = getLessonImage(lesson || topic, subjectId, cardTitle);
 
           return (
             <div

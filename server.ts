@@ -3,14 +3,18 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
-import { createServer as createViteServer } from 'vite';
+import { fileURLToPath } from 'url';
 
-import { processTiaChat, getGeminiApiKey } from './src/services/tiaAiHandler';
-import { processSignup } from './src/services/authServerHandler';
+// Use compiled ESM modules with explicit .js extension for native Node 22 execution
+import { processTiaChat, getGeminiApiKey } from './src/services/tiaAiHandler.js';
+import { processSignup } from './src/services/authServerHandler.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PRIMARY_PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // CORS middleware to ensure seamless communication in all environments (iframes, shared previews, local)
   app.use((req, res, next) => {
@@ -25,12 +29,15 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Health checks
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', hasGeminiApiKey: Boolean(getGeminiApiKey()) });
-  });
+  // Health checks for Cloud Run & Google Cloud Load Balancer
   app.get('/healthz', (req, res) => {
-    res.json({ status: 'ok' });
+    res.status(200).json({ status: 'ok' });
+  });
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', hasGeminiApiKey: Boolean(getGeminiApiKey()) });
   });
 
   // Diagnostic status check for API configuration (no secrets exposed)
@@ -39,7 +46,7 @@ async function startServer() {
     res.json({
       ok: true,
       hasGeminiApiKey: hasKey,
-      nodeEnv: process.env.NODE_ENV || 'development',
+      nodeEnv: process.env.NODE_ENV || 'production',
     });
   });
 
@@ -72,65 +79,66 @@ async function startServer() {
     }
   });
 
-  // Vite middleware setup for development, or static serving in production
-  if (process.env.NODE_ENV !== 'production') {
+  // Determine if running in production mode:
+  // If built assets exist and we are NOT in explicit npm run dev mode, always serve production build
+  const candidates = [
+    path.join(process.cwd(), 'dist'),
+    path.resolve(__dirname, 'dist'),
+    path.resolve(__dirname, '..', 'dist'),
+    '/app/applet/dist',
+  ];
+  const distPath = candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html')));
+  const isExplicitDev = process.env.npm_lifecycle_event === 'dev';
+  const isProduction = Boolean(distPath) && !isExplicitDev;
+
+  if (isProduction && distPath) {
+    console.log(`[Server] Serving production build from: ${distPath}`);
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Application build artifact index.html not found. Run npm run build.');
+      }
+    });
+  } else {
+    console.log('[Server] Initializing Vite middleware for development');
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const candidates = [
-      path.join(process.cwd(), 'dist'),
-      __dirname,
-      path.resolve(__dirname, '..', 'dist'),
-      '/app/applet/dist',
-    ];
-    const distPath =
-      candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) || candidates[0];
-
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath, (err) => {
-          if (err && !res.headersSent) {
-            res.status(500).send('Error serving application');
-          }
-        });
-      } else {
-        res.status(404).send('Application build artifact index.html not found. Run npm run build.');
-      }
-    });
   }
 
-  const tryListen = (port: number, label: string) => {
-    try {
-      const server = http.createServer(app);
-      server.on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          console.warn(`[${label}] Port ${port} is already in use; skipping listener on ${port}.`);
-        } else {
-          console.error(`[${label}] Server error on port ${port}:`, err);
-        }
-      });
-      server.listen(port, '0.0.0.0', () => {
-        console.log(`Tia Server (${label}) listening on http://0.0.0.0:${port}`);
-      });
-      return server;
-    } catch (err) {
-      console.warn(`[${label}] Failed to start listener on port ${port}:`, err);
-      return null;
+  // Primary listener binds to the assigned PORT (3000 in dev, Cloud Run assigned PORT in production)
+  const primaryServer = http.createServer(app);
+  primaryServer.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Server] Port ${PORT} is already in use; skipping listener on ${PORT}.`);
+    } else {
+      console.error(`[Server] Error on port ${PORT}:`, err);
     }
-  };
+  });
 
-  // Primary listener binds to port 3000 (standard for AI Studio dev server & Nginx reverse proxy)
-  tryListen(PRIMARY_PORT, 'primary');
+  primaryServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Server] Ready and listening on http://0.0.0.0:${PORT}`);
+  });
 
-  // Secondary listener for standalone Cloud Run container if PORT is specified and distinct
-  const secondaryPort = Number(process.env.PORT);
-  if (secondaryPort && secondaryPort !== PRIMARY_PORT) {
-    tryListen(secondaryPort, 'secondary');
+  // Secondary listener for port 3000 if PORT is a distinct Cloud Run port (e.g., 8080)
+  if (PORT !== 3000) {
+    try {
+      const secondaryServer = http.createServer(app);
+      secondaryServer.on('error', () => {
+        // Silently skip if port 3000 is unavailable or in use
+      });
+      secondaryServer.listen(3000, '0.0.0.0', () => {
+        console.log(`[Server] Secondary listener active on http://0.0.0.0:3000`);
+      });
+    } catch {
+      // Ignore
+    }
   }
 }
 

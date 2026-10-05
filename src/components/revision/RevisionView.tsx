@@ -16,7 +16,7 @@ import { Question, UserProgress, SubjectId } from '../../types';
 import { triggerConfetti } from '../../lib/confetti';
 import { scrollToTop, useScrollToTop } from '../../lib/scrollHelper';
 import { ALL_LESSONS } from '../../data/initialContent';
-import { getSubjectThumbnail } from '../../data/courseImages';
+import { getSubjectThumbnail, getLessonImage } from '../../data/courseImages';
 
 interface RevisionViewProps {
   onStartFirstLesson: () => void;
@@ -485,8 +485,12 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
                     <img
-                      src={getSubjectThumbnail(prog.subject_id)}
-                      alt={subjectName}
+                      src={getLessonImage(
+                        lesson || prog.lesson_id,
+                        prog.subject_id,
+                        lessonTitle
+                      )}
+                      alt={lessonTitle}
                       className="w-full h-full object-cover"
                     />
                   </div>

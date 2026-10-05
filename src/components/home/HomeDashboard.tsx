@@ -17,6 +17,7 @@ import { ALL_LESSONS, getTopicsBySubject } from '../../data/initialContent';
 import {
   getSubjectThumbnail,
   getSubjectBanner,
+  getLessonImage,
   SUBJECT_IMAGES,
 } from '../../data/courseImages';
 
@@ -112,8 +113,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   ].filter(Boolean);
 
   const heroBannerImage = todayMission
-    ? getSubjectBanner(todayMission.subject_id)
-    : 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80';
+    ? getLessonImage(todayMission, todayMission.subject_id, todayMission.title)
+    : 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80';
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-5 animate-fadeIn pb-28">
@@ -298,11 +299,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           }}
           className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] flex items-center gap-3.5"
         >
-          {/* Square Image Thumbnail: Classical Bust / Greek Sculpture */}
+          {/* Square Image Thumbnail: Matched to Continue Lesson */}
           <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
             <img
-              src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80"
-              alt="Philosophy"
+              src={getLessonImage(
+                continueLesson,
+                continueSubject.id,
+                continueLesson?.title
+              )}
+              alt={continueLesson?.title || 'Lesson'}
               className="w-full h-full object-cover"
             />
           </div>
