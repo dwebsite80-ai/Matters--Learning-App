@@ -16,7 +16,11 @@ import { Question, UserProgress, SubjectId } from '../../types';
 import { triggerConfetti } from '../../lib/confetti';
 import { scrollToTop, useScrollToTop } from '../../lib/scrollHelper';
 import { ALL_LESSONS } from '../../data/initialContent';
-import { getSubjectThumbnail, getLessonImage } from '../../data/courseImages';
+import {
+  getSubjectThumbnail,
+  getLessonImage,
+  getImageObjectPosition,
+} from '../../data/courseImages';
 
 interface RevisionViewProps {
   onStartFirstLesson: () => void;
@@ -492,6 +496,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                       )}
                       alt={lessonTitle}
                       className="w-full h-full object-cover"
+                      style={{ objectPosition: getImageObjectPosition(lesson || prog.lesson_id, prog.subject_id) }}
                     />
                   </div>
                   <div className="truncate">

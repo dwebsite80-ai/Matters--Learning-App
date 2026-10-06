@@ -18,6 +18,7 @@ import {
   getSubjectThumbnail,
   getSubjectBanner,
   getLessonImage,
+  getImageObjectPosition,
   SUBJECT_IMAGES,
 } from '../../data/courseImages';
 
@@ -153,7 +154,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <img
                 src={heroBannerImage}
                 alt={todayMission.title}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: getImageObjectPosition(todayMission, todayMission?.subject_id) }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
@@ -309,6 +311,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               )}
               alt={continueLesson?.title || 'Lesson'}
               className="w-full h-full object-cover"
+              style={{ objectPosition: getImageObjectPosition(continueLesson, continueSubject.id) }}
             />
           </div>
 

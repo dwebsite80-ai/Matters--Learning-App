@@ -1,4 +1,16 @@
 // High-quality educational and editorial images matching the Matters design direction
+import personalityDevBanner from '../assets/images/personality_dev_1791281340080.jpg';
+import firstImpressionImg from '../assets/images/first_impression_1791281519559.jpg';
+import shipTheseusImg from '../assets/images/ship_theseus_1791281361978.jpg';
+import grandfatherParadoxImg from '../assets/images/grandfather_paradox_1791281377733.jpg';
+import liarParadoxImg from '../assets/images/liar_paradox_1791281393794.jpg';
+import simpsonsParadoxImg from '../assets/images/simpsons_paradox_1791281409313.jpg';
+import fermiParadoxImg from '../assets/images/fermi_paradox_1791281424528.jpg';
+import soritesParadoxImg from '../assets/images/sorites_paradox_1791281439939.jpg';
+import montyHallImg from '../assets/images/monty_hall_1791281456072.jpg';
+import prisonersDilemmaImg from '../assets/images/prisoners_dilemma_1791281470304.jpg';
+import trolleyProblemImg from '../assets/images/trolley_problem_1791281485823.jpg';
+import russellsParadoxImg from '../assets/images/russells_paradox_1791281502353.jpg';
 
 export const USER_AVATAR_IMAGE =
   'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80'; // Portrait of young man (Anurag) with warm smile
@@ -47,10 +59,8 @@ export const SUBJECT_IMAGES: Record<string, { thumbnail: string; banner: string 
       'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80',
   },
   'personality-development': {
-    thumbnail:
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80', // Confident executive leader & communication
-    banner:
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=1200&q=80',
+    thumbnail: personalityDevBanner, // Perfectly framed young confident businessman with head, face & safe area
+    banner: personalityDevBanner,
   },
   'dressing-sense': {
     thumbnail:
@@ -131,16 +141,19 @@ export const SUBJECT_PREFIX_MAP: Record<string, string> = {
 // ============================================================================
 const RAW_LESSON_IMAGES: Record<string, string> = {
   // --- Mind-Bending Paradoxes ---
-  'paradoxes-1': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=700&q=80', // The Ship of Theseus: ancient wooden sailing vessel on sea
-  'paradoxes-2': 'https://images.unsplash.com/photo-1501139083538-0139583c060f?auto=format&fit=crop&w=700&q=80', // The Grandfather Paradox: glowing pocket watch & time warp
-  'paradoxes-3': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80', // The Liar Paradox: infinite mirror reflection / self-reference
-  'paradoxes-4': 'https://images.unsplash.com/photo-1511193311914-0346f16efe90?auto=format&fit=crop&w=700&q=80', // Simpson's Paradox & Monty Hall: three closed doors / probability game
-  'paradoxes-5': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=700&q=80', // The Fermi Paradox: deep cosmic stars & radio telescope observatory
+  'paradoxes-1': shipTheseusImg, // The Ship of Theseus: ancient wooden sailing vessel on sea at golden sunset
+  'paradoxes-2': grandfatherParadoxImg, // The Grandfather Paradox: colossal glowing clockwork timepiece & temporal gears
+  'paradoxes-3': liarParadoxImg, // The Liar Paradox: side profile mirror reflection / contradiction
+  'paradoxes-4': simpsonsParadoxImg, // Simpson's Paradox: illuminated data analytics bar charts & trend lines
+  'paradoxes-5': fermiParadoxImg, // The Fermi Paradox: cosmic stargaze with giant ringed planet and deep starfield
   'paradoxes-6': 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=700&q=80', // Paradox of Choice: branching labyrinth / crossroads of paths
-  'paradoxes-7': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80', // The Sorites Paradox: golden grain sand dunes / heap of sand
-  'paradoxes-8': 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=700&q=80', // Prisoner's Dilemma: dramatic chess match of strategy & decisions
+  'paradoxes-7': soritesParadoxImg, // The Sorites Paradox: golden grain sand dunes / heap of sand
+  'paradoxes-8': prisonersDilemmaImg, // Prisoner's Dilemma: two men at wooden table with single candle in strategic standoff
   'paradoxes-9': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=700&q=80', // Bootstrap Paradox: endless staircase loop / recursive spiral
   'paradoxes-10': 'https://images.unsplash.com/photo-1575517111478-7f6afd0973db?auto=format&fit=crop&w=700&q=80', // Paradox of Tolerance: classical Athenian assembly forum & stone pillars
+  'paradoxes-monty-hall': montyHallImg, // Monty Hall Problem: three arched wooden doors with glowing question marks
+  'paradoxes-trolley': trolleyProblemImg, // Trolley Problem: vintage tram on split railroad tracks
+  'paradoxes-russell': russellsParadoxImg, // Russell's Paradox: chalkboard with Venn diagram & mathematical set theory
 
   // --- Philosophy: Think Deeper, Live Better ---
   'philosophy-1': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=700&q=80', // What is Philosophy: solitary thinker silhouette at sunrise horizon
@@ -239,7 +252,7 @@ const RAW_LESSON_IMAGES: Record<string, string> = {
   'case-10': 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=700&q=80', // Failing Forward: startup pivot strategy whiteboard and team review
 
   // --- Personality Development ---
-  'personality-1': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=700&q=80', // First Impressions: confident professional handshake and warm eye contact
+  'personality-1': firstImpressionImg, // First Impressions: confident professional businesswoman, warm eye contact, perfectly framed face
   'personality-2': 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=700&q=80', // Speaking Clearly: confident speaker with microphone delivering message
   'personality-3': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=700&q=80', // Active Listening: two engaged colleagues in deep conversation over coffee
   'personality-4': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=700&q=80', // Emotional Intelligence: mindful composure and tranquil meditation
@@ -414,14 +427,20 @@ export function getLessonImage(
     // Paradoxes
     if (title.includes('theseus') || title.includes('ship of theseus')) return LESSON_SPECIFIC_IMAGES['paradoxes-1'];
     if (title.includes('grandfather') || title.includes('time travel')) return LESSON_SPECIFIC_IMAGES['paradoxes-2'];
-    if (title.includes('liar') || title.includes('russell')) return LESSON_SPECIFIC_IMAGES['paradoxes-3'];
-    if (title.includes('simpson') || title.includes('monty hall')) return LESSON_SPECIFIC_IMAGES['paradoxes-4'];
+    if (title.includes('liar')) return LESSON_SPECIFIC_IMAGES['paradoxes-3'];
+    if (title.includes('russell')) return LESSON_SPECIFIC_IMAGES['paradoxes-russell'] || LESSON_SPECIFIC_IMAGES['paradoxes-3'];
+    if (title.includes('simpson')) return LESSON_SPECIFIC_IMAGES['paradoxes-4'];
+    if (title.includes('monty hall') || title.includes('three doors')) return LESSON_SPECIFIC_IMAGES['paradoxes-monty-hall'] || LESSON_SPECIFIC_IMAGES['paradoxes-4'];
     if (title.includes('fermi') || title.includes('great silence') || title.includes('alien')) return LESSON_SPECIFIC_IMAGES['paradoxes-5'];
     if (title.includes('choice') && title.includes('paradox')) return LESSON_SPECIFIC_IMAGES['paradoxes-6'];
     if (title.includes('sorites') || title.includes('heap of sand') || title.includes('sand')) return LESSON_SPECIFIC_IMAGES['paradoxes-7'];
     if (title.includes('prisoner') || title.includes('game theory')) return LESSON_SPECIFIC_IMAGES['paradoxes-8'];
+    if (title.includes('trolley')) return LESSON_SPECIFIC_IMAGES['paradoxes-trolley'] || LESSON_SPECIFIC_IMAGES['paradoxes-8'];
     if (title.includes('bootstrap')) return LESSON_SPECIFIC_IMAGES['paradoxes-9'];
     if (title.includes('tolerance') || title.includes('intolerance')) return LESSON_SPECIFIC_IMAGES['paradoxes-10'];
+
+    // Personality Development
+    if (title.includes('first impression')) return LESSON_SPECIFIC_IMAGES['personality-1'];
 
     // Philosophy
     if (title.includes('what is philosophy')) return LESSON_SPECIFIC_IMAGES['philosophy-1'];
@@ -516,4 +535,66 @@ export function getLessonImage(
 
   // 4. Default high-end editorial image
   return 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=700&q=80';
+}
+
+// ============================================================================
+// INTELLIGENT FOCAL-POINT CROPPING & POSITIONING
+// Ensures portraits, people, ships, and subjects have comfortable margins
+// and are never awkwardly cropped across 320px, 375px, 390px, 414px and desktop.
+// ============================================================================
+export const SUBJECT_FOCAL_POINTS: Record<string, string> = {
+  'personality-development': 'center 15%', // Man's face & head comfortably visible with safe area
+  'dressing-sense': 'center 20%',
+  philosophy: 'center 20%',
+  'case-studies': 'center center',
+  'law-rights': 'center center',
+  paradoxes: 'center center',
+  'time-management': 'center center',
+};
+
+export const LESSON_FOCAL_POINTS: Record<string, string> = {
+  'personality-1': 'center top', // Professional woman with warm eye contact
+  'personality-2': 'center top',
+  'personality-3': 'center 25%',
+  'personality-5': 'center top',
+  'personality-7': 'center top',
+  'personality-8': 'center top',
+  'personality-9': 'center 20%',
+  'dressing-1': 'center 25%',
+  'dressing-5': 'center 20%',
+  'dressing-6': 'center 20%',
+  'dressing-7': 'center top',
+  'dressing-10': 'center 20%',
+  'firstaid-2': 'center top',
+  'firstaid-3': 'center top',
+  'philosophy-2': 'center 20%',
+};
+
+export function getImageObjectPosition(
+  itemOrKey?: any,
+  subjectId?: string
+): string {
+  if (typeof itemOrKey === 'string') {
+    const key = itemOrKey.replace(/^lesson-/, '');
+    if (LESSON_FOCAL_POINTS[key]) return LESSON_FOCAL_POINTS[key];
+    if (LESSON_FOCAL_POINTS[itemOrKey]) return LESSON_FOCAL_POINTS[itemOrKey];
+    if (SUBJECT_FOCAL_POINTS[itemOrKey]) return SUBJECT_FOCAL_POINTS[itemOrKey];
+  }
+
+  if (itemOrKey && typeof itemOrKey === 'object') {
+    const rawKey = itemOrKey.topic_id || itemOrKey.id || '';
+    const normKey = rawKey.replace(/^lesson-/, '');
+    if (LESSON_FOCAL_POINTS[normKey]) return LESSON_FOCAL_POINTS[normKey];
+    if (LESSON_FOCAL_POINTS[rawKey]) return LESSON_FOCAL_POINTS[rawKey];
+    const sId = itemOrKey.subject_id || subjectId;
+    if (sId && SUBJECT_FOCAL_POINTS[sId]) {
+      return SUBJECT_FOCAL_POINTS[sId];
+    }
+  }
+
+  if (subjectId && SUBJECT_FOCAL_POINTS[subjectId]) {
+    return SUBJECT_FOCAL_POINTS[subjectId];
+  }
+
+  return 'center center';
 }

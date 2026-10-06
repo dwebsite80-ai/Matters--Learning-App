@@ -16,7 +16,7 @@ import { Lesson, SubjectId, TiaMode } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { scrollToTop, useScrollToTop } from '../../lib/scrollHelper';
 import { ALL_LESSONS } from '../../data/initialContent';
-import { getLessonImage } from '../../data/courseImages';
+import { getLessonImage, getImageObjectPosition } from '../../data/courseImages';
 
 interface LessonPlayerProps {
   lesson: Lesson;
@@ -225,7 +225,8 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         <img
           src={getLessonImage(lesson, lesson.subject_id, lessonTitle)}
           alt={lessonTitle}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: getImageObjectPosition(lesson, lesson.subject_id) }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-5">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 bg-black/40 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 w-fit">

@@ -9,7 +9,7 @@ import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { SubjectId, UserProgress } from '../../types';
-import { getSubjectThumbnail } from '../../data/courseImages';
+import { getSubjectThumbnail, getImageObjectPosition } from '../../data/courseImages';
 
 export const ProgressView: React.FC = () => {
   const { preferences } = useAuth();
@@ -236,6 +236,7 @@ export const ProgressView: React.FC = () => {
                     src={thumbnail}
                     alt={subName}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: getImageObjectPosition(sub.id) }}
                   />
                 </div>
 

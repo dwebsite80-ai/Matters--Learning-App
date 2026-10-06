@@ -13,7 +13,11 @@ import { useLanguage } from '../../context/LanguageContext';
 import { SubjectId, Lesson } from '../../types';
 import { getTopicsBySubject, getLessonByTopicId, getSubjectById } from '../../data/initialContent';
 import { useScrollToTop } from '../../lib/scrollHelper';
-import { getSubjectBanner, getLessonImage } from '../../data/courseImages';
+import {
+  getSubjectBanner,
+  getLessonImage,
+  getImageObjectPosition,
+} from '../../data/courseImages';
 
 interface TopicRoadmapProps {
   subjectId: SubjectId;
@@ -78,7 +82,8 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
         <img
           src={bannerImage}
           alt={subName}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: getImageObjectPosition(subjectId) }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
       </div>
@@ -147,6 +152,7 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
                   src={lessonImg}
                   alt={cardTitle}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  style={{ objectPosition: getImageObjectPosition(lesson || topic, subjectId) }}
                 />
                 {isCompleted && (
                   <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-xs">

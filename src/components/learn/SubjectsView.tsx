@@ -7,7 +7,7 @@ import {
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { SubjectId } from '../../types';
-import { getSubjectThumbnail } from '../../data/courseImages';
+import { getSubjectThumbnail, getImageObjectPosition } from '../../data/courseImages';
 
 interface SubjectsViewProps {
   onSelectSubject: (subjectId: SubjectId) => void;
@@ -142,6 +142,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
                     src={thumbnail}
                     alt={subName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    style={{ objectPosition: getImageObjectPosition(sub.id) }}
                   />
                 </div>
 
