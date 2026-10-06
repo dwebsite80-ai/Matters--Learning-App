@@ -15,6 +15,8 @@ import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ActiveTab, SubjectId } from '../../types';
 import { ALL_LESSONS } from '../../data/initialContent';
+import { USER_AVATAR_IMAGE } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -252,11 +254,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               title={t('nav.profile')}
               aria-label="Profile"
             >
-              <img
-                src={
-                  (user as any)?.avatar_url ||
-                  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80'
-                }
+              <MattersImage
+                src={(user as any)?.avatar_url || USER_AVATAR_IMAGE}
+                fallbackSrc={USER_AVATAR_IMAGE}
                 alt={user?.name || 'Anurag'}
                 className="w-full h-full object-cover"
               />

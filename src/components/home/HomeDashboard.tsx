@@ -21,6 +21,7 @@ import {
   getImageObjectPosition,
   SUBJECT_IMAGES,
 } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface HomeDashboardProps {
   onStartLesson: (lesson: Lesson) => void;
@@ -151,13 +152,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
             {/* Large Rich Educational Image Banner */}
             <div className="relative h-32 sm:h-36 w-full rounded-2xl overflow-hidden shadow-inner border border-white/[0.1]">
-              <img
+              <MattersImage
                 src={heroBannerImage}
                 alt={todayMission.title}
+                fallbackSrc={getSubjectBanner(todayMission?.subject_id)}
+                subjectId={todayMission?.subject_id}
+                lessonId={todayMission?.id}
                 className="w-full h-full object-cover"
                 style={{ objectPosition: getImageObjectPosition(todayMission, todayMission?.subject_id) }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
             </div>
 
             {/* Title & Description */}
@@ -303,13 +307,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         >
           {/* Square Image Thumbnail: Matched to Continue Lesson */}
           <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
-            <img
+            <MattersImage
               src={getLessonImage(
                 continueLesson,
                 continueSubject.id,
                 continueLesson?.title
               )}
               alt={continueLesson?.title || 'Lesson'}
+              fallbackSrc={getSubjectThumbnail(continueSubject.id)}
+              subjectId={continueSubject.id}
+              lessonId={continueLesson?.id}
               className="w-full h-full object-cover"
               style={{ objectPosition: getImageObjectPosition(continueLesson, continueSubject.id) }}
             />
@@ -364,9 +371,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           >
             <div>
               <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
-                <img
-                  src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=400&q=80"
+                <MattersImage
+                  src={getSubjectThumbnail('history-movement')}
                   alt="History"
+                  subjectId="history-movement"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
@@ -392,9 +400,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           >
             <div>
               <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
-                <img
-                  src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=400&q=80"
+                <MattersImage
+                  src={getSubjectThumbnail('money-finance')}
                   alt="Money & Finance"
+                  subjectId="money-finance"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
@@ -420,9 +429,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           >
             <div>
               <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
-                <img
-                  src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=400&q=80"
+                <MattersImage
+                  src={getSubjectThumbnail('paradoxes')}
                   alt="Science"
+                  subjectId="paradoxes"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>

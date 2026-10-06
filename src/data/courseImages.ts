@@ -11,6 +11,12 @@ import montyHallImg from '../assets/images/monty_hall_1791281456072.jpg';
 import prisonersDilemmaImg from '../assets/images/prisoners_dilemma_1791281470304.jpg';
 import trolleyProblemImg from '../assets/images/trolley_problem_1791281485823.jpg';
 import russellsParadoxImg from '../assets/images/russells_paradox_1791281502353.jpg';
+import biharGkBanner from '../assets/images/bihar_special_gk_1791282750959.jpg';
+import consumerRightsImg from '../assets/images/consumer_rights_1791282772900.jpg';
+import socratesBustImg from '../assets/images/socrates_bust_1791282789280.jpg';
+import bodhGayaImg from '../assets/images/bodh_gaya_1791282811840.jpg';
+import gangaBridgeImg from '../assets/images/ganga_bridge_1791282827645.jpg';
+import sanchiToranaImg from '../assets/images/sanchi_torana_1791282846576.jpg';
 
 export const USER_AVATAR_IMAGE =
   'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80'; // Portrait of young man (Anurag) with warm smile
@@ -41,10 +47,8 @@ export const SUBJECT_IMAGES: Record<string, { thumbnail: string; banner: string 
       'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
   },
   'bihar-gk': {
-    thumbnail:
-      'https://images.unsplash.com/photo-1600100397608-f010f443b74f?auto=format&fit=crop&w=600&q=80', // Ancient Nalanda Mahavihara ruins
-    banner:
-      'https://images.unsplash.com/photo-1600100397608-f010f443b74f?auto=format&fit=crop&w=1200&q=80',
+    thumbnail: biharGkBanner, // Ancient Nalanda Mahavihara university red brick ruins at golden sunset
+    banner: biharGkBanner,
   },
   'polity-constitution': {
     thumbnail:
@@ -157,7 +161,7 @@ const RAW_LESSON_IMAGES: Record<string, string> = {
 
   // --- Philosophy: Think Deeper, Live Better ---
   'philosophy-1': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=700&q=80', // What is Philosophy: solitary thinker silhouette at sunrise horizon
-  'philosophy-2': 'https://images.unsplash.com/photo-1569420067645-12cf513511eb?auto=format&fit=crop&w=700&q=80', // Socrates & Examined Life: classical marble bust of Socrates
+  'philosophy-2': socratesBustImg, // Socrates & Examined Life: classical marble bust of Socrates
   'philosophy-3': 'https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=700&q=80', // Stoicism & Inner Peace: weathered stone statue overlooking tranquil ocean
   'philosophy-4': 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=700&q=80', // Plato's Cave & Shadows: beam of light piercing dark underground cavern
   'philosophy-5': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=700&q=80', // Ethics & Moral Dilemmas: bronze balance scales weighing choices
@@ -172,7 +176,7 @@ const RAW_LESSON_IMAGES: Record<string, string> = {
   'law-2': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80', // Article 21: free silhouette walking toward golden sunrise
   'law-3': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80', // FIR Basics: official police complaint ledger & desk pen
   'law-4': 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=700&q=80', // Arrest & Detention: stately courthouse stone pillars
-  'law-5': 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=700&q=80', // Consumer Rights: retail purchase package & verified receipt
+  'law-5': consumerRightsImg, // Consumer Rights: delivery package with official verification seal, digital invoice & scales of justice
   'law-6': 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=700&q=80', // RTI Act: high glass atrium of public archives and records
   'law-7': 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=700&q=80', // Cybercrime & Fraud: digital security padlock & data shield
   'law-8': 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=700&q=80', // Traffic Stops & Challans: highway asphalt road and transit checkpoint
@@ -207,12 +211,12 @@ const RAW_LESSON_IMAGES: Record<string, string> = {
   'bihar-1': 'https://images.unsplash.com/photo-1524654458049-e36be0721fa2?auto=format&fit=crop&w=700&q=80', // Formation of Bihar: historic topographical map of the region
   'bihar-2': 'https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=700&q=80', // Ancient Bihar & Magadha: ancient stone fortress ruins of Rajgir
   'bihar-3': 'https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&w=700&q=80', // Maurya & Gupta: Ashoka pillar sandstone lion carvings
-  'bihar-4': 'https://images.unsplash.com/photo-1600100397608-f010f443b74f?auto=format&fit=crop&w=700&q=80', // Buddhism & Jainism: sacred Bodh Gaya stupa & Nalanda
+  'bihar-4': bodhGayaImg, // Buddhism & Jainism: sacred Bodh Gaya stupa & Mahabodhi Temple at tranquil dawn
   'bihar-5': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=700&q=80', // Medieval Bihar: grand sandstone mausoleum dome of Sher Shah Suri
   'bihar-6': 'https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?auto=format&fit=crop&w=700&q=80', // Modern History of Bihar: Champaran Satyagraha spinning wheel
   'bihar-7': 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80', // Geography of Bihar: emerald green Gangetic fertile agricultural plains
   'bihar-8': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80', // Rivers & Agriculture: the holy Ganges flowing wide at sunrise
-  'bihar-9': 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=700&q=80', // Economy & Infrastructure: modern Ganga bridge & connectivity
+  'bihar-9': gangaBridgeImg, // Economy & Infrastructure: modern long bridge spanning holy Ganges river at sunset
   'bihar-10': 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=700&q=80', // Personalities & Administration: Patna Secretariat grand historic dome
 
   // --- Indian Polity & Constitution ---
@@ -229,7 +233,7 @@ const RAW_LESSON_IMAGES: Record<string, string> = {
 
   // --- Indian History & National Movement ---
   'history-1': 'https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=700&q=80', // Indus Valley & Vedic: ancient terracotta brick civilization artifact
-  'history-2': 'https://images.unsplash.com/photo-1600100397608-f010f443b74f?auto=format&fit=crop&w=700&q=80', // Religious Movements: Sanchi Stupa carved torana arch
+  'history-2': sanchiToranaImg, // Religious Movements: Sanchi Stupa carved torana archway
   'history-3': 'https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&w=700&q=80', // Delhi Sultanate & Mughals: Mughal red sandstone archway
   'history-4': 'https://images.unsplash.com/photo-1524654458049-e36be0721fa2?auto=format&fit=crop&w=700&q=80', // British Expansion: vintage 19th-century colonial map
   'history-5': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=700&q=80', // Revolt of 1857: historic bronze cannon on rampart

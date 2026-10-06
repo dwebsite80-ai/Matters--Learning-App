@@ -21,6 +21,7 @@ import {
   getLessonImage,
   getImageObjectPosition,
 } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface RevisionViewProps {
   onStartFirstLesson: () => void;
@@ -488,13 +489,16 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                 {/* [Course/Lesson Thumbnail Image] */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
-                    <img
+                    <MattersImage
                       src={getLessonImage(
                         lesson || prog.lesson_id,
                         prog.subject_id,
                         lessonTitle
                       )}
                       alt={lessonTitle}
+                      fallbackSrc={getSubjectThumbnail(prog.subject_id)}
+                      subjectId={prog.subject_id}
+                      lessonId={prog.lesson_id}
                       className="w-full h-full object-cover"
                       style={{ objectPosition: getImageObjectPosition(lesson || prog.lesson_id, prog.subject_id) }}
                     />

@@ -16,7 +16,8 @@ import { Lesson, SubjectId, TiaMode } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { scrollToTop, useScrollToTop } from '../../lib/scrollHelper';
 import { ALL_LESSONS } from '../../data/initialContent';
-import { getLessonImage, getImageObjectPosition } from '../../data/courseImages';
+import { getLessonImage, getImageObjectPosition, getSubjectBanner } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface LessonPlayerProps {
   lesson: Lesson;
@@ -222,13 +223,16 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* 2. LARGE EDUCATIONAL IMAGE / BANNER (MATCHING SPECIFICATION) */}
       <div className="relative h-36 sm:h-48 w-full rounded-3xl overflow-hidden shadow-sm border border-black/10">
-        <img
+        <MattersImage
           src={getLessonImage(lesson, lesson.subject_id, lessonTitle)}
           alt={lessonTitle}
+          fallbackSrc={getSubjectBanner(lesson.subject_id)}
+          subjectId={lesson.subject_id}
+          lessonId={lesson.id}
           className="w-full h-full object-cover"
           style={{ objectPosition: getImageObjectPosition(lesson, lesson.subject_id) }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-5">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-5 pointer-events-none">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 bg-black/40 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 w-fit">
             <span>{getSubjectEmoji(lesson.subject_id)}</span>
             <span>{getSubjectName(lesson.subject_id)}</span>

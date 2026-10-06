@@ -79,29 +79,40 @@ async function startServer() {
     }
   });
 
-  // Determine if running in production mode:
-  // If built assets exist and we are NOT in explicit npm run dev mode, always serve production build
+  // Detect Cloud Run container vs local dev environment
+  const isCloudRun = Boolean(process.env.K_SERVICE || process.env.K_REVISION);
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    isCloudRun ||
+    process.env.npm_lifecycle_event === 'start';
+
   const candidates = [
     path.join(process.cwd(), 'dist'),
     path.resolve(__dirname, 'dist'),
     path.resolve(__dirname, '..', 'dist'),
     '/app/applet/dist',
+    '/workspace/dist',
   ];
   const distPath = candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html')));
-  const isExplicitDev = process.env.npm_lifecycle_event === 'dev';
-  const isProduction = Boolean(distPath) && !isExplicitDev;
 
-  if (isProduction && distPath) {
-    console.log(`[Server] Serving production build from: ${distPath}`);
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send('Application build artifact index.html not found. Run npm run build.');
-      }
-    });
+  if (isProduction || distPath) {
+    if (distPath) {
+      console.log(`[Server] Serving production build from: ${distPath}`);
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        const indexPath = path.join(distPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(404).send('Application build artifact index.html not found. Run npm run build.');
+        }
+      });
+    } else {
+      console.warn('[Server] Running in production mode but dist folder was not found. Serving fallback.');
+      app.get('*', (req, res) => {
+        res.status(200).send('<!doctype html><html><head><title>Matters</title></head><body><h1>Matters is starting up...</h1><script>setTimeout(() => location.reload(), 2000);</script></body></html>');
+      });
+    }
   } else {
     console.log('[Server] Initializing Vite middleware for development');
     const { createServer: createViteServer } = await import('vite');
@@ -112,34 +123,47 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  // Primary listener binds to the assigned PORT (3000 in dev, Cloud Run assigned PORT in production)
-  const primaryServer = http.createServer(app);
-  primaryServer.on('error', (err: any) => {
+  // Cloud Run assigns PORT (usually 8080). Local dev server uses port 3000.
+  const listenPort = isCloudRun
+    ? (process.env.PORT ? parseInt(process.env.PORT, 10) : 8080)
+    : 3000;
+
+  const server = http.createServer(app);
+
+  server.on('error', (err: any) => {
+    console.error(`[Server] Error on port ${listenPort}:`, err);
     if (err.code === 'EADDRINUSE') {
-      console.warn(`[Server] Port ${PORT} is already in use; skipping listener on ${PORT}.`);
-    } else {
-      console.error(`[Server] Error on port ${PORT}:`, err);
+      console.warn(`[Server] Port ${listenPort} in use.`);
     }
   });
 
-  primaryServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] Ready and listening on http://0.0.0.0:${PORT}`);
+  server.listen(listenPort, '0.0.0.0', () => {
+    console.log(`[Server] Ready and listening on http://0.0.0.0:${listenPort} (CloudRun: ${isCloudRun})`);
   });
 
-  // Secondary listener for port 3000 if PORT is a distinct Cloud Run port (e.g., 8080)
-  if (PORT !== 3000) {
+  // If in dev environment and PORT is set to something other than 3000, also bind to it if available
+  if (!isCloudRun && process.env.PORT && parseInt(process.env.PORT, 10) !== 3000) {
+    const extraPort = parseInt(process.env.PORT, 10);
     try {
-      const secondaryServer = http.createServer(app);
-      secondaryServer.on('error', () => {
-        // Silently skip if port 3000 is unavailable or in use
+      const extraServer = http.createServer(app);
+      extraServer.on('error', () => {
+        // Silently skip if extra port is unavailable (e.g. nginx proxy port)
       });
-      secondaryServer.listen(3000, '0.0.0.0', () => {
-        console.log(`[Server] Secondary listener active on http://0.0.0.0:3000`);
+      extraServer.listen(extraPort, '0.0.0.0', () => {
+        console.log(`[Server] Additional listener active on http://0.0.0.0:${extraPort}`);
       });
     } catch {
       // Ignore
     }
   }
+
+  // Graceful shutdown on Cloud Run SIGTERM
+  process.on('SIGTERM', () => {
+    console.log('[Server] Received SIGTERM, shutting down gracefully');
+    server.close(() => {
+      process.exit(0);
+    });
+  });
 }
 
 startServer();

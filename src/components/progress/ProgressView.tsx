@@ -10,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { SubjectId, UserProgress } from '../../types';
 import { getSubjectThumbnail, getImageObjectPosition } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 export const ProgressView: React.FC = () => {
   const { preferences } = useAuth();
@@ -232,9 +233,10 @@ export const ProgressView: React.FC = () => {
               >
                 {/* Small square thumbnail photo */}
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-black/10">
-                  <img
+                  <MattersImage
                     src={thumbnail}
                     alt={subName}
+                    subjectId={sub.id}
                     className="w-full h-full object-cover"
                     style={{ objectPosition: getImageObjectPosition(sub.id) }}
                   />

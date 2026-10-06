@@ -23,6 +23,7 @@ import {
   UserPreferences,
 } from '../../types';
 import { PROFILE_COVER_IMAGE, USER_AVATAR_IMAGE } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface ProfileViewProps {
   onOpenSchemaModal?: () => void;
@@ -93,20 +94,22 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       {/* 1. PROFILE COVER (MATCHING REFERENCE MOCKUP SCREEN 5) */}
       <section aria-label="Profile Header" className="relative">
         <div className="relative rounded-3xl h-36 sm:h-44 w-full overflow-hidden shadow-sm border border-black/10">
-          <img
+          <MattersImage
             src={PROFILE_COVER_IMAGE}
+            fallbackSrc={PROFILE_COVER_IMAGE}
             alt="Profile Cover"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
         {/* Circular Avatar Overlapping Cover with Edit Pencil Badge */}
         <div className="relative -mt-14 flex flex-col items-center text-center">
           <div className="relative">
             <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-md bg-[#090D16]">
-              <img
+              <MattersImage
                 src={avatarUrl}
+                fallbackSrc={USER_AVATAR_IMAGE}
                 alt={user?.name || 'Anurag'}
                 className="w-full h-full object-cover"
               />

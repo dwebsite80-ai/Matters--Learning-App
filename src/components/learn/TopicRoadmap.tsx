@@ -18,6 +18,7 @@ import {
   getLessonImage,
   getImageObjectPosition,
 } from '../../data/courseImages';
+import { MattersImage } from '../common/MattersImage';
 
 interface TopicRoadmapProps {
   subjectId: SubjectId;
@@ -79,13 +80,14 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
 
       {/* 2. HERO BANNER IMAGE (MATCHING REFERENCE MOCKUP SCREEN 3) */}
       <div className="relative h-36 sm:h-44 w-full rounded-2xl overflow-hidden shadow-sm border border-black/10">
-        <img
+        <MattersImage
           src={bannerImage}
           alt={subName}
+          subjectId={subjectId}
           className="w-full h-full object-cover"
           style={{ objectPosition: getImageObjectPosition(subjectId) }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* 3. COURSE OVERVIEW CARD */}
@@ -148,14 +150,17 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
             >
               {/* Thumbnail Image for Lesson */}
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-black/10 shadow-2xs relative">
-                <img
+                <MattersImage
                   src={lessonImg}
                   alt={cardTitle}
+                  fallbackSrc={bannerImage}
+                  subjectId={subjectId}
+                  lessonId={lesson?.id || topic.id}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   style={{ objectPosition: getImageObjectPosition(lesson || topic, subjectId) }}
                 />
                 {isCompleted && (
-                  <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-xs">
+                  <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-xs z-10">
                     <CheckCircle2 className="w-3 h-3" />
                   </div>
                 )}
