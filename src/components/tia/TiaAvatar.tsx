@@ -4,7 +4,7 @@ import { TiaState } from '../../types';
 
 interface TiaAvatarProps {
   state?: TiaState;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showBadge?: boolean;
   className?: string;
   onClick?: () => void;
@@ -18,6 +18,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
   onClick,
 }) => {
   const sizeMap = {
+    xs: 'w-[31px] h-[31px] max-[360px]:w-[29px] max-[360px]:h-[29px] text-xs',
     sm: 'w-10 h-10 text-sm',
     md: 'w-14 h-14 text-base',
     lg: 'w-20 h-20 text-xl',
@@ -27,11 +28,17 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
   const getRingColor = () => {
     switch (state) {
       case 'listening':
-        return 'ring-4 ring-emerald-400/60 animate-pulse';
+        return size === 'xs'
+          ? 'ring-2 ring-emerald-400/60 animate-pulse'
+          : 'ring-4 ring-emerald-400/60 animate-pulse';
       case 'thinking':
-        return 'ring-4 ring-amber-400/60 animate-spin';
+        return size === 'xs'
+          ? 'ring-2 ring-amber-400/60 animate-spin'
+          : 'ring-4 ring-amber-400/60 animate-spin';
       case 'speaking':
-        return 'ring-4 ring-indigo-500/80 shadow-lg shadow-indigo-500/30';
+        return size === 'xs'
+          ? 'ring-2 ring-indigo-500/80 shadow-md shadow-indigo-500/30'
+          : 'ring-4 ring-indigo-500/80 shadow-lg shadow-indigo-500/30';
       default:
         return 'ring-2 ring-amber-400/40';
     }
@@ -52,11 +59,11 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
 
       {/* Main Avatar Body */}
       <div
-        className={`${sizeMap[size]} rounded-full bg-gradient-to-tr from-[#FF6B6B] via-[#FFE66D] to-[#4ECDC4] p-[3px] shadow-md transition-all duration-300 ${getRingColor()}`}
+        className={`${sizeMap[size]} rounded-full bg-gradient-to-tr from-[#FF6B6B] via-[#FFE66D] to-[#4ECDC4] ${size === 'xs' ? 'p-[2px]' : 'p-[3px]'} shadow-md transition-all duration-300 ${getRingColor()}`}
       >
         <div className="w-full h-full rounded-full bg-[#1A1A1A] flex items-center justify-center overflow-hidden relative border border-white/20">
           {/* Facial features & visual character */}
-          <div className="flex flex-col items-center justify-center">
+          <div className={`flex flex-col items-center justify-center ${size === 'xs' ? 'scale-[0.72]' : ''}`}>
             {/* Eyes */}
             <div className="flex items-center gap-1.5 mb-0.5">
               <span

@@ -163,9 +163,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 )}
               </button>
 
+              {/* Tap-outside backdrop */}
+              {isNotificationsOpen && (
+                <div
+                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] sm:bg-transparent"
+                  onClick={() => {
+                    setNotificationsRead(true);
+                    setIsNotificationsOpen(false);
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+
               {/* Notification Popover */}
               {isNotificationsOpen && (
-                <div className="absolute right-0 top-11 sm:top-12 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-black/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 z-50 animate-fadeIn">
+                <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-[60px] sm:top-12 max-w-sm sm:w-80 mx-auto sm:mx-0 bg-white rounded-2xl border border-black/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.16)] p-4 z-50 animate-fadeIn max-h-[calc(100vh-5rem)] overflow-y-auto box-border">
                   <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs text-[#090D16]">
@@ -178,9 +190,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                         setNotificationsRead(true);
                         setIsNotificationsOpen(false);
                       }}
-                      className="text-[10px] font-semibold text-slate-400 hover:text-slate-700 cursor-pointer"
+                      className="text-[11px] font-semibold text-slate-500 hover:text-black py-0.5 px-2 rounded-md hover:bg-black/[0.05] cursor-pointer flex items-center gap-1 transition-colors"
+                      aria-label="Close notifications"
                     >
-                      {language === 'hi' ? 'बंद करें' : 'Close'}
+                      <span>{language === 'hi' ? 'बंद करें' : 'Close'}</span>
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
