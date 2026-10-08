@@ -264,12 +264,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   ];
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] flex flex-col justify-center py-8 px-4 sm:px-6 animate-fadeIn">
+    <div className="min-h-screen bg-[#FDFCFB] dark:bg-[#0B0F17] text-[#1A1A1A] dark:text-[#F8FAFC] flex flex-col justify-center py-8 px-4 sm:px-6 animate-fadeIn transition-colors">
       <div className="max-w-md mx-auto w-full">
         {/* Top Language Bar */}
-        <div className="flex items-center justify-between mb-4 bg-white px-4 py-2.5 rounded-full border border-black/5 shadow-xs">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
-            <Languages className="w-4 h-4 text-[#1A1A1A]" />
+        <div className="flex items-center justify-between mb-4 bg-white dark:bg-[#131926] px-4 py-2.5 rounded-full border border-black/5 dark:border-white/10 shadow-xs transition-colors">
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-slate-300">
+            <Languages className="w-4 h-4 text-[#1A1A1A] dark:text-slate-300" />
             <span>{language === 'hi' ? 'भाषा चुनें:' : 'Language:'}</span>
           </div>
           <div className="flex items-center gap-1">
@@ -278,8 +278,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               onClick={() => setLanguage('en')}
               className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                 language === 'en'
-                  ? 'bg-[#1A1A1A] text-white shadow-xs'
-                  : 'text-gray-500 hover:text-black'
+                  ? 'bg-[#1A1A1A] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
               }`}
             >
               English
@@ -289,8 +289,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               onClick={() => setLanguage('hi')}
               className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                 language === 'hi'
-                  ? 'bg-[#1A1A1A] text-white shadow-xs'
-                  : 'text-gray-500 hover:text-black'
+                  ? 'bg-[#1A1A1A] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
               }`}
             >
               हिन्दी
@@ -300,13 +300,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
 
         {/* Step Indicator */}
         <div className="mb-6">
-          <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 mb-2 uppercase tracking-widest font-semibold">
+          <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-widest font-semibold">
             <span>{language === 'hi' ? `चरण ${step} / 5` : `Step ${step} of 5`}</span>
             <span>{Math.round((step / 5) * 100)}%</span>
           </div>
-          <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-black/5 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
             <div
-              className="bg-[#1A1A1A] h-full rounded-full transition-all duration-300 ease-out"
+              className="bg-[#1A1A1A] dark:bg-violet-600 h-full rounded-full transition-all duration-300 ease-out"
               style={{ width: `${(step / 5) * 100}%` }}
             />
           </div>

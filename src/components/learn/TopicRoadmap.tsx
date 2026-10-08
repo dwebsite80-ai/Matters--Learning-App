@@ -52,25 +52,25 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
       <div className="flex items-center justify-between gap-3 pt-1">
         <button
           onClick={onBack}
-          className="p-2 rounded-full bg-white border border-black/[0.08] text-[#090D16] hover:bg-slate-50 transition-all cursor-pointer active:scale-95 shadow-2xs"
+          className="p-2 rounded-full bg-white dark:bg-[#131926] border border-black/[0.08] dark:border-white/[0.08] text-[#090D16] dark:text-[#F8FAFC] hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-all cursor-pointer active:scale-95 shadow-2xs"
           title={language === 'hi' ? 'वापस लौटें' : 'Back'}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <h1 className="font-serif italic font-bold text-lg text-[#090D16] truncate">
+        <h1 className="font-serif italic font-bold text-lg text-[#090D16] dark:text-[#F8FAFC] truncate">
           {subName}
         </h1>
 
         <div className="flex items-center gap-1">
           <button
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
             title="Bookmark"
           >
             <Bookmark className="w-4 h-4" />
           </button>
           <button
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
             title="Options"
           >
             <MoreVertical className="w-4 h-4" />
@@ -79,7 +79,7 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
       </div>
 
       {/* 2. HERO BANNER IMAGE (MATCHING REFERENCE MOCKUP SCREEN 3) */}
-      <div className="relative h-36 sm:h-44 w-full rounded-2xl overflow-hidden shadow-sm border border-black/10">
+      <div className="relative h-36 sm:h-44 w-full rounded-2xl overflow-hidden shadow-sm border border-black/10 dark:border-white/10">
         <MattersImage
           src={bannerImage}
           alt={subName}
@@ -91,24 +91,24 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
       </div>
 
       {/* 3. COURSE OVERVIEW CARD */}
-      <div className="bg-white rounded-2xl border border-black/[0.06] p-4 shadow-sm space-y-2.5">
-        <h2 className="font-serif italic font-bold text-lg sm:text-xl text-[#090D16]">
+      <div className="bg-white dark:bg-[#131926] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-4 shadow-sm space-y-2.5">
+        <h2 className="font-serif italic font-bold text-lg sm:text-xl text-[#090D16] dark:text-[#F8FAFC]">
           {subName}
         </h2>
-        <p className="text-xs text-slate-500 font-light leading-relaxed">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-light leading-relaxed">
           {subDesc}
         </p>
 
         <div className="pt-1 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-500">
+          <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400">
             <span>
               {language === 'hi'
                 ? `${progress.completedCount} / ${progress.totalCount} पाठ पूर्ण`
                 : `${progress.completedCount} of ${progress.totalCount} lessons completed`}
             </span>
-            <span className="font-bold text-slate-700">{progress.percentage}%</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300">{progress.percentage}%</span>
           </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full transition-all duration-500"
               style={{ width: `${progress.percentage}%` }}
@@ -142,14 +142,14 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
               }}
               className={`p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-[0.99] flex items-center gap-3 group ${
                 isCurrent
-                  ? 'bg-amber-50/40 border-amber-300 shadow-sm ring-1 ring-amber-300/50'
+                  ? 'bg-amber-50/40 dark:bg-amber-950/30 border-amber-300 dark:border-amber-600/50 shadow-sm ring-1 ring-amber-300/50 dark:ring-amber-500/30'
                   : isCompleted
-                  ? 'bg-white border-black/[0.06] shadow-sm hover:border-black/20'
-                  : 'bg-white border-black/[0.06] shadow-2xs hover:border-black/20'
+                  ? 'bg-white dark:bg-[#131926] border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20'
+                  : 'bg-white dark:bg-[#131926] border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-black/20 dark:hover:border-white/20'
               }`}
             >
               {/* Thumbnail Image for Lesson */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-black/10 shadow-2xs relative">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 shadow-2xs relative">
                 <MattersImage
                   src={lessonImg}
                   alt={cardTitle}
@@ -172,31 +172,31 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
                   <span
                     className={`text-[9px] font-mono uppercase font-bold px-2 py-0.5 rounded-full ${
                       isCompleted
-                        ? 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
                         : isCurrent
-                        ? 'bg-amber-200 text-amber-900'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-amber-200 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300'
+                        : 'bg-slate-100 dark:bg-[#1A2234] text-slate-600 dark:text-slate-300'
                     }`}
                   >
                     {language === 'hi' ? `पाठ ${lessonNumber}` : `Lesson ${lessonNumber}`}
                   </span>
                   {isCompleted && userProg && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50">
                       Score: {userProg.quiz_score}%
                     </span>
                   )}
                   {isCurrent && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50">
                       Score: 56%
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-serif italic font-bold text-sm text-[#090D16] group-hover:text-violet-700 transition-colors leading-snug line-clamp-1">
+                <h3 className="font-serif italic font-bold text-sm text-[#090D16] dark:text-[#F8FAFC] group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors leading-snug line-clamp-1">
                   {cardTitle}
                 </h3>
 
-                <div className="flex items-center gap-2.5 text-[10px] text-slate-400 font-mono">
+                <div className="flex items-center gap-2.5 text-[10px] text-slate-400 dark:text-slate-400 font-mono">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-slate-400" />
                     {cardMinutes} mins
@@ -207,12 +207,12 @@ export const TopicRoadmap: React.FC<TopicRoadmapProps> = ({
                     {cardDifficulty}
                   </span>
                   <span>·</span>
-                  <span className="font-bold text-violet-700">+20 XP</span>
+                  <span className="font-bold text-violet-700 dark:text-violet-400">+20 XP</span>
                 </div>
               </div>
 
               {/* Arrow */}
-              <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0 group-hover:bg-[#090D16] group-hover:text-white transition-colors">
+              <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-[#1A2234] border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-400 shrink-0 group-hover:bg-[#090D16] dark:group-hover:bg-violet-600 group-hover:text-white transition-colors">
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>

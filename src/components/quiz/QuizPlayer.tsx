@@ -147,19 +147,19 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
 
     return (
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6 text-center animate-fadeIn">
-        <div className="bg-white rounded-[36px] sm:rounded-[44px] border border-black/[0.06] p-8 sm:p-12 shadow-[0_16px_50px_-12px_rgba(9,13,22,0.1)] space-y-6">
-          <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-200/90 text-emerald-800 flex items-center justify-center mx-auto shadow-2xs group hover:scale-105 transition-transform">
-            <Award className="w-10 h-10 text-emerald-600 animate-bounce" />
+        <div className="bg-white dark:bg-[#131926] rounded-[36px] sm:rounded-[44px] border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-12 shadow-[0_16px_50px_-12px_rgba(9,13,22,0.1)] dark:shadow-[0_16px_50px_-12px_rgba(0,0,0,0.5)] space-y-6 transition-colors">
+          <div className="w-20 h-20 rounded-3xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-700/50 text-emerald-800 dark:text-emerald-300 flex items-center justify-center mx-auto shadow-2xs group hover:scale-105 transition-transform">
+            <Award className="w-10 h-10 text-emerald-600 dark:text-emerald-400 animate-bounce" />
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200 font-mono shadow-2xs">
+            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-700/50 font-mono shadow-2xs">
               {language === 'hi' ? 'पाठ पूर्ण हुआ' : 'Lesson Complete'}
             </span>
-            <h1 className="text-2xl sm:text-4xl font-serif italic text-[#090D16] mt-4 tracking-tight font-medium leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] mt-4 tracking-tight font-medium leading-tight">
               {lessonTitle}
             </h1>
-            <p className="text-xs sm:text-sm text-black/60 mt-2 font-light leading-relaxed max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-black/60 dark:text-slate-400 mt-2 font-light leading-relaxed max-w-sm mx-auto">
               {language === 'hi'
                 ? 'आपने आज एक महत्वपूर्ण व्यावहारिक दक्षता हासिल कर ली है!'
                 : 'You’ve built another essential practical competency today!'}
@@ -168,32 +168,32 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
 
           {/* Score & XP Rewards Banner */}
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="p-5 sm:p-6 rounded-3xl bg-[#FAFAF8] border border-black/[0.06] shadow-2xs">
-              <span className="text-[10px] font-bold text-black/50 uppercase tracking-widest font-mono">
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#FAFAF8] dark:bg-[#161D2E] border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+              <span className="text-[10px] font-bold text-black/50 dark:text-slate-400 uppercase tracking-widest font-mono">
                 {language === 'hi' ? 'अंक (स्कोर)' : 'Score'}
               </span>
-              <p className="text-2xl sm:text-4xl font-serif italic text-[#090D16] mt-1 font-medium">
+              <p className="text-2xl sm:text-4xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] mt-1 font-medium">
                 {correctCount} / {totalQuestions}
               </p>
-              <span className="text-[11px] font-mono font-semibold text-black/50">({scorePct}%)</span>
+              <span className="text-[11px] font-mono font-semibold text-black/50 dark:text-slate-400">({scorePct}%)</span>
             </div>
 
-            <div className="p-5 sm:p-6 rounded-3xl bg-violet-50/90 border border-violet-200/90 text-violet-900 shadow-2xs">
-              <span className="text-[10px] font-bold text-violet-800 uppercase tracking-widest font-mono">
+            <div className="p-5 sm:p-6 rounded-3xl bg-violet-50/90 dark:bg-violet-950/50 border border-violet-200/90 dark:border-violet-700/50 text-violet-900 dark:text-violet-200 shadow-2xs">
+              <span className="text-[10px] font-bold text-violet-800 dark:text-violet-300 uppercase tracking-widest font-mono">
                 {language === 'hi' ? 'अर्जित XP' : 'Earned'}
               </span>
-              <p className="text-2xl sm:text-4xl font-serif italic text-violet-950 mt-1 font-medium">
+              <p className="text-2xl sm:text-4xl font-serif italic text-violet-950 dark:text-violet-100 mt-1 font-medium">
                 +{xpResult?.xpGained || 25} XP
               </p>
-              <span className="text-[11px] font-medium text-violet-700">
+              <span className="text-[11px] font-medium text-violet-700 dark:text-violet-300">
                 {language === 'hi' ? 'ज्ञान संवर्धन' : 'Knowledge Boost'}
               </span>
             </div>
           </div>
 
           {/* Streak Boost Note */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-900 flex items-center justify-center gap-2.5 text-xs font-semibold shadow-2xs">
-            <Flame className="w-4 h-4 text-amber-600" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-700/50 text-amber-900 dark:text-amber-200 flex items-center justify-center gap-2.5 text-xs font-semibold shadow-2xs">
+            <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>
               {language === 'hi'
                 ? 'दैनिक अध्ययन स्ट्रीक बरकरार रही!'
@@ -204,7 +204,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           <button
             onClick={onFinish}
             id="quiz-finish-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
           >
             <span>{language === 'hi' ? 'पाठ पूरा करें व वापस जाएं' : 'Complete Lesson & Return'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -227,19 +227,19 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 animate-fadeIn">
       {/* Header with Question Counter & Progress */}
-      <div className="space-y-3 bg-white/80 p-4 rounded-3xl border border-black/[0.06] backdrop-blur-xl shadow-2xs">
-        <div className="flex items-center justify-between text-xs text-black/60">
-          <span className="text-[#090D16] font-bold uppercase tracking-widest text-[10px] font-mono bg-black/[0.03] px-3 py-1 rounded-full border border-black/[0.04]">
+      <div className="space-y-3 bg-white/80 dark:bg-[#131926]/90 p-4 rounded-3xl border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-xl shadow-2xs transition-colors">
+        <div className="flex items-center justify-between text-xs text-black/60 dark:text-slate-400">
+          <span className="text-[#090D16] dark:text-[#F8FAFC] font-bold uppercase tracking-widest text-[10px] font-mono bg-black/[0.03] dark:bg-white/[0.06] px-3 py-1 rounded-full border border-black/[0.04] dark:border-white/[0.08]">
             {language === 'hi'
               ? `प्रश्नोत्तरी · प्रश्न ${currentIndex + 1} / ${totalQuestions}`
               : `Quiz · Question ${currentIndex + 1} of ${totalQuestions}`}
           </span>
-          <span className="font-mono text-[11px] font-bold text-amber-800 bg-amber-50/90 px-3 py-1 rounded-full border border-amber-200/90 shadow-2xs">
+          <span className="font-mono text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-200/90 dark:border-amber-700/50 shadow-2xs">
             {language === 'hi' ? '+5 XP प्रति प्रश्न' : '+5 XP per question'}
           </span>
         </div>
 
-        <div className="w-full bg-black/[0.04] h-2 rounded-full overflow-hidden">
+        <div className="w-full bg-black/[0.04] dark:bg-white/10 h-2 rounded-full overflow-hidden">
           <div
             className="bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
@@ -248,8 +248,8 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
       </div>
 
       {/* Question Card */}
-      <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-black/[0.06] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-serif italic text-[#090D16] leading-snug font-medium">
+      <div className="bg-white dark:bg-[#131926] rounded-[32px] sm:rounded-[40px] border border-black/[0.06] dark:border-white/[0.08] p-7 sm:p-10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] space-y-6 transition-colors">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] leading-snug font-medium">
           {qText}
         </h2>
 
@@ -264,18 +264,18 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             const isSelected = selectedOption === opt.key;
             const isCorrectAnswer = opt.key === currentQ.correct_answer;
 
-            let optionStyle = 'border-black/[0.08] bg-[#FAFAF8] hover:border-black/25 hover:bg-white text-[#090D16] shadow-2xs';
+            let optionStyle = 'border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAF8] dark:bg-[#161D2E] hover:border-black/25 dark:hover:border-white/25 hover:bg-white dark:hover:bg-[#192236] text-[#090D16] dark:text-[#F8FAFC] shadow-2xs';
 
             if (isSubmitted) {
               if (isCorrectAnswer) {
-                optionStyle = 'border-emerald-500 bg-emerald-50/90 text-emerald-950 font-medium shadow-xs';
+                optionStyle = 'border-emerald-500 dark:border-emerald-600 bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-medium shadow-xs';
               } else if (isSelected && !isCorrectAnswer) {
-                optionStyle = 'border-rose-400 bg-rose-50/90 text-rose-950 shadow-xs';
+                optionStyle = 'border-rose-400 dark:border-rose-600 bg-rose-50/90 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100 shadow-xs';
               } else {
-                optionStyle = 'border-black/[0.05] bg-black/[0.02] text-black/40 opacity-55';
+                optionStyle = 'border-black/[0.05] dark:border-white/[0.04] bg-black/[0.02] dark:bg-white/[0.02] text-black/40 dark:text-slate-500 opacity-55';
               }
             } else if (isSelected) {
-              optionStyle = 'border-[#090D16] bg-white text-[#090D16] font-semibold shadow-xs ring-2 ring-black/5';
+              optionStyle = 'border-[#090D16] dark:border-violet-500 bg-white dark:bg-[#1A2234] text-[#090D16] dark:text-white font-semibold shadow-xs ring-2 ring-black/5 dark:ring-violet-500/20';
             }
 
             return (
@@ -291,10 +291,10 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
                         ? 'bg-emerald-600 text-white'
                         : isSelected
                         ? 'bg-rose-600 text-white'
-                        : 'bg-black/[0.08] text-black/60'
+                        : 'bg-black/[0.08] dark:bg-white/10 text-black/60 dark:text-slate-400'
                       : isSelected
-                      ? 'bg-[#090D16] text-white'
-                      : 'bg-white border border-black/[0.1] text-black/70'
+                      ? 'bg-[#090D16] dark:bg-violet-600 text-white'
+                      : 'bg-white dark:bg-[#1A2234] border border-black/[0.1] dark:border-white/[0.15] text-black/70 dark:text-slate-300'
                   }`}
                 >
                   {opt.key}
@@ -307,9 +307,9 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 {isSubmitted && (
                   <div className="flex-shrink-0 mt-0.5">
                     {isCorrectAnswer ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     ) : isSelected ? (
-                      <XCircle className="w-5 h-5 text-rose-600" />
+                      <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                     ) : null}
                   </div>
                 )}
@@ -323,22 +323,22 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           <div
             className={`p-5 sm:p-6 rounded-3xl border animate-fadeIn ${
               selectedOption === currentQ.correct_answer
-                ? 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 shadow-2xs'
-                : 'bg-amber-50/90 border-amber-200/90 text-amber-950 shadow-2xs'
+                ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100 shadow-2xs'
+                : 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-700/50 text-amber-950 dark:text-amber-100 shadow-2xs'
             }`}
           >
             <div className="flex items-center gap-2 font-bold text-xs mb-2 font-mono">
               {selectedOption === currentQ.correct_answer ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                  <span className="text-emerald-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                  <span className="text-emerald-800 dark:text-emerald-300">
                     {language === 'hi' ? 'सही उत्तर! +5 XP' : 'Correct! +5 XP'}
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-4 h-4 text-amber-700" />
-                  <span className="text-amber-900">
+                  <XCircle className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                  <span className="text-amber-900 dark:text-amber-300">
                     {language === 'hi' ? 'महत्वपूर्ण सीख:' : 'Key Learning Takeaway:'}
                   </span>
                 </>
@@ -348,14 +348,14 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
               {explanationText}
             </p>
             {onOpenTia && (
-              <div className="mt-4 pt-3.5 border-t border-black/[0.06] flex items-center justify-between">
-                <span className="text-[11px] text-black/60">
+              <div className="mt-4 pt-3.5 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+                <span className="text-[11px] text-black/60 dark:text-slate-400">
                   {language === 'hi' ? 'संदेह है या और विस्तार से समझना है?' : 'Want a deeper breakdown?'}
                 </span>
                 <button
                   type="button"
                   onClick={() => onOpenTia('chat')}
-                  className="text-xs font-bold text-[#090D16] hover:text-violet-700 underline flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-xs font-bold text-[#090D16] dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 underline flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <span>🎙️ {language === 'hi' ? 'टिया से पूछें' : 'Ask Tia'}</span>
                 </button>
@@ -371,7 +371,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           <button
             type="button"
             onClick={() => onOpenTia('chat')}
-            className="text-xs text-black/60 hover:text-black font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="text-xs text-black/60 dark:text-slate-400 hover:text-black dark:hover:text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span>💡 {language === 'hi' ? 'संकेत चाहिए? टिया से पूछें' : 'Need a hint? Ask Tia'}</span>
           </button>
@@ -385,7 +385,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             onClick={handleSubmitAnswer}
             disabled={!selectedOption}
             id="quiz-submit-answer-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black disabled:opacity-40 transition-all shadow-md cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 disabled:opacity-40 transition-all shadow-md cursor-pointer"
           >
             <span>{language === 'hi' ? 'उत्तर जमा करें' : 'Submit Answer'}</span>
             <CheckCircle2 className="w-4 h-4" />
@@ -395,7 +395,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             onClick={handleNextQuestion}
             disabled={savingProgress}
             id="quiz-next-btn"
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] hover:bg-black active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-xs uppercase tracking-widest text-white bg-[#090D16] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-pointer"
           >
             {savingProgress ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

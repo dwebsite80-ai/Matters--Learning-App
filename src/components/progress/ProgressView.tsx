@@ -57,10 +57,10 @@ export const ProgressView: React.FC = () => {
     <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-5 animate-fadeIn pb-28">
       {/* 1. HEADER */}
       <div className="space-y-0.5 pt-1">
-        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] tracking-tight font-medium">
+        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] tracking-tight font-medium">
           {language === 'hi' ? 'मेरी प्रगति' : 'My Progress'}
         </h1>
-        <p className="text-xs text-slate-500 font-light">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-light">
           {language === 'hi'
             ? 'आपकी ज्ञान यात्रा, स्ट्रीक और विषय महारत का समग्र विवरण।'
             : 'Track your learning consistency, level milestones, and domain mastery.'}
@@ -79,8 +79,8 @@ export const ProgressView: React.FC = () => {
             onClick={() => setTimeFilter(f.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
               timeFilter === f.id
-                ? 'bg-[#090D16] text-white shadow-xs'
-                : 'bg-white border border-black/[0.08] text-slate-600 hover:text-black'
+                ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                : 'bg-white dark:bg-[#131926] border border-black/[0.08] dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white'
             }`}
           >
             {f.label}
@@ -134,34 +134,34 @@ export const ProgressView: React.FC = () => {
       <section aria-label="Key Stats">
         <div className="grid grid-cols-3 gap-2.5">
           {/* 🔥 7 Day Streak */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">🔥</span>
-            <p className="text-xl font-serif italic font-bold text-[#090D16]">
+            <p className="text-xl font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {currentStreak}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Day Streak
             </span>
           </div>
 
           {/* 🎯 2/3 Daily Goal */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">🎯</span>
-            <p className="text-xl font-serif italic font-bold text-[#090D16]">
+            <p className="text-xl font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {dailyGoalRatio}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Daily Goal
             </span>
           </div>
 
           {/* 📖 12 Lessons */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">📖</span>
-            <p className="text-xl font-serif italic font-bold text-[#090D16]">
+            <p className="text-xl font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {lessonsCompleted}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Lessons
             </span>
           </div>
@@ -171,19 +171,19 @@ export const ProgressView: React.FC = () => {
       {/* 5. LEARNING ACTIVITY (CALENDAR GRID MATCHING REFERENCE MOCKUP SCREEN 4) */}
       <section aria-label="Learning Activity" className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             Learning Activity
           </h3>
-          <button className="text-xs font-semibold text-violet-700 hover:text-violet-900 cursor-pointer">
+          <button className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer">
             View Calendar →
           </button>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-2.5">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-2.5">
           {/* Days of week header */}
           <div className="grid grid-cols-7 gap-1 text-center">
             {daysOfWeek.map((day) => (
-              <span key={day} className="text-[10px] font-mono text-slate-400 font-medium">
+              <span key={day} className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-medium">
                 {day}
               </span>
             ))}
@@ -199,7 +199,7 @@ export const ProgressView: React.FC = () => {
                     className={`h-7 rounded-lg transition-all ${
                       active
                         ? 'bg-violet-600 shadow-2xs'
-                        : 'bg-violet-50/70 border border-violet-100/60'
+                        : 'bg-violet-50/70 dark:bg-white/[0.04] border border-violet-100/60 dark:border-white/[0.06]'
                     }`}
                   />
                 ))}
@@ -212,10 +212,10 @@ export const ProgressView: React.FC = () => {
       {/* 6. COURSE PROGRESS (MATCHING REFERENCE MOCKUP SCREEN 4) */}
       <section aria-label="Course Progress" className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             Course Progress
           </h3>
-          <button className="text-xs font-semibold text-violet-700 hover:text-violet-900 cursor-pointer">
+          <button className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer">
             See All →
           </button>
         </div>
@@ -229,10 +229,10 @@ export const ProgressView: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center gap-3 group"
+                className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center gap-3 group"
               >
                 {/* Small square thumbnail photo */}
-                <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-black/10">
+                <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10">
                   <MattersImage
                     src={thumbnail}
                     alt={subName}
@@ -245,15 +245,15 @@ export const ProgressView: React.FC = () => {
                 {/* Course Name & Progress Bar */}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-1">
-                    <h4 className="font-serif italic font-bold text-xs sm:text-sm text-[#090D16] truncate">
+                    <h4 className="font-serif italic font-bold text-xs sm:text-sm text-[#090D16] dark:text-[#F8FAFC] truncate">
                       {subName}
                     </h4>
-                    <span className="font-mono text-xs font-bold text-slate-600 shrink-0">
+                    <span className="font-mono text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
                       {prog.percentage}%
                     </span>
                   </div>
 
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full transition-all duration-500"
                       style={{ width: `${prog.percentage}%` }}

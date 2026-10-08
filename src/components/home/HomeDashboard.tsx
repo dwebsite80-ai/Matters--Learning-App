@@ -122,10 +122,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-5 animate-fadeIn pb-28">
       {/* 1. GREETING SECTION */}
       <div className="space-y-0.5 pt-1">
-        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] tracking-tight font-medium">
+        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] tracking-tight font-medium">
           {getGreeting()}, {userName}! 👋
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-light">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-light">
           {language === 'hi'
             ? 'आज कुछ नया सीखने के लिए तैयार हैं?'
             : 'Ready to learn something new today?'}
@@ -228,13 +228,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* 🔥 Day Streak */}
           <div
             onClick={() => setActiveTab('progress')}
-            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+            className="p-3 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-95 transition-all"
           >
             <span className="text-lg block">🔥</span>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] mt-0.5">
               {currentStreak}
             </p>
-            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               {language === 'hi' ? 'दैनिक स्ट्रीक' : 'Day Streak'}
             </span>
           </div>
@@ -242,13 +242,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* ⭐ Total XP */}
           <div
             onClick={() => setActiveTab('progress')}
-            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+            className="p-3 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-95 transition-all"
           >
             <span className="text-lg block">⭐</span>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] mt-0.5">
               {totalXp}
             </p>
-            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               {language === 'hi' ? 'कुल XP' : 'Total XP'}
             </span>
           </div>
@@ -256,13 +256,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* 🎯 Daily Goal */}
           <div
             onClick={() => setActiveTab('profile')}
-            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+            className="p-3 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-95 transition-all"
           >
             <span className="text-lg block">🎯</span>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] mt-0.5">
               {dailyGoalRatio}
             </p>
-            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               {language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Goal'}
             </span>
           </div>
@@ -270,13 +270,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* 📖 Completed */}
           <div
             onClick={() => setActiveTab('progress')}
-            className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center cursor-pointer hover:border-black/20 active:scale-95 transition-all"
+            className="p-3 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-95 transition-all"
           >
             <span className="text-lg block">📖</span>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] mt-0.5">
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] mt-0.5">
               {completedCount}
             </p>
-            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[9px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               {language === 'hi' ? 'पूर्ण पाठ' : 'Completed'}
             </span>
           </div>
@@ -286,12 +286,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {/* 4. CONTINUE LEARNING (MATCHING REFERENCE MOCKUP SCREEN 1) */}
       <section aria-label="Continue Learning" className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             {language === 'hi' ? 'जहाँ से आपने छोड़ा था' : 'Continue Learning'}
           </h3>
           <button
             onClick={() => setActiveTab('learn')}
-            className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-0.5 cursor-pointer active:scale-95"
+            className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 flex items-center gap-0.5 cursor-pointer active:scale-95"
           >
             <span>{language === 'hi' ? 'सभी देखें →' : 'See All →'}</span>
           </button>
@@ -303,10 +303,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             if (continueLesson) onStartLesson(continueLesson);
             else onSelectSubject(continueSubject.id);
           }}
-          className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] flex items-center gap-3.5"
+          className="p-3.5 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] flex items-center gap-3.5"
         >
           {/* Square Image Thumbnail: Matched to Continue Lesson */}
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 shadow-2xs">
             <MattersImage
               src={getLessonImage(
                 continueLesson,
@@ -324,17 +324,17 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
           {/* Details */}
           <div className="flex-1 min-w-0 space-y-0.5">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-400 font-semibold block">
               {language === 'hi' ? 'दर्शनशास्त्र' : 'Philosophy'}
             </span>
-            <h4 className="text-sm font-serif italic font-bold text-[#090D16] truncate">
+            <h4 className="text-sm font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] truncate">
               {language === 'hi' ? 'थीसियस का जहाज़ (Theseus\' Ship)' : "Theseus' Ship"}
             </h4>
-            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
               <span>{language === 'hi' ? 'पाठ 4 / 10' : 'Lesson 4 / 10'}</span>
-              <span className="font-mono font-bold text-slate-700">60%</span>
+              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">60%</span>
             </div>
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+            <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden mt-1">
               <div
                 className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full"
                 style={{ width: '60%' }}
@@ -343,7 +343,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
 
           {/* Continue Arrow Button */}
-          <div className="w-8 h-8 rounded-full bg-[#090D16] text-white flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-8 h-8 rounded-full bg-[#090D16] dark:bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
             <ChevronRight className="w-4 h-4" />
           </div>
         </div>
@@ -352,12 +352,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {/* 5. RECOMMENDED FOR YOU (3 COMPACT VISUAL CARDS MATCHING REFERENCE MOCKUP) */}
       <section aria-label="Recommended for You" className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16]">
+          <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             {language === 'hi' ? 'आपके लिए सुझाए गए कोर्स' : 'Recommended for You'}
           </h3>
           <button
             onClick={() => setActiveTab('learn')}
-            className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-0.5 cursor-pointer active:scale-95"
+            className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 flex items-center gap-0.5 cursor-pointer active:scale-95"
           >
             <span>{language === 'hi' ? 'सभी देखें →' : 'See All →'}</span>
           </button>
@@ -367,10 +367,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* Card 1: History / Indian Freedom */}
           <div
             onClick={() => onSelectSubject('history-movement')}
-            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-2.5 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
           >
             <div>
-              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10 dark:border-white/10">
                 <MattersImage
                   src={getSubjectThumbnail('history-movement')}
                   alt="History"
@@ -378,16 +378,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-400 font-semibold block truncate">
                 {language === 'hi' ? 'इतिहास' : 'History'}
               </span>
-              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] dark:text-[#F8FAFC] truncate mt-0.5">
                 {language === 'hi' ? 'भारतीय स्वतंत्रता' : 'Indian Freedom'}
               </h4>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
-              <span className="text-[9px] font-mono text-slate-400 block truncate">12 lessons</span>
-              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-400 block truncate">12 lessons</span>
+              <div className="w-full bg-slate-100 dark:bg-white/10 h-1 rounded-full overflow-hidden">
                 <div className="h-full bg-violet-600 rounded-full" style={{ width: '20%' }} />
               </div>
             </div>
@@ -396,10 +396,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* Card 2: Economics / Money & Finance */}
           <div
             onClick={() => onSelectSubject('money-finance')}
-            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-2.5 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
           >
             <div>
-              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10 dark:border-white/10">
                 <MattersImage
                   src={getSubjectThumbnail('money-finance')}
                   alt="Money & Finance"
@@ -407,16 +407,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-400 font-semibold block truncate">
                 {language === 'hi' ? 'अर्थशास्त्र' : 'Economics'}
               </span>
-              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] dark:text-[#F8FAFC] truncate mt-0.5">
                 {language === 'hi' ? 'धन एवं वित्त' : 'Money & Finance'}
               </h4>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
-              <span className="text-[9px] font-mono text-slate-400 block truncate">10 lessons</span>
-              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-400 block truncate">10 lessons</span>
+              <div className="w-full bg-slate-100 dark:bg-white/10 h-1 rounded-full overflow-hidden">
                 <div className="h-full bg-violet-600 rounded-full" style={{ width: '0%' }} />
               </div>
             </div>
@@ -425,10 +425,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* Card 3: Science / Mind & Paradoxes */}
           <div
             onClick={() => onSelectSubject('paradoxes')}
-            className="p-2.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-2.5 rounded-2xl bg-white dark:bg-[#131826] border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] flex flex-col justify-between group"
           >
             <div>
-              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10">
+              <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-black/10 dark:border-white/10">
                 <MattersImage
                   src={getSubjectThumbnail('paradoxes')}
                   alt="Science"
@@ -436,16 +436,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-400 font-semibold block truncate">
                 {language === 'hi' ? 'विज्ञान' : 'Science'}
               </span>
-              <h4 className="font-serif italic font-bold text-xs text-[#090D16] truncate mt-0.5">
+              <h4 className="font-serif italic font-bold text-xs text-[#090D16] dark:text-[#F8FAFC] truncate mt-0.5">
                 {language === 'hi' ? 'मानव मस्तिष्क' : 'Human Mind'}
               </h4>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-black/[0.04] space-y-1">
-              <span className="text-[9px] font-mono text-slate-400 block truncate">15 lessons</span>
-              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+            <div className="mt-2 pt-1.5 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1">
+              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-400 block truncate">15 lessons</span>
+              <div className="w-full bg-slate-100 dark:bg-white/10 h-1 rounded-full overflow-hidden">
                 <div className="h-full bg-violet-600 rounded-full" style={{ width: '0%' }} />
               </div>
             </div>

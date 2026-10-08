@@ -9,10 +9,13 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { ActiveTab, SubjectId } from '../../types';
 import { ALL_LESSONS } from '../../data/initialContent';
 import { USER_AVATAR_IMAGE } from '../../data/courseImages';
@@ -28,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   const { stats, streakStatus, currentStreak: ctxStreak, subjects } = useLearning();
   const { language, setLanguage, t } = useLanguage();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.03)] w-full transition-all">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.08] shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.4)] w-full transition-all">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2.5">
           {/* Left: Matters Logo & Brand Name */}
           <div
@@ -80,27 +84,27 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             id="nav-logo"
             aria-label="Matters Home"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-[#090D16] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 group-hover:scale-105">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-[#090D16] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 group-hover:scale-105 border border-white/10">
               <Sparkles className="w-4 h-4 text-amber-300" />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="font-serif italic font-bold text-[#090D16] text-xl sm:text-2xl tracking-tight leading-none">
+              <span className="font-serif italic font-bold text-[#090D16] dark:text-white text-xl sm:text-2xl tracking-tight leading-none">
                 Matters
               </span>
-              <span className="text-[8px] sm:text-[9px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200/60 hidden xs:inline-block">
+              <span className="text-[8px] sm:text-[9px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 border border-violet-200/60 dark:border-violet-700/50 hidden xs:inline-block">
                 Daily
               </span>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 bg-black/[0.03] p-1 rounded-full border border-black/[0.05] shrink-0">
+          <nav className="hidden md:flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.05] p-1 rounded-full border border-black/[0.05] dark:border-white/[0.08] shrink-0">
             <button
               onClick={() => setActiveTab('home')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'home'
-                  ? 'bg-[#090D16] text-white shadow-xs'
-                  : 'text-black/60 hover:text-black hover:bg-black/[0.03]'
+                  ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
               }`}
             >
               {t('nav.home')}
@@ -109,8 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               onClick={() => setActiveTab('learn')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'learn'
-                  ? 'bg-[#090D16] text-white shadow-xs'
-                  : 'text-black/60 hover:text-black hover:bg-black/[0.03]'
+                  ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
               }`}
             >
               {t('nav.curriculum')}
@@ -119,8 +123,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               onClick={() => setActiveTab('revision')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'revision'
-                  ? 'bg-[#090D16] text-white shadow-xs'
-                  : 'text-black/60 hover:text-black hover:bg-black/[0.03]'
+                  ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
               }`}
             >
               {t('nav.revision')}
@@ -129,37 +133,52 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               onClick={() => setActiveTab('progress')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'progress'
-                  ? 'bg-[#090D16] text-white shadow-xs'
-                  : 'text-black/60 hover:text-black hover:bg-black/[0.03]'
+                  ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                  : 'text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
               }`}
             >
               {t('nav.analytics')}
             </button>
           </nav>
 
-          {/* Right Action Icons: Search, Notifications, Language, Stats */}
+          {/* Right Action Icons: Search, Notifications, Theme, Language, Profile */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Quick Search Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-700 hover:text-black hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer"
               title={language === 'hi' ? 'खोजें' : 'Search'}
               aria-label="Search courses and lessons"
             >
               <Search className="w-4 h-4" />
             </button>
 
+            {/* Quick Dark Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer"
+              title={resolvedTheme === 'dark' ? (language === 'hi' ? 'लाइट मोड चालू करें' : 'Switch to Light Mode') : (language === 'hi' ? 'डार्क मोड चालू करें' : 'Switch to Dark Mode')}
+              aria-label="Toggle theme"
+            >
+              {resolvedTheme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-700" />
+              )}
+            </button>
+
             {/* Notification Bell with indicator */}
             <div className="relative">
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-700 hover:text-black hover:bg-slate-100 active:scale-95 transition-all cursor-pointer relative"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer relative"
                 title={language === 'hi' ? 'सूचनाएं' : 'Notifications'}
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
                 {!notificationsRead && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#0B0F17] animate-pulse" />
                 )}
               </button>
 
@@ -177,10 +196,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
 
               {/* Notification Popover */}
               {isNotificationsOpen && (
-                <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-[60px] sm:top-12 max-w-sm sm:w-80 mx-auto sm:mx-0 bg-white rounded-2xl border border-black/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.16)] p-4 z-50 animate-fadeIn max-h-[calc(100vh-5rem)] overflow-y-auto box-border">
-                  <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-[60px] sm:top-12 max-w-sm sm:w-80 mx-auto sm:mx-0 bg-white dark:bg-[#131926] rounded-2xl border border-black/[0.08] dark:border-white/[0.1] shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] p-4 z-50 animate-fadeIn max-h-[calc(100vh-5rem)] overflow-y-auto box-border">
+                  <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#090D16]">
+                      <span className="font-bold text-xs text-[#090D16] dark:text-white">
                         {language === 'hi' ? 'सूचनाएं एवं सुझाव' : 'Daily Updates'}
                       </span>
                       <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
@@ -190,7 +209,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                         setNotificationsRead(true);
                         setIsNotificationsOpen(false);
                       }}
-                      className="text-[11px] font-semibold text-slate-500 hover:text-black py-0.5 px-2 rounded-md hover:bg-black/[0.05] cursor-pointer flex items-center gap-1 transition-colors"
+                      className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white py-0.5 px-2 rounded-md hover:bg-black/[0.05] dark:hover:bg-white/[0.05] cursor-pointer flex items-center gap-1 transition-colors"
                       aria-label="Close notifications"
                     >
                       <span>{language === 'hi' ? 'बंद करें' : 'Close'}</span>
@@ -199,24 +218,24 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                   </div>
 
                   <div className="space-y-2.5 mt-3">
-                    <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/70 text-xs">
-                      <p className="font-bold text-amber-900 flex items-center gap-1.5">
-                        <Flame className="w-3.5 h-3.5 text-amber-600" />
+                    <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-700/50 text-xs">
+                      <p className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                        <Flame className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         {language === 'hi' ? 'दैनिक स्ट्रीक अलर्ट' : 'Streak Alert'}
                       </p>
-                      <p className="text-[11px] text-amber-800/80 mt-1 font-light leading-relaxed">
+                      <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-1 font-light leading-relaxed">
                         {language === 'hi'
                           ? `आपकी स्ट्रीक: ${currentStreak} दिन। अपनी गति बनाए रखने के लिए आज का 10-मिनट का पाठ पूरा करें!`
                           : `Current streak: ${currentStreak}d. Complete today's 10-minute micro-lesson to keep your fire burning!`}
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-violet-50/80 border border-violet-200/70 text-xs">
-                      <p className="font-bold text-violet-900 flex items-center gap-1.5">
-                        <Brain className="w-3.5 h-3.5 text-violet-600" />
+                    <div className="p-3 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200/70 dark:border-violet-700/50 text-xs">
+                      <p className="font-bold text-violet-900 dark:text-violet-200 flex items-center gap-1.5">
+                        <Brain className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
                         {language === 'hi' ? 'दैनिक व्यावहारिक युक्ति' : 'Practical Wisdom Tip'}
                       </p>
-                      <p className="text-[11px] text-violet-800/80 mt-1 font-light leading-relaxed">
+                      <p className="text-[11px] text-violet-800/80 dark:text-violet-300/80 mt-1 font-light leading-relaxed">
                         {language === 'hi'
                           ? 'प्रतिदिन 15 मिनट सीखना साल के 90 घंटों के बराबर है। नियमितता ही ज्ञान की कुंजी है।'
                           : '15 minutes of intentional learning a day equals 90 hours a year. Consistency beats cramming.'}
@@ -229,7 +248,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
 
             {/* Language Selector Pill */}
             <div
-              className="flex items-center bg-black/[0.04] rounded-full p-0.5 border border-black/[0.06]"
+              className="flex items-center bg-black/[0.04] dark:bg-white/[0.06] rounded-full p-0.5 border border-black/[0.06] dark:border-white/[0.08]"
               id="nav-language-selector"
             >
               <button
@@ -237,7 +256,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                   language === 'en'
                     ? 'bg-[#090D16] text-white shadow-2xs'
-                    : 'text-black/60 hover:text-black'
+                    : 'text-black/60 dark:text-slate-400 hover:text-black dark:hover:text-white'
                 }`}
                 title="English"
               >
@@ -248,7 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                   language === 'hi'
                     ? 'bg-[#090D16] text-white shadow-2xs'
-                    : 'text-black/60 hover:text-black'
+                    : 'text-black/60 dark:text-slate-400 hover:text-black dark:hover:text-white'
                 }`}
                 title="हिन्दी"
               >
@@ -282,8 +301,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       {/* Quick Search Modal / Drawer */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex flex-col justify-start pt-14 sm:pt-20 px-4 animate-fadeIn">
-          <div className="max-w-xl w-full mx-auto bg-white rounded-2xl sm:rounded-3xl border border-black/10 shadow-2xl overflow-hidden animate-slideDown">
-            <div className="p-3 sm:p-4 border-b border-black/[0.06] flex items-center gap-3">
+          <div className="max-w-xl w-full mx-auto bg-white dark:bg-[#131926] rounded-2xl sm:rounded-3xl border border-black/10 dark:border-white/[0.08] shadow-2xl overflow-hidden animate-slideDown">
+            <div className="p-3 sm:p-4 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center gap-3">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -291,14 +310,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={language === 'hi' ? 'पाठ या विषय खोजें (उदा. जीडीपी, एफआईआर, दर्शन)...' : 'Search courses or lessons (e.g. GDP, FIR, Plato)...'}
-                className="w-full text-xs sm:text-sm bg-transparent border-none outline-none text-[#090D16] placeholder-slate-400"
+                className="w-full text-xs sm:text-sm bg-transparent border-none outline-none text-[#090D16] dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
               />
               <button
                 onClick={() => {
                   setIsSearchOpen(false);
                   setSearchQuery('');
                 }}
-                className="p-1 rounded-full text-slate-400 hover:text-black cursor-pointer"
+                className="p-1 rounded-full text-slate-400 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -307,10 +326,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             <div className="max-h-[60vh] overflow-y-auto p-3 sm:p-4 space-y-4">
               {searchQuery.trim() === '' ? (
                 <div className="text-center py-8 text-xs text-slate-400">
-                  <p className="font-medium text-slate-600 mb-1">
+                  <p className="font-medium text-slate-600 dark:text-slate-300 mb-1">
                     {language === 'hi' ? 'तुरंत ज्ञान खोजें' : 'Search Knowledge Instantly'}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     {language === 'hi'
                       ? 'अर्थशास्त्र, कानून, दर्शनशास्त्र, वित्त या किसी भी पाठ का नाम लिखें।'
                       : 'Type any domain, concept, or practical question.'}
@@ -335,17 +354,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                             setIsSearchOpen(false);
                             setSearchQuery('');
                           }}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 flex items-center justify-between cursor-pointer transition-colors"
+                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.05] border border-transparent hover:border-slate-100 dark:hover:border-white/[0.05] flex items-center justify-between cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-8 h-8 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center shrink-0 text-sm font-bold">
+                            <span className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 flex items-center justify-center shrink-0 text-sm font-bold">
                               {c.name.charAt(0)}
                             </span>
                             <div className="truncate">
-                              <p className="text-xs font-bold text-[#090D16] truncate">
+                              <p className="text-xs font-bold text-[#090D16] dark:text-white truncate">
                                 {language === 'hi' && c.name_hi ? c.name_hi : c.name}
                               </p>
-                              <p className="text-[11px] text-slate-500 truncate font-light">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-light">
                                 {language === 'hi' && c.description_hi ? c.description_hi : c.description}
                               </p>
                             </div>
@@ -369,17 +388,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                             setIsSearchOpen(false);
                             setSearchQuery('');
                           }}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 flex items-center justify-between cursor-pointer transition-colors"
+                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.05] border border-transparent hover:border-slate-100 dark:hover:border-white/[0.05] flex items-center justify-between cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                            <span className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
                               <BookOpen className="w-4 h-4" />
                             </span>
                             <div className="truncate">
-                              <p className="text-xs font-bold text-[#090D16] truncate">
+                              <p className="text-xs font-bold text-[#090D16] dark:text-white truncate">
                                 {language === 'hi' && l.title_hi ? l.title_hi : l.title}
                               </p>
-                              <p className="text-[11px] text-slate-500 truncate font-light">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-light">
                                 {l.estimated_minutes} min read · {l.difficulty}
                               </p>
                             </div>

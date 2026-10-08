@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LearningProvider } from './context/LearningContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -219,7 +220,7 @@ function MainAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] text-[#121212] flex flex-col pb-24 md:pb-12 overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#0B0F17] text-[#121212] dark:text-[#F3F4F6] flex flex-col pb-24 md:pb-12 overflow-x-hidden w-full max-w-full transition-colors duration-200">
       {/* Top Header Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -317,12 +318,14 @@ function MainAppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <LearningProvider>
-          <MainAppContent />
-        </LearningProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <LearningProvider>
+            <MainAppContent />
+          </LearningProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

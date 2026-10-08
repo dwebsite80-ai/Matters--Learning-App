@@ -441,24 +441,24 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       {/* Container / Sheet */}
-      <div className="bg-[#FAFAF8] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden animate-slideUp">
+      <div className="bg-[#FAFAF8] dark:bg-[#0E131F] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden animate-slideUp transition-colors">
         {/* 1. Header */}
-        <div className="p-4 sm:p-5 bg-white border-b border-black/[0.06] flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-white dark:bg-[#131926] border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <TiaAvatar state={tiaState} size="md" showBadge={true} />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-serif italic font-bold text-lg text-[#121212]">
+                <h2 className="font-serif italic font-bold text-lg text-[#121212] dark:text-[#F8FAFC]">
                   {isHindi ? 'टिया' : 'Tia'}
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-900 font-mono">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-mono">
                   {isHindi ? 'एआई ट्यूटर' : 'AI Tutor'}
                 </span>
-                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/[0.04] text-black/60 border border-black/[0.04]">
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black/60 dark:text-slate-300 border border-black/[0.04] dark:border-white/[0.08]">
                   {languageConfig.locale}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-black/50">
+              <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-slate-400">
                 <span
                   className={`w-2 h-2 rounded-full ${
                     isListening
@@ -499,14 +499,14 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                 const nextLang = currentLanguage === 'hi' ? 'en' : 'hi';
                 setLanguage(nextLang);
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100 shadow-2xs"
+              className="px-3 py-1 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-700/50 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-2xs"
               title={
                 isHindi
                   ? 'Switch app & Tia to English (en-IN)'
                   : 'ऐप और टिया को हिन्दी (hi-IN) में बदलें'
               }
             >
-              <Languages className="w-3.5 h-3.5 text-amber-700" />
+              <Languages className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
               <span>{isHindi ? 'हिन्दी' : 'English'}</span>
             </button>
 
@@ -515,8 +515,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
               onClick={handleToggleVoice}
               className={`p-2 rounded-full border transition-colors cursor-pointer ${
                 voiceEnabled
-                  ? 'bg-[#121212] text-white border-[#121212]'
-                  : 'bg-white text-black/40 border-black/10 hover:text-black'
+                  ? 'bg-[#121212] dark:bg-violet-600 text-white border-[#121212] dark:border-violet-600'
+                  : 'bg-white dark:bg-[#1A2234] text-black/40 dark:text-slate-400 border-black/10 dark:border-white/10 hover:text-black dark:hover:text-white'
               }`}
               title={
                 voiceEnabled
@@ -538,7 +538,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                 stopListening();
                 onClose();
               }}
-              className="p-2 rounded-full border border-black/10 bg-white hover:bg-black/[0.04] text-black/60 hover:text-black transition-colors cursor-pointer"
+              className="p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A2234] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               aria-label="Close Tia"
             >
               <X className="w-4 h-4" />
@@ -548,10 +548,10 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
 
         {/* Lesson Context Banner */}
         {context && (
-          <div className="px-4 py-2.5 bg-black/[0.02] border-b border-black/[0.06] flex items-center justify-between text-xs text-black/60 shrink-0">
+          <div className="px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.03] border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between text-xs text-black/60 dark:text-slate-400 shrink-0">
             <div className="flex items-center gap-2 truncate">
-              <BookOpen className="w-3.5 h-3.5 text-black/50 shrink-0" />
-              <span className="font-semibold text-[#121212] truncate">
+              <BookOpen className="w-3.5 h-3.5 text-black/50 dark:text-slate-400 shrink-0" />
+              <span className="font-semibold text-[#121212] dark:text-[#F8FAFC] truncate">
                 {isHindi
                   ? `${context.subjectName_hi || context.subjectName}: ${
                       context.lessonTitle_hi || context.lessonTitle
@@ -559,22 +559,22 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                   : `${context.subjectName}: ${context.lessonTitle}`}
               </span>
             </div>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white border border-black/[0.06] shrink-0 font-bold text-black/60">
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white dark:bg-[#161D2E] border border-black/[0.06] dark:border-white/[0.08] shrink-0 font-bold text-black/60 dark:text-slate-300">
               {isHindi ? 'सक्रिय संदर्भ' : 'Context Active'}
             </span>
           </div>
         )}
 
         {/* 2. Mode Selector Navigation */}
-        <div className="flex items-center gap-1.5 px-3 py-2 bg-white border-b border-black/[0.06] overflow-x-auto no-scrollbar shrink-0">
+        <div className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-[#131926] border-b border-black/[0.06] dark:border-white/[0.08] overflow-x-auto no-scrollbar shrink-0">
           {modeTabs.map((mode) => (
             <button
               key={mode.id}
               onClick={() => handleTriggerModeAction(mode.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeMode === mode.id
-                  ? 'bg-[#121212] text-white shadow-xs'
-                  : 'bg-black/[0.03] text-black/60 hover:bg-black/[0.07] hover:text-black'
+                  ? 'bg-[#121212] dark:bg-violet-600 text-white shadow-xs'
+                  : 'bg-black/[0.03] dark:bg-white/[0.05] text-black/60 dark:text-slate-300 hover:bg-black/[0.07] dark:hover:bg-white/[0.1] hover:text-black dark:hover:text-white'
               }`}
             >
               {mode.label}
@@ -594,8 +594,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
               <div
                 className={`max-w-[85%] sm:max-w-[80%] rounded-3xl p-4 sm:p-5 text-xs sm:text-sm leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-[#121212] text-white rounded-tr-sm shadow-sm'
-                    : 'bg-white border border-black/[0.06] text-[#121212] rounded-tl-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)]'
+                    ? 'bg-[#121212] dark:bg-violet-600 text-white rounded-tr-sm shadow-sm'
+                    : 'bg-white dark:bg-[#161D2E] border border-black/[0.06] dark:border-white/[0.08] text-[#121212] dark:text-[#F8FAFC] rounded-tl-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.4)]'
                 }`}
               >
                 {/* Voice message tag */}
@@ -620,7 +620,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                       <button
                         key={oIdx}
                         onClick={() => handleSendUserText(opt)}
-                        className="w-full text-left p-3 rounded-xl border border-black/[0.08] bg-[#FAFAF8] hover:bg-white hover:border-black/20 text-xs font-medium text-[#121212] transition-all cursor-pointer shadow-2xs"
+                        className="w-full text-left p-3 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAF8] dark:bg-[#131926] hover:bg-white dark:hover:bg-[#1A2234] hover:border-black/20 dark:hover:border-white/20 text-xs font-medium text-[#121212] dark:text-[#F8FAFC] transition-all cursor-pointer shadow-2xs"
                       >
                         {opt}
                       </button>
@@ -630,18 +630,18 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
 
                 {/* Voice Replay on Tia messages */}
                 {msg.sender === 'tia' && voiceEnabled && (
-                  <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-black/[0.06] text-[11px] text-black/50">
+                  <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-black/[0.06] dark:border-white/[0.08] text-[11px] text-black/50 dark:text-slate-400">
                     <button
                       onClick={() => speakText(msg.speechText || msg.text)}
-                      className="flex items-center gap-1.5 hover:text-black transition-colors cursor-pointer font-medium"
+                      className="flex items-center gap-1.5 hover:text-black dark:hover:text-white transition-colors cursor-pointer font-medium"
                     >
-                      <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                      <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                       <span>{isHindi ? 'दोबारा सुनें (hi-IN)' : 'Listen again (en-IN)'}</span>
                     </button>
                     {isSpeaking && (
                       <button
                         onClick={stopSpeaking}
-                        className="flex items-center gap-1 text-rose-600 hover:underline cursor-pointer"
+                        className="flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                       >
                         <VolumeX className="w-3.5 h-3.5" />
                         <span>{isHindi ? 'आवाज़ रोकें' : 'Stop'}</span>
@@ -658,7 +658,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                     <button
                       key={qIdx}
                       onClick={() => handleSendUserText(qa)}
-                      className="text-[11px] font-semibold text-black/70 bg-white hover:bg-[#121212] hover:text-white px-3 py-1 rounded-full border border-black/[0.08] shadow-2xs transition-all cursor-pointer"
+                      className="text-[11px] font-semibold text-black/70 dark:text-slate-300 bg-white dark:bg-[#161D2E] hover:bg-[#121212] dark:hover:bg-violet-600 hover:text-white px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] shadow-2xs transition-all cursor-pointer"
                     >
                       {qa}
                     </button>
@@ -671,9 +671,9 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
           {/* Live transcript bubble while user is speaking */}
           {isListening && (
             <div className="flex flex-col items-end space-y-1 animate-fadeIn">
-              <div className="max-w-[80%] rounded-3xl p-4 bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs sm:text-sm shadow-2xs">
-                <div className="flex items-center gap-1.5 font-bold text-[10px] text-emerald-800 uppercase tracking-widest mb-1 font-mono">
-                  <Mic className="w-3 h-3 text-emerald-600 animate-ping" />
+              <div className="max-w-[80%] rounded-3xl p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100 text-xs sm:text-sm shadow-2xs">
+                <div className="flex items-center gap-1.5 font-bold text-[10px] text-emerald-800 dark:text-emerald-300 uppercase tracking-widest mb-1 font-mono">
+                  <Mic className="w-3 h-3 text-emerald-600 dark:text-emerald-400 animate-ping" />
                   <span>
                     {isHindi
                       ? '🎙️ लाइव वॉइस ट्रांसक्रिप्ट (hi-IN)'
@@ -689,8 +689,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
 
           {/* Thinking indicator */}
           {isLoading && (
-            <div className="flex items-center gap-2.5 p-3.5 bg-white rounded-2xl border border-black/[0.06] w-fit text-xs text-black/60 animate-fadeIn shadow-2xs">
-              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2.5 p-3.5 bg-white dark:bg-[#161D2E] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] w-fit text-xs text-black/60 dark:text-slate-300 animate-fadeIn shadow-2xs">
+              <div className="w-4 h-4 border-2 border-indigo-600 dark:border-violet-400 border-t-transparent rounded-full animate-spin" />
               <span>
                 {isHindi
                   ? 'टिया सोच रही है...'
@@ -703,14 +703,14 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
         </div>
 
         {/* 4. Active Voice Waveform & Visualizer Strip */}
-        <div className="bg-[#FAFAF8] border-t border-black/[0.06] px-4 py-2.5 flex items-center justify-between shrink-0">
+        <div className="bg-[#FAFAF8] dark:bg-[#0B0F17] border-t border-black/[0.06] dark:border-white/[0.08] px-4 py-2.5 flex items-center justify-between shrink-0 transition-colors">
           <div className="flex items-center gap-3">
             <button
               onClick={isListening ? stopListening : startListening}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer ${
                 isListening
                   ? 'bg-rose-500 text-white hover:bg-rose-600 animate-pulse'
-                  : 'bg-[#121212] text-white hover:bg-black active:scale-95'
+                  : 'bg-[#121212] dark:bg-violet-600 text-white hover:bg-black dark:hover:bg-violet-500 active:scale-95'
               }`}
             >
               {isListening ? (
@@ -741,8 +741,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                       isListening
                         ? 'bg-emerald-500'
                         : isSpeaking
-                        ? 'bg-indigo-600'
-                        : 'bg-black/15'
+                        ? 'bg-indigo-600 dark:bg-indigo-400'
+                        : 'bg-black/15 dark:bg-white/20'
                     }`}
                   />
                 );
@@ -754,14 +754,14 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             {isSpeaking && (
               <button
                 onClick={stopSpeaking}
-                className="text-[11px] font-semibold text-rose-600 hover:underline px-2 py-1 cursor-pointer"
+                className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline px-2 py-1 cursor-pointer"
               >
                 {isHindi ? 'आवाज़ रोकें' : 'Stop Speech'}
               </button>
             )}
             <button
               onClick={replayLastSpeech}
-              className="p-1.5 rounded-full border border-black/[0.08] bg-white hover:bg-black/[0.03] text-black/60 cursor-pointer shadow-2xs"
+              className="p-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1A2234] hover:bg-black/[0.03] dark:hover:bg-white/[0.06] text-black/60 dark:text-slate-300 cursor-pointer shadow-2xs"
               title={isHindi ? 'पिछली आवाज़ दोबारा सुनें' : 'Replay last speech'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -770,7 +770,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
         </div>
 
         {/* 5. Bottom Text Input Bar */}
-        <div className="p-3 sm:p-4 bg-white border-t border-black/[0.06] space-y-2.5 shrink-0">
+        <div className="p-3 sm:p-4 bg-white dark:bg-[#131926] border-t border-black/[0.06] dark:border-white/[0.08] space-y-2.5 shrink-0 transition-colors">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -789,12 +789,12 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                   ? 'टिया से कुछ भी पूछें या उदाहरण मांगें...'
                   : 'Ask Tia anything or request an example...'
               }
-              className="flex-1 bg-black/[0.03] border border-black/[0.06] rounded-full px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-black/10 font-light"
+              className="flex-1 bg-black/[0.03] dark:bg-[#0B0F17] border border-black/[0.06] dark:border-white/[0.08] text-[#121212] dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500 rounded-full px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-violet-500/20 font-light"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || isLoading}
-              className="p-2.5 rounded-full bg-[#121212] hover:bg-black disabled:opacity-30 text-white transition-all shadow-sm cursor-pointer shrink-0"
+              className="p-2.5 rounded-full bg-[#121212] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 disabled:opacity-30 text-white transition-all shadow-sm cursor-pointer shrink-0"
               aria-label={isHindi ? 'संदेश भेजें' : 'Send message'}
             >
               <Send className="w-4 h-4" />
@@ -808,7 +808,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSendUserText(chip)}
-                className="px-2.5 py-1 rounded-full bg-black/[0.03] hover:bg-black/[0.07] text-black/70 whitespace-nowrap transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-black/70 dark:text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
               >
                 {chip}
               </button>

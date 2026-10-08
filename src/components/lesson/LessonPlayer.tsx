@@ -187,12 +187,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5 animate-fadeIn pb-32">
       {/* 1. TOP HEADER & PROGRESS */}
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-black/[0.06] shadow-2xs space-y-2.5">
+      <div className="bg-white dark:bg-[#131926] rounded-2xl p-3.5 sm:p-4 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs space-y-2.5 transition-colors">
         <div className="flex items-center justify-between gap-3">
           {/* Back button */}
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-black transition-colors cursor-pointer active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
             aria-label="Back to topics"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -201,19 +201,19 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
           {/* Progress: Lesson X / Y & Percentage */}
           <div className="flex items-center gap-2 font-mono text-xs font-bold shrink-0">
-            <span className="text-slate-500 text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400 text-[11px]">
               {language === 'hi'
                 ? `पाठ ${lessonNumber} / ${totalSubjectLessons}`
                 : `Lesson ${lessonNumber} / ${totalSubjectLessons}`}
             </span>
-            <span className="text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200/60 text-[10px]">
+            <span className="text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-700/50 text-[10px]">
               {progressPercent}%
             </span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
           <div
             className="bg-gradient-to-r from-violet-600 to-amber-500 h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
@@ -222,7 +222,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       </div>
 
       {/* 2. LARGE EDUCATIONAL IMAGE / BANNER (MATCHING SPECIFICATION) */}
-      <div className="relative h-36 sm:h-48 w-full rounded-3xl overflow-hidden shadow-sm border border-black/10">
+      <div className="relative h-36 sm:h-48 w-full rounded-3xl overflow-hidden shadow-sm border border-black/10 dark:border-white/10">
         <MattersImage
           src={getLessonImage(lesson, lesson.subject_id, lessonTitle)}
           alt={lessonTitle}
@@ -244,17 +244,17 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
       {/* 3. LESSON TITLE & METADATA */}
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif italic text-[#090D16] font-medium leading-tight tracking-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-medium leading-tight tracking-tight">
           {lessonTitle}
         </h1>
         {lessonSubtitle && (
-          <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-light leading-relaxed">
             {lessonSubtitle}
           </p>
         )}
 
         {/* Metadata: Duration, Difficulty, XP */}
-        <div className="flex items-center gap-3 pt-1 text-xs text-slate-500 flex-wrap">
+        <div className="flex items-center gap-3 pt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
           <span className="flex items-center gap-1 font-mono">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span>{lesson.estimated_minutes} {language === 'hi' ? 'मिनट' : 'mins'}</span>
@@ -269,7 +269,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
             </span>
           </span>
           <span>·</span>
-          <span className="font-mono font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200/60 text-[11px]">
+          <span className="font-mono font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-700/50 text-[11px]">
             +20 XP
           </span>
         </div>
@@ -279,24 +279,24 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       <div className="space-y-5">
         {/* Step 0: Hook & Real-world Introduction */}
         {currentStep === 0 && (
-          <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-2xs space-y-5">
+          <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-2xs space-y-5 transition-colors">
             {/* 💡 मुख्य विचार / Key Idea Card */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 space-y-1.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-900 font-mono">
-                <Lightbulb className="w-4 h-4 text-amber-600" />
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-600/40 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-300 font-mono">
+                <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>{language === 'hi' ? 'मुख्य विचार' : 'Core Concept'}</span>
               </div>
-              <p className="text-xs sm:text-sm text-amber-950 font-medium leading-relaxed">
+              <p className="text-xs sm:text-sm text-amber-950 dark:text-amber-100 font-medium leading-relaxed">
                 {language === 'hi' && lesson.hook_hi ? lesson.hook_hi : lesson.hook}
               </p>
             </div>
 
             {/* Why This Matters Section */}
             <div className="space-y-2">
-              <h3 className="font-serif italic font-bold text-base sm:text-lg text-[#090D16]">
+              <h3 className="font-serif italic font-bold text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
                 {language === 'hi' ? 'यह जानना आपके लिए क्यों आवश्यक है?' : 'Why This Matters In Everyday Life'}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-light whitespace-pre-line">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-light whitespace-pre-line">
                 {language === 'hi' && lesson.why_it_matters_hi
                   ? lesson.why_it_matters_hi
                   : lesson.why_it_matters}
@@ -305,7 +305,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
             {/* Quote or Core Axiom */}
             {lesson.quote && (
-              <div className="border-l-2 border-violet-500 pl-4 py-1 italic text-xs sm:text-sm text-slate-600 font-serif">
+              <div className="border-l-2 border-violet-500 pl-4 py-1 italic text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-serif">
                 "{lesson.quote}"
               </div>
             )}
@@ -314,7 +314,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
         {/* Steps 1..N: Concept Sections */}
         {currentStep >= 1 && currentStep <= totalSections && (
-          <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-2xs space-y-5">
+          <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-2xs space-y-5 transition-colors">
             {(() => {
               const sec = sections[currentStep - 1];
               const secTitle = language === 'hi' && sec.title_hi ? sec.title_hi : sec.title;
@@ -327,26 +327,26 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
               return (
                 <>
                   <div className="space-y-1">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-violet-700 bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200/60">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 px-2.5 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-700/50">
                       {language === 'hi' ? `बिंदु ${currentStep}` : `Part ${currentStep}`}
                     </span>
-                    <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] font-bold mt-1">
+                    <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold mt-1">
                       {secTitle}
                     </h2>
                   </div>
 
                   {/* Paragraph Spacing & Clean Text */}
-                  <div className="text-xs sm:text-sm text-slate-700 leading-relaxed font-light whitespace-pre-line space-y-3">
+                  <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-light whitespace-pre-line space-y-3">
                     {secContent}
                   </div>
 
                   {/* Highlight Block / Important Information */}
                   {secHighlight && (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#1A2234] border border-slate-200/80 dark:border-white/[0.08] space-y-1">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                         {language === 'hi' ? 'विशेष ध्यान दें' : 'Pro Tip / Note'}
                       </span>
-                      <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
                         {secHighlight}
                       </p>
                     </div>
@@ -354,12 +354,12 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
                   {/* Micro check-in if present */}
                   {sec.check_in_question && (
-                    <div className="p-4 rounded-2xl bg-violet-50/70 border border-violet-200/70 space-y-2">
-                      <p className="text-xs font-bold text-violet-950 flex items-center gap-1.5 font-mono">
-                        <HelpCircle className="w-4 h-4 text-violet-700" />
+                    <div className="p-4 rounded-2xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/70 dark:border-violet-700/50 space-y-2">
+                      <p className="text-xs font-bold text-violet-950 dark:text-violet-200 flex items-center gap-1.5 font-mono">
+                        <HelpCircle className="w-4 h-4 text-violet-700 dark:text-violet-400" />
                         <span>{language === 'hi' ? 'त्वरित विचार' : 'Quick Reflection'}</span>
                       </p>
-                      <p className="text-xs text-violet-900 font-light leading-relaxed">
+                      <p className="text-xs text-violet-900 dark:text-violet-300 font-light leading-relaxed">
                         {language === 'hi' && sec.check_in_question_hi
                           ? sec.check_in_question_hi
                           : sec.check_in_question}
@@ -374,19 +374,19 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
         {/* Step N+1: Practical Scenario & Analysis */}
         {currentStep === totalSections + 1 && (
-          <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-2xs space-y-5">
+          <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-2xs space-y-5 transition-colors">
             <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/70">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-200/70 dark:border-amber-700/50">
                 {language === 'hi' ? 'वास्तविक जीवन केस' : 'Real-World Scenario'}
               </span>
-              <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] font-bold mt-1">
+              <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold mt-1">
                 {language === 'hi'
                   ? (lesson.practical_scenario?.title_hi || 'व्यावहारिक स्थिति एवं विश्लेषण')
                   : (lesson.practical_scenario?.title || 'Practical Application')}
               </h2>
             </div>
 
-            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 border border-amber-200/70 text-xs sm:text-sm text-amber-950 font-light leading-relaxed whitespace-pre-line">
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-700/50 text-xs sm:text-sm text-amber-950 dark:text-amber-100 font-light leading-relaxed whitespace-pre-line">
               {language === 'hi' && lesson.practical_scenario?.scenario_hi
                 ? lesson.practical_scenario.scenario_hi
                 : (lesson.practical_scenario?.scenario || 'Scenario details')}
@@ -394,10 +394,10 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
             {lesson.practical_scenario?.analysis && (
               <div className="space-y-1.5 pt-2">
-                <h4 className="text-xs font-bold text-[#090D16] uppercase font-mono tracking-wider">
+                <h4 className="text-xs font-bold text-[#090D16] dark:text-[#F8FAFC] uppercase font-mono tracking-wider">
                   {language === 'hi' ? 'विशेषज्ञ विश्लेषण:' : 'Expert Analysis:'}
                 </h4>
-                <p className="text-xs sm:text-sm text-slate-700 font-light leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-light leading-relaxed">
                   {language === 'hi' && lesson.practical_scenario?.analysis_hi
                     ? lesson.practical_scenario.analysis_hi
                     : lesson.practical_scenario.analysis}
@@ -409,16 +409,16 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
         {/* Step N+2: Practical Activity (if present) */}
         {hasActivity && currentStep === totalSections + 2 && (
-          <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-2xs space-y-5">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/70">
+          <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-2xs space-y-5 transition-colors">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200/70 dark:border-emerald-700/50">
               {language === 'hi' ? 'करके सीखें' : 'Interactive Drill'}
             </span>
-            <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] font-bold">
+            <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold">
               {language === 'hi'
                 ? (lesson.practical_activity?.title_hi || 'व्यावहारिक अभ्यास')
                 : (lesson.practical_activity?.title || 'Hands-on Activity')}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-light whitespace-pre-line">
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-light whitespace-pre-line">
               {language === 'hi' && lesson.practical_activity?.instructions_hi
                 ? lesson.practical_activity.instructions_hi
                 : lesson.practical_activity?.instructions}
@@ -428,16 +428,16 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
 
         {/* Final Step: Key Takeaways & Quiz CTA */}
         {currentStep === totalSteps - 1 && (
-          <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-2xs space-y-5">
+          <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-2xs space-y-5 transition-colors">
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center text-sm font-bold">
+              <span className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-800 dark:text-violet-300 flex items-center justify-center text-sm font-bold">
                 ✓
               </span>
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                   {language === 'hi' ? 'संक्षेप' : 'Summary'}
                 </span>
-                <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] font-bold">
+                <h2 className="text-lg sm:text-xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold">
                   {language === 'hi' ? 'मुख्य निष्कर्ष (Key Takeaways)' : 'Key Takeaways'}
                 </h2>
               </div>
@@ -449,16 +449,16 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
                 lesson.key_takeaways ||
                 []
               ).map((point, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs sm:text-sm text-slate-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-[#1A2234] border border-slate-200/70 dark:border-white/[0.08] text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span className="font-light leading-relaxed">{point}</span>
                 </div>
               ))}
             </div>
 
             {/* Prompt for Quiz */}
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 font-light flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-700/50 text-xs text-amber-900 dark:text-amber-200 font-light flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>
                 {language === 'hi'
                   ? 'ज्ञान को पक्का करने के लिए 3 त्वरित प्रश्नों की क्विज़ दें और +20 XP अर्जित करें!'
@@ -470,13 +470,13 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
       </div>
 
       {/* 5. STICKY BOTTOM NAVIGATION ACTIONS */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-2xl border-t border-black/[0.08] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] py-3 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-2xl border-t border-black/[0.08] dark:border-white/[0.08] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] py-3 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] transition-all">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           {/* Previous Button */}
           <button
             onClick={handlePrev}
             id="lesson-prev-btn"
-            className="flex-1 sm:flex-initial py-3 px-4 rounded-2xl border border-black/[0.1] text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 sm:flex-initial py-3 px-4 rounded-2xl border border-black/[0.1] dark:border-white/[0.1] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.06] active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>{currentStep === 0 ? (language === 'hi' ? 'विषय' : 'Topics') : (language === 'hi' ? 'पिछला' : 'Previous')}</span>
@@ -486,7 +486,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
           {onOpenTia && (
             <button
               onClick={() => onOpenTia('explain')}
-              className="py-3 px-3.5 rounded-2xl bg-violet-50 text-violet-700 border border-violet-200/70 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-violet-100 transition-colors active:scale-95 shrink-0"
+              className="py-3 px-3.5 rounded-2xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/70 dark:border-violet-700/50 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors active:scale-95 shrink-0"
               title="Tia AI Explanation"
             >
               <Volume2 className="w-4 h-4" />
@@ -501,7 +501,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
             className={`flex-1 py-3 px-6 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 ${
               currentStep === totalSteps - 1
                 ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold shadow-[0_4px_16px_rgba(251,191,36,0.4)]'
-                : 'bg-[#090D16] hover:bg-black text-white'
+                : 'bg-[#090D16] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 text-white'
             }`}
           >
             <span>

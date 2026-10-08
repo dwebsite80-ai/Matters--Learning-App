@@ -153,14 +153,14 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
   if (completedLessonCount === 0 && !sessionActive) {
     return (
       <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-5 animate-fadeIn pb-24">
-        <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center mx-auto shadow-2xs">
+        <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-700/50 flex items-center justify-center mx-auto shadow-2xs">
           <RotateCcw className="w-7 h-7" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] font-medium">
+          <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-medium">
             {language === 'hi' ? 'पुनरीक्षण' : 'Revision'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-sm mx-auto font-light leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto font-light leading-relaxed">
             {language === 'hi'
               ? 'पहले एक पाठ पूरा करें और स्मृति को पक्का करने के लिए स्वतः स्मार्ट पुनरावलोकन प्रश्न यहाँ आ जाएंगे।'
               : 'Complete a lesson first to unlock smart spaced repetition drill cards.'}
@@ -185,19 +185,19 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
 
     return (
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6 text-center animate-fadeIn pb-24">
-        <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-10 shadow-md space-y-5">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center mx-auto shadow-2xs">
-            <Award className="w-8 h-8 text-emerald-600 animate-bounce" />
+        <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-md space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700/50 text-emerald-800 dark:text-emerald-300 flex items-center justify-center mx-auto shadow-2xs">
+            <Award className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-bounce" />
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 font-mono">
+            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-700/50 font-mono">
               {language === 'hi' ? 'पुनरीक्षण पूर्ण' : 'Revision Complete'}
             </span>
-            <h1 className="text-xl sm:text-3xl font-serif italic text-[#090D16] mt-3 font-medium">
+            <h1 className="text-xl sm:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] mt-3 font-medium">
               {language === 'hi' ? 'स्मृति और ज्ञान सशक्त हुआ!' : 'Memory Reinforced!'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-light leading-relaxed max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-light leading-relaxed max-w-sm mx-auto">
               {language === 'hi'
                 ? 'नियमित अंतराल पर अभ्यास करने से सीखा हुआ ज्ञान स्थायी स्मृति में सुरक्षित होता है।'
                 : 'Spaced revision resets your retention to 100% effortless recall.'}
@@ -205,18 +205,18 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
           </div>
 
           <div className="grid grid-cols-2 gap-3 py-1">
-            <div className="p-4 rounded-2xl bg-slate-50 border border-black/[0.06]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.06] dark:border-white/[0.08]">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider font-mono">
                 {language === 'hi' ? 'स्कोर' : 'Score'}
               </span>
-              <p className="text-2xl font-serif italic text-[#090D16] mt-0.5 font-bold">
+              <p className="text-2xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] mt-0.5 font-bold">
                 {correctCount} / {questions.length}
               </p>
               <span className="text-[11px] font-mono text-slate-400">({scorePct}%)</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-violet-50 text-violet-900 border border-violet-200/80">
-              <span className="text-[10px] font-bold text-violet-700 uppercase tracking-wider font-mono">
+            <div className="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 border border-violet-200/80 dark:border-violet-700/50">
+              <span className="text-[10px] font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider font-mono">
                 {language === 'hi' ? 'पुरस्कार' : 'Reward'}
               </span>
               <p className="text-2xl font-serif italic text-violet-950 mt-0.5 font-bold">
@@ -256,20 +256,20 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 animate-fadeIn pb-24">
         {/* Progress header */}
-        <div className="bg-white rounded-2xl p-3.5 border border-black/[0.06] shadow-2xs space-y-2">
+        <div className="bg-white dark:bg-[#131926] rounded-2xl p-3.5 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs space-y-2 transition-colors">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500 font-mono font-bold text-[11px] flex items-center gap-1.5">
-              <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+            <span className="text-slate-500 dark:text-slate-400 font-mono font-bold text-[11px] flex items-center gap-1.5">
+              <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               {language === 'hi'
                 ? `प्रश्न ${currentIndex + 1} / ${questions.length}`
                 : `Question ${currentIndex + 1} of ${questions.length}`}
             </span>
-            <span className="font-mono text-[10px] font-bold text-violet-700 bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200/60">
+            <span className="font-mono text-[10px] font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 px-2.5 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-700/50">
               +10 XP
             </span>
           </div>
 
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
             <div
               className="bg-gradient-to-r from-violet-600 to-amber-500 h-full rounded-full transition-all duration-300 ease-out"
               style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -278,8 +278,8 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
         </div>
 
         {/* Question Card */}
-        <div className="bg-white rounded-3xl border border-black/[0.06] p-5 sm:p-7 shadow-2xs space-y-5">
-          <h2 className="text-base sm:text-xl font-serif italic text-[#090D16] leading-snug font-bold">
+        <div className="bg-white dark:bg-[#131926] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] p-5 sm:p-7 shadow-2xs space-y-5 transition-colors">
+          <h2 className="text-base sm:text-xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] leading-snug font-bold">
             {qText}
           </h2>
 
@@ -293,18 +293,18 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
               const isSelected = selectedOption === opt.key;
               const isCorrectAnswer = opt.key === currentQ.correct_answer;
 
-              let optionStyle = 'border-black/[0.08] bg-slate-50 hover:bg-white text-[#090D16]';
+              let optionStyle = 'border-black/[0.08] dark:border-white/[0.08] bg-slate-50 dark:bg-[#161D2E] hover:bg-white dark:hover:bg-[#1A2234] text-[#090D16] dark:text-[#F8FAFC]';
 
               if (isSubmitted) {
                 if (isCorrectAnswer) {
-                  optionStyle = 'border-emerald-500 bg-emerald-50/90 text-emerald-950 font-medium';
+                  optionStyle = 'border-emerald-500 dark:border-emerald-600 bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-medium';
                 } else if (isSelected && !isCorrectAnswer) {
-                  optionStyle = 'border-rose-400 bg-rose-50/90 text-rose-950';
+                  optionStyle = 'border-rose-400 dark:border-rose-600 bg-rose-50/90 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100';
                 } else {
-                  optionStyle = 'border-black/[0.04] bg-slate-50 text-slate-400 opacity-60';
+                  optionStyle = 'border-black/[0.04] dark:border-white/[0.04] bg-slate-50 dark:bg-[#161D2E]/50 text-slate-400 dark:text-slate-500 opacity-60';
                 }
               } else if (isSelected) {
-                optionStyle = 'border-[#090D16] bg-white text-[#090D16] font-semibold ring-2 ring-black/5';
+                optionStyle = 'border-[#090D16] dark:border-violet-500 bg-white dark:bg-[#1A2234] text-[#090D16] dark:text-white font-semibold ring-2 ring-black/5 dark:ring-violet-500/20';
               }
 
               return (
@@ -320,10 +320,10 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                           ? 'bg-emerald-600 text-white'
                           : isSelected
                           ? 'bg-rose-600 text-white'
-                          : 'bg-slate-200 text-slate-600'
+                          : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                         : isSelected
-                        ? 'bg-[#090D16] text-white'
-                        : 'bg-white border border-slate-300 text-slate-700'
+                        ? 'bg-[#090D16] dark:bg-violet-600 text-white'
+                        : 'bg-white dark:bg-[#1A2234] border border-slate-300 dark:border-white/20 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     {opt.key}
@@ -338,19 +338,19 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
             <div
               className={`p-4 rounded-2xl border text-xs leading-relaxed animate-fadeIn ${
                 selectedOption === currentQ.correct_answer
-                  ? 'bg-emerald-50/90 border-emerald-200 text-emerald-950'
-                  : 'bg-amber-50/90 border-amber-200 text-amber-950'
+                  ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100'
+                  : 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-700/50 text-amber-950 dark:text-amber-100'
               }`}
             >
               <div className="flex items-center gap-1.5 font-bold mb-1 font-mono">
                 {selectedOption === currentQ.correct_answer ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{language === 'hi' ? 'सही उत्तर!' : 'Correct!'}</span>
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-4 h-4 text-amber-600" />
+                    <XCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>{language === 'hi' ? 'स्पष्टीकरण:' : 'Explanation:'}</span>
                   </>
                 )}
@@ -376,7 +376,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
               onClick={handleNext}
               disabled={saving}
               id="revision-next-btn"
-              className="w-full py-3.5 px-6 rounded-2xl font-bold text-xs uppercase tracking-wider text-white bg-[#090D16] hover:bg-black active:scale-95 transition-all shadow-md cursor-pointer"
+              className="w-full py-3.5 px-6 rounded-2xl font-bold text-xs uppercase tracking-wider text-white bg-[#090D16] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 active:scale-95 transition-all shadow-md cursor-pointer"
             >
               {saving ? (
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -452,8 +452,8 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
             onClick={() => setFilterMode(tab.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
               filterMode === tab.id
-                ? 'bg-[#090D16] text-white shadow-xs'
-                : 'bg-white border border-black/[0.08] text-slate-600 hover:text-black'
+                ? 'bg-[#090D16] dark:bg-violet-600 text-white shadow-xs'
+                : 'bg-white dark:bg-[#131926] border border-black/[0.08] dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white'
             }`}
           >
             {language === 'hi' ? tab.label_hi : tab.label_en}
@@ -464,10 +464,10 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
       {/* 4. REVISION CARDS FOR COMPLETED LESSONS */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif italic font-medium text-lg sm:text-xl text-[#090D16]">
+          <h3 className="font-serif italic font-medium text-lg sm:text-xl text-[#090D16] dark:text-[#F8FAFC]">
             {language === 'hi' ? 'पुनरीक्षण हेतु पाठ' : 'Lessons in Retention Pool'}
           </h3>
-          <span className="text-[11px] font-mono text-slate-400">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-400">
             {completedLessonCount} {language === 'hi' ? 'उपलब्ध' : 'ready'}
           </span>
         </div>
@@ -484,11 +484,11 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
             return (
               <div
                 key={prog.lesson_id}
-                className="p-3.5 sm:p-4 rounded-2xl bg-white border border-black/[0.06] shadow-2xs hover:border-black/15 transition-all flex items-center justify-between gap-3"
+                className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-black/15 dark:hover:border-white/15 transition-all flex items-center justify-between gap-3"
               >
                 {/* [Course/Lesson Thumbnail Image] */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 shadow-2xs">
                     <MattersImage
                       src={getLessonImage(
                         lesson || prog.lesson_id,
@@ -504,13 +504,13 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                     />
                   </div>
                   <div className="truncate">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block truncate">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-400 font-semibold block truncate">
                       {subjectName}
                     </span>
-                    <h4 className="font-serif italic font-bold text-xs sm:text-sm text-[#090D16] truncate">
+                    <h4 className="font-serif italic font-bold text-xs sm:text-sm text-[#090D16] dark:text-[#F8FAFC] truncate">
                       {lessonTitle}
                     </h4>
-                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                    <p className="text-[10px] font-mono text-slate-400 dark:text-slate-400 mt-0.5">
                       {language === 'hi' ? 'क्विज़ स्कोर:' : 'Score:'} {prog.quiz_score}%
                     </p>
                   </div>
@@ -519,7 +519,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({ onStartFirstLesson }
                 {/* Existing action button */}
                 <button
                   onClick={handleStartSession}
-                  className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-black hover:text-white border border-slate-200/80 text-[11px] font-bold text-slate-700 transition-colors shrink-0 cursor-pointer active:scale-95"
+                  className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#1A2234] hover:bg-black hover:text-white dark:hover:bg-violet-600 border border-slate-200/80 dark:border-white/10 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition-colors shrink-0 cursor-pointer active:scale-95"
                 >
                   {language === 'hi' ? 'अभ्यास करें' : 'Review'}
                 </button>

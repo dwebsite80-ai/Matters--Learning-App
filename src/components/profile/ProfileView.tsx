@@ -6,6 +6,8 @@ import {
   Target,
   Bell,
   Moon,
+  Sun,
+  Laptop,
   ChevronRight,
   Crown,
   LogOut,
@@ -15,6 +17,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   DailyMinutes,
   LearningLevel,
@@ -33,6 +36,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   const { user, preferences, updatePreferences, logOut } = useAuth();
   const { stats, currentStreak: ctxStreak } = useLearning();
   const { language, setLanguage } = useLanguage();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<'preferences' | 'achievements' | 'account'>('preferences');
 
@@ -106,7 +110,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
         {/* Circular Avatar Overlapping Cover with Edit Pencil Badge */}
         <div className="relative -mt-14 flex flex-col items-center text-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-md bg-[#090D16]">
+            <div className="w-24 h-24 rounded-full border-4 border-white dark:border-[#131926] overflow-hidden shadow-md bg-[#090D16]">
               <MattersImage
                 src={avatarUrl}
                 fallbackSrc={USER_AVATAR_IMAGE}
@@ -115,20 +119,20 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
               />
             </div>
             {/* Edit pencil icon */}
-            <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-xs border-2 border-white">
+            <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-xs border-2 border-white dark:border-[#131926]">
               <Pencil className="w-3 h-3" />
             </div>
           </div>
 
           {/* User Name & Info */}
           <div className="mt-2 space-y-0.5">
-            <h1 className="text-xl sm:text-2xl font-serif italic text-[#090D16] font-bold">
+            <h1 className="text-xl sm:text-2xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold">
               {user?.name || 'Anurag'}
             </h1>
-            <p className="text-xs text-slate-500 font-mono">
-              @{user?.username || 'anurag'} · <span className="font-bold text-violet-700">Level 2</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              @{user?.username || 'anurag'} · <span className="font-bold text-violet-700 dark:text-violet-400">Level 2</span>
             </p>
-            <p className="text-[11px] text-slate-400 font-mono flex items-center justify-center gap-1 pt-0.5">
+            <p className="text-[11px] text-slate-400 dark:text-slate-400 font-mono flex items-center justify-center gap-1 pt-0.5">
               <Calendar className="w-3 h-3 text-slate-400" />
               <span>Member since Aug 2026</span>
             </p>
@@ -140,34 +144,34 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       <section aria-label="Profile Stats">
         <div className="grid grid-cols-3 gap-2.5">
           {/* ⭐ 1,250 Total XP */}
-          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">⭐</span>
-            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {totalXp}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Total XP
             </span>
           </div>
 
           {/* 🔥 7 Streak */}
-          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">🔥</span>
-            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {currentStreak}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Streak
             </span>
           </div>
 
           {/* 📖 12 Lessons */}
-          <div className="p-3 rounded-2xl bg-white border border-black/[0.06] shadow-sm text-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
             <span className="text-xl block">📖</span>
-            <p className="text-lg font-serif italic font-bold text-[#090D16]">
+            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
               {lessonsCompleted}
             </p>
-            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 block font-semibold truncate">
+            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
               Lessons
             </span>
           </div>
@@ -175,7 +179,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       </section>
 
       {/* 3. TABS: PREFERENCES / ACHIEVEMENTS / ACCOUNT */}
-      <div className="flex bg-slate-100 p-1 rounded-2xl border border-black/[0.04]">
+      <div className="flex bg-slate-100 dark:bg-[#161D2C] p-1 rounded-2xl border border-black/[0.04] dark:border-white/[0.06]">
         {[
           { id: 'preferences' as const, label: 'Preferences' },
           { id: 'achievements' as const, label: 'Achievements' },
@@ -187,7 +191,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
               activeTab === tab.id
                 ? 'bg-violet-700 text-white shadow-xs font-bold'
-                : 'text-slate-500 hover:text-black'
+                : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
             }`}
           >
             {tab.label}
@@ -199,25 +203,25 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       {activeTab === 'preferences' && (
         <div className="space-y-2.5">
           {/* Learning Language Row */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shrink-0">
                 <Globe className="w-4 h-4" />
               </div>
-              <span className="text-xs font-semibold text-[#090D16]">
+              <span className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
                 Learning Language
               </span>
             </div>
 
             {/* Segmented language toggle */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-black/[0.06]">
+            <div className="flex items-center bg-slate-100 dark:bg-[#1A2234] p-0.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   language === 'en'
                     ? 'bg-white text-violet-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-black'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {language === 'en' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
@@ -229,7 +233,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   language === 'hi'
                     ? 'bg-white text-violet-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-black'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {language === 'hi' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
@@ -245,46 +249,107 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
               setDailyMinutes(next as DailyMinutes);
               handleSavePreferences();
             }}
-            className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0">
                 <Target className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-[#090D16]">Daily Goal</p>
-                <p className="text-[11px] text-slate-400 font-light">{dailyMinutes === 10 ? '2 lessons per day' : '3 lessons per day'}</p>
+                <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Daily Goal</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">{dailyMinutes === 10 ? '2 lessons per day' : '3 lessons per day'}</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
 
           {/* Notifications Row */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-[#090D16]">Notifications</p>
-                <p className="text-[11px] text-slate-400 font-light">Lesson reminders and updates</p>
+                <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Notifications</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">Lesson reminders and updates</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
 
-          {/* Appearance Row */}
-          <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 active:scale-[0.99] transition-all">
+          {/* Appearance Row with 3-Way Toggle: Light / Dark / System */}
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                <Moon className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-violet-400" />
+                ) : theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <Laptop className="w-4 h-4 text-indigo-400" />
+                )}
               </div>
               <div>
-                <p className="text-xs font-semibold text-[#090D16]">Appearance</p>
-                <p className="text-[11px] text-slate-400 font-light">Light Mode</p>
+                <p className="text-xs font-semibold text-[#090D16] dark:text-slate-100">
+                  {language === 'hi' ? 'दिखावट (थीम)' : 'Appearance'}
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
+                  {theme === 'light'
+                    ? (language === 'hi' ? 'लाइट मोड' : 'Light Mode')
+                    : theme === 'dark'
+                    ? (language === 'hi' ? 'डार्क मोड' : 'Dark Mode')
+                    : (language === 'hi'
+                        ? `सिस्टम (${resolvedTheme === 'dark' ? 'डार्क' : 'लाइट'})`
+                        : `System (${resolvedTheme === 'dark' ? 'Dark' : 'Light'})`)}
+                </p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+
+            {/* Segmented Appearance Toggle: Light | Dark | System */}
+            <div className="flex items-center bg-slate-100 dark:bg-[#1A2234] p-0.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08] self-stretch sm:self-auto justify-between sm:justify-start">
+              <button
+                type="button"
+                id="theme-light-btn"
+                onClick={() => setTheme('light')}
+                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  theme === 'light'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
+                }`}
+                title={language === 'hi' ? 'लाइट' : 'Light'}
+              >
+                <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : ''}`} />
+                <span>{language === 'hi' ? 'लाइट' : 'Light'}</span>
+              </button>
+              <button
+                type="button"
+                id="theme-dark-btn"
+                onClick={() => setTheme('dark')}
+                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  theme === 'dark'
+                    ? 'bg-violet-600 text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
+                }`}
+                title={language === 'hi' ? 'डार्क' : 'Dark'}
+              >
+                <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-violet-200' : ''}`} />
+                <span>{language === 'hi' ? 'डार्क' : 'Dark'}</span>
+              </button>
+              <button
+                type="button"
+                id="theme-system-btn"
+                onClick={() => setTheme('system')}
+                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  theme === 'system'
+                    ? 'bg-white dark:bg-[#253046] text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
+                }`}
+                title={language === 'hi' ? 'सिस्टम' : 'System'}
+              >
+                <Laptop className="w-3.5 h-3.5" />
+                <span>{language === 'hi' ? 'सिस्टम' : 'System'}</span>
+              </button>
+            </div>
           </div>
 
           {/* 5. LEVEL 2 ACHIEVEMENT CARD AT BOTTOM (MATCHING REFERENCE MOCKUP SCREEN 5) */}
@@ -318,8 +383,8 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
       {/* ACHIEVEMENTS TAB */}
       {activeTab === 'achievements' && (
-        <div className="p-4 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-3">
-          <h3 className="font-serif italic font-bold text-sm text-[#090D16]">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
+          <h3 className="font-serif italic font-bold text-sm text-[#090D16] dark:text-[#F8FAFC]">
             Milestones Unlocked
           </h3>
           <div className="grid grid-cols-2 gap-2.5">
@@ -329,10 +394,10 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
               { icon: '⭐', title: 'Century Club', desc: '1,000+ XP earned', unlocked: true },
               { icon: '🏆', title: 'Scholar', desc: '5 domains studied', unlocked: true },
             ].map((m, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-center space-y-0.5">
+              <div key={idx} className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-center space-y-0.5">
                 <span className="text-xl block">{m.icon}</span>
-                <p className="font-serif italic font-bold text-xs text-amber-950">{m.title}</p>
-                <span className="text-[9px] text-amber-800 font-mono block">{m.desc}</span>
+                <p className="font-serif italic font-bold text-xs text-amber-950 dark:text-amber-200">{m.title}</p>
+                <span className="text-[9px] text-amber-800 dark:text-amber-300 font-mono block">{m.desc}</span>
               </div>
             ))}
           </div>
@@ -341,25 +406,25 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
       {/* ACCOUNT TAB */}
       {activeTab === 'account' && (
-        <div className="p-4 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-3">
-          <h3 className="font-serif italic font-bold text-sm text-[#090D16]">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
+          <h3 className="font-serif italic font-bold text-sm text-[#090D16] dark:text-[#F8FAFC]">
             Account Info
           </h3>
           <div className="space-y-2 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
-              <span className="text-slate-400">Name</span>
-              <strong className="text-[#090D16]">{user?.name || 'Anurag'}</strong>
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] flex items-center justify-between">
+              <span className="text-slate-400 dark:text-slate-400">Name</span>
+              <strong className="text-[#090D16] dark:text-[#F8FAFC]">{user?.name || 'Anurag'}</strong>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
-              <span className="text-slate-400">Username</span>
-              <strong className="text-[#090D16] font-mono">@{user?.username || 'anurag'}</strong>
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] flex items-center justify-between">
+              <span className="text-slate-400 dark:text-slate-400">Username</span>
+              <strong className="text-[#090D16] dark:text-[#F8FAFC] font-mono">@{user?.username || 'anurag'}</strong>
             </div>
           </div>
 
           <button
             onClick={logOut}
             id="logout-btn"
-            className="w-full py-3 px-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs font-bold transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 mt-2"
+            className="w-full py-3 px-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs font-bold transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 mt-2"
           >
             <LogOut className="w-4 h-4" />
             <span>Log Out</span>

@@ -50,7 +50,7 @@ export const TiaFloatingButton: React.FC<TiaFloatingButtonProps> = ({
     <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+70px)] sm:bottom-8 right-[11px] sm:right-6 z-40 flex flex-col items-end gap-1.5 pointer-events-none">
       {/* Speech bubble prompt */}
       {showBubble && (
-        <div className="pointer-events-auto flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-2xl bg-white/95 backdrop-blur-xl border border-black/[0.08] shadow-[0_4px_16px_rgb(0,0,0,0.12)] text-[#121212] max-w-[150px] sm:max-w-[210px] animate-fadeIn">
+        <div className="pointer-events-auto flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-2xl bg-white/95 dark:bg-[#131926]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.1] shadow-[0_4px_16px_rgb(0,0,0,0.12)] dark:shadow-[0_4px_16px_rgb(0,0,0,0.5)] text-[#121212] dark:text-[#F8FAFC] max-w-[150px] sm:max-w-[210px] animate-fadeIn transition-colors">
           <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500 shrink-0" />
           <span className="font-medium text-[9px] sm:text-[11px] leading-tight truncate">{bubbleText}</span>
           <button
@@ -58,7 +58,7 @@ export const TiaFloatingButton: React.FC<TiaFloatingButtonProps> = ({
               e.stopPropagation();
               setShowBubble(false);
             }}
-            className="p-0.5 text-black/40 hover:text-black transition-colors rounded-full cursor-pointer ml-auto shrink-0"
+            className="p-0.5 text-black/40 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors rounded-full cursor-pointer ml-auto shrink-0"
             aria-label="Dismiss bubble"
           >
             <X className="w-2.5 h-2.5" />

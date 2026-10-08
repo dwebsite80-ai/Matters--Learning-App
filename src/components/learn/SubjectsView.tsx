@@ -60,10 +60,10 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
     <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-4 animate-fadeIn pb-28">
       {/* 1. HEADER */}
       <div className="space-y-0.5 pt-1">
-        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] tracking-tight font-medium">
+        <h1 className="text-2xl sm:text-3xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] tracking-tight font-medium">
           {language === 'hi' ? 'अपने लिए कुछ नया सीखें' : 'Learn Something New For Yourself'}
         </h1>
-        <p className="text-xs text-slate-500 font-light">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-light">
           {language === 'hi'
             ? 'ज्ञान, विचार और कौशल — एक ही जगह'
             : 'Knowledge, Ideas & Skills — All in One Place'}
@@ -80,12 +80,12 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={language === 'hi' ? 'कोर्स खोजें...' : 'Search courses...'}
-          className="w-full pl-10 pr-9 py-2.5 bg-white rounded-2xl border border-black/[0.08] text-xs text-[#090D16] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-2xs"
+          className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-[#131926] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] text-xs text-[#090D16] dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-2xs"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-black cursor-pointer"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-black dark:hover:text-white cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -104,7 +104,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
                 isActive
                   ? 'bg-violet-700 text-white shadow-xs'
-                  : 'bg-white border border-black/[0.08] text-slate-600 hover:text-black hover:border-black/20'
+                  : 'bg-white dark:bg-[#131926] border border-black/[0.08] dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20'
               }`}
             >
               {label}
@@ -116,8 +116,8 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
       {/* 4. VERTICAL COURSE LIST (MATCHING REFERENCE MOCKUP SCREEN 2) */}
       <div className="space-y-3 pt-1">
         {filteredSubjects.length === 0 ? (
-          <div className="text-center py-10 bg-white rounded-2xl border border-black/[0.06] p-5 space-y-2">
-            <p className="text-sm font-semibold text-slate-600">
+          <div className="text-center py-10 bg-white dark:bg-[#131926] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 space-y-2">
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               {language === 'hi' ? 'कोई मेल खाता कोर्स नहीं मिला' : 'No matching courses found'}
             </p>
             <p className="text-xs text-slate-400">
@@ -135,10 +135,10 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
               <div
                 key={sub.id}
                 onClick={() => onSelectSubject(sub.id)}
-                className="p-3 sm:p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm hover:border-black/20 hover:shadow-md transition-all cursor-pointer active:scale-[0.99] flex items-center gap-3.5 group"
+                className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:border-black/20 dark:hover:border-white/20 hover:shadow-md transition-all cursor-pointer active:scale-[0.99] flex items-center gap-3.5 group"
               >
                 {/* [Large Square High-Quality Photographic Thumbnail] */}
-                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 border border-black/10 shadow-2xs">
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 shadow-2xs">
                   <MattersImage
                     src={thumbnail}
                     alt={subName}
@@ -151,25 +151,25 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
                 {/* [Course Information] */}
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center justify-between gap-1">
-                    <h3 className="font-serif italic font-bold text-sm sm:text-base text-[#090D16] group-hover:text-violet-700 transition-colors truncate">
+                    <h3 className="font-serif italic font-bold text-sm sm:text-base text-[#090D16] dark:text-[#F8FAFC] group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors truncate">
                       {subName}
                     </h3>
                   </div>
 
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-light">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-light">
                     {subDesc}
                   </p>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-400 pt-1">
                     <span className="font-mono">
                       {progress.totalCount} {language === 'hi' ? 'पाठ' : 'lessons'}
                     </span>
-                    <span className="font-mono font-bold text-slate-600">
+                    <span className="font-mono font-bold text-slate-600 dark:text-slate-300">
                       {progress.percentage}%
                     </span>
                   </div>
 
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-0.5">
+                  <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden mt-0.5">
                     <div
                       className="h-full bg-gradient-to-r from-violet-600 to-[#FBBF24] rounded-full transition-all duration-500"
                       style={{ width: `${progress.percentage}%` }}
@@ -178,7 +178,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({ onSelectSubject }) =
                 </div>
 
                 {/* Circular Arrow Button */}
-                <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-500 shrink-0 group-hover:bg-[#090D16] group-hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-[#1A2234] border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0 group-hover:bg-[#090D16] dark:group-hover:bg-violet-600 group-hover:text-white transition-colors">
                   <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
