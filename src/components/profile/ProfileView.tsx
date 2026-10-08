@@ -28,6 +28,15 @@ import {
 import { PROFILE_COVER_IMAGE, USER_AVATAR_IMAGE } from '../../data/courseImages';
 import { MattersImage } from '../common/MattersImage';
 import { AvatarPickerModal } from './AvatarPickerModal';
+import { DailyGoalModal } from './DailyGoalModal';
+import { NotificationSettingsModal } from './NotificationSettingsModal';
+import {
+  getStoredDailyGoal,
+  setStoredDailyGoal,
+  getStoredNotificationSettings,
+  setStoredNotificationSettings,
+  NotificationSettings,
+} from '../../data/preferencesStorage';
 import {
   getStoredUserAvatar,
   setStoredUserAvatar,
@@ -61,6 +70,16 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   const [saving, setSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
+  const [isDailyGoalModalOpen, setIsDailyGoalModalOpen] = useState<boolean>(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
+
+  const [dailyGoal, setDailyGoal] = useState<number>(() => {
+    return getStoredDailyGoal(user?.id);
+  });
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
+    return getStoredNotificationSettings(user?.id);
+  });
+
   const [currentAvatar, setCurrentAvatar] = useState<string>(() => {
     return (
       getStoredUserAvatar() ||
@@ -83,6 +102,39 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
     }
   };
 
+  const handleSaveDailyGoal = async (newGoal: number) => {
+    setDailyGoal(newGoal);
+    setStoredDailyGoal(newGoal, user?.id);
+    const newMinutes: DailyMinutes = (newGoal >= 3 ? 20 : 10) as DailyMinutes;
+    setDailyMinutes(newMinutes);
+    try {
+      await updatePreferences({
+        daily_minutes: newMinutes,
+      });
+    } catch (err) {
+      console.warn('Error saving daily goal preference', err);
+    }
+  };
+
+  const handleSaveNotificationSettings = async (newSettings: NotificationSettings) => {
+    setNotificationSettings(newSettings);
+    setStoredNotificationSettings(newSettings, user?.id);
+    let mappedTime: PreferredTime = 'Morning';
+    if (newSettings.reminderTime.startsWith('Morning')) mappedTime = 'Morning';
+    else if (newSettings.reminderTime.startsWith('Afternoon')) mappedTime = 'Afternoon';
+    else if (newSettings.reminderTime.startsWith('Evening')) mappedTime = 'Evening';
+    else mappedTime = 'Custom';
+
+    setPreferredTime(mappedTime);
+    try {
+      await updatePreferences({
+        preferred_time: mappedTime,
+      });
+    } catch (err) {
+      console.warn('Error saving notification preferences', err);
+    }
+  };
+
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
   const totalXp = stats?.total_xp || 1250;
   const lessonsCompleted = stats?.lessons_completed_count || 12;
@@ -95,7 +147,11 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       setPreferredTime(preferences.preferred_time);
       setSelectedSubjects(preferences.selected_subjects || []);
     }
-  }, [preferences]);
+    if (user?.id) {
+      setDailyGoal(getStoredDailyGoal(user.id));
+      setNotificationSettings(getStoredNotificationSettings(user.id));
+    }
+  }, [preferences, user?.id]);
 
   const handleSavePreferences = async () => {
     setSaving(true);
@@ -283,11 +339,8 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
           {/* Daily Goal Row */}
           <div
-            onClick={() => {
-              const next = dailyMinutes === 10 ? 20 : 10;
-              setDailyMinutes(next as DailyMinutes);
-              handleSavePreferences();
-            }}
+            onClick={() => setIsDailyGoalModalOpen(true)}
+            id="profile-daily-goal-btn"
             className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all"
           >
             <div className="flex items-center gap-3">
@@ -296,21 +349,31 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
               </div>
               <div>
                 <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Daily Goal</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">{dailyMinutes === 10 ? '2 lessons per day' : '3 lessons per day'}</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
+                  {dailyGoal === 1 ? '1 lesson per day' : `${dailyGoal} lessons per day`}
+                </p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
 
           {/* Notifications Row */}
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all">
+          <div
+            onClick={() => setIsNotificationModalOpen(true)}
+            id="profile-notifications-btn"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all"
+          >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Notifications</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">Lesson reminders and updates</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
+                  {notificationSettings.dailyReminders
+                    ? 'Lesson reminders and updates'
+                    : 'Reminders paused'}
+                </p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -477,6 +540,22 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
         onClose={() => setIsAvatarModalOpen(false)}
         currentAvatar={avatarUrl}
         onSelectAvatar={handleAvatarChange}
+      />
+
+      {/* Daily Goal Settings Modal */}
+      <DailyGoalModal
+        isOpen={isDailyGoalModalOpen}
+        onClose={() => setIsDailyGoalModalOpen(false)}
+        currentGoal={dailyGoal}
+        onSaveGoal={handleSaveDailyGoal}
+      />
+
+      {/* Notification Settings Modal */}
+      <NotificationSettingsModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+        currentSettings={notificationSettings}
+        onSaveSettings={handleSaveNotificationSettings}
       />
     </div>
   );
