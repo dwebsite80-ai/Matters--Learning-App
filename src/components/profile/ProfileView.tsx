@@ -30,6 +30,7 @@ import { MattersImage } from '../common/MattersImage';
 import { AvatarPickerModal } from './AvatarPickerModal';
 import { DailyGoalModal } from './DailyGoalModal';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
+import { AchievementsView } from './AchievementsView';
 import {
   getStoredDailyGoal,
   setStoredDailyGoal,
@@ -485,25 +486,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
       {/* ACHIEVEMENTS TAB */}
       {activeTab === 'achievements' && (
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
-          <h3 className="font-serif italic font-bold text-sm text-[#090D16] dark:text-[#F8FAFC]">
-            Milestones Unlocked
-          </h3>
-          <div className="grid grid-cols-2 gap-2.5">
-            {[
-              { icon: '🌱', title: 'First Step', desc: '1st lesson completed', unlocked: true },
-              { icon: '🔥', title: 'Consistency', desc: '7-day streak', unlocked: true },
-              { icon: '⭐', title: 'Century Club', desc: '1,000+ XP earned', unlocked: true },
-              { icon: '🏆', title: 'Scholar', desc: '5 domains studied', unlocked: true },
-            ].map((m, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-center space-y-0.5">
-                <span className="text-xl block">{m.icon}</span>
-                <p className="font-serif italic font-bold text-xs text-amber-950 dark:text-amber-200">{m.title}</p>
-                <span className="text-[9px] text-amber-800 dark:text-amber-300 font-mono block">{m.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AchievementsView />
       )}
 
       {/* ACCOUNT TAB */}

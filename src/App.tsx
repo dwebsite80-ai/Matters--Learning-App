@@ -281,7 +281,12 @@ function MainAppContent() {
           />
         ) : activeTab === 'progress' ? (
           /* Analytics & Progress View */
-          <ProgressView />
+          <ProgressView
+            onSelectSubject={(subId) => {
+              setSelectedSubjectId(subId);
+              handleTabChange('learn');
+            }}
+          />
         ) : activeTab === 'profile' ? (
           /* Profile & Preferences View */
           <ProfileView onOpenSchemaModal={() => setIsSchemaModalOpen(true)} />

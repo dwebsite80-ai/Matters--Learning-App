@@ -11,8 +11,14 @@ import { useAuth } from '../../context/AuthContext';
 import { SubjectId, UserProgress } from '../../types';
 import { getSubjectThumbnail, getImageObjectPosition } from '../../data/courseImages';
 import { MattersImage } from '../common/MattersImage';
+import { LearningActivityCalendar } from './LearningActivityCalendar';
+import { AllCoursesProgressView } from './AllCoursesProgressView';
 
-export const ProgressView: React.FC = () => {
+interface ProgressViewProps {
+  onSelectSubject?: (subjectId: SubjectId) => void;
+}
+
+export const ProgressView: React.FC<ProgressViewProps> = ({ onSelectSubject }) => {
   const { preferences } = useAuth();
   const {
     stats,
@@ -24,6 +30,7 @@ export const ProgressView: React.FC = () => {
   const { language } = useLanguage();
 
   const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all');
+  const [subView, setSubView] = useState<'main' | 'calendar' | 'all-courses'>('main');
 
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
   const totalXp = stats?.total_xp || 1250;
@@ -52,6 +59,19 @@ export const ProgressView: React.FC = () => {
     [0, 1, 1, 1, 1, 0, 1],
     [1, 1, 0, 1, 0, 0, 0],
   ];
+
+  if (subView === 'calendar') {
+    return <LearningActivityCalendar onBack={() => setSubView('main')} />;
+  }
+
+  if (subView === 'all-courses') {
+    return (
+      <AllCoursesProgressView
+        onBack={() => setSubView('main')}
+        onSelectSubject={onSelectSubject}
+      />
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-5 py-3 sm:py-5 space-y-5 animate-fadeIn pb-28">
@@ -174,7 +194,12 @@ export const ProgressView: React.FC = () => {
           <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             Learning Activity
           </h3>
-          <button className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setSubView('calendar')}
+            id="view-calendar-btn"
+            className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer active:scale-95 transition-transform"
+          >
             View Calendar →
           </button>
         </div>
@@ -215,7 +240,12 @@ export const ProgressView: React.FC = () => {
           <h3 className="font-serif italic font-medium text-base sm:text-lg text-[#090D16] dark:text-[#F8FAFC]">
             Course Progress
           </h3>
-          <button className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setSubView('all-courses')}
+            id="see-all-courses-btn"
+            className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 cursor-pointer active:scale-95 transition-transform"
+          >
             See All →
           </button>
         </div>
@@ -229,7 +259,10 @@ export const ProgressView: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center gap-3 group"
+                onClick={() => onSelectSubject && onSelectSubject(sub.id)}
+                className={`p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center gap-3 group ${
+                  onSelectSubject ? 'cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all' : ''
+                }`}
               >
                 {/* Small square thumbnail photo */}
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10">
