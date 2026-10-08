@@ -20,6 +20,7 @@ import { ActiveTab, SubjectId } from '../../types';
 import { ALL_LESSONS } from '../../data/initialContent';
 import { USER_AVATAR_IMAGE } from '../../data/courseImages';
 import { MattersImage } from '../common/MattersImage';
+import { getStoredUserAvatar } from '../../data/avatars';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -37,6 +38,20 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notificationsRead, setNotificationsRead] = useState(false);
+  const [navAvatar, setNavAvatar] = useState<string>(() => {
+    return getStoredUserAvatar() || (user as any)?.avatar_url || USER_AVATAR_IMAGE;
+  });
+
+  React.useEffect(() => {
+    const handleAvatarChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ avatarUrl: string }>;
+      if (customEvent.detail?.avatarUrl) {
+        setNavAvatar(customEvent.detail.avatarUrl);
+      }
+    };
+    window.addEventListener('matters:avatar-changed', handleAvatarChange);
+    return () => window.removeEventListener('matters:avatar-changed', handleAvatarChange);
+  }, []);
 
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 0;
   const totalXp = stats?.total_xp || 0;
@@ -287,10 +302,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               title={t('nav.profile')}
               aria-label="Profile"
             >
-              <MattersImage
-                src={(user as any)?.avatar_url || USER_AVATAR_IMAGE}
-                fallbackSrc={USER_AVATAR_IMAGE}
-                alt={user?.name || 'Anurag'}
+              <img
+                src={navAvatar}
+                alt={user?.name || 'Profile'}
+                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
               />
             </button>

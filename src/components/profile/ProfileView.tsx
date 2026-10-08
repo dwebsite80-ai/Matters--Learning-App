@@ -27,6 +27,12 @@ import {
 } from '../../types';
 import { PROFILE_COVER_IMAGE, USER_AVATAR_IMAGE } from '../../data/courseImages';
 import { MattersImage } from '../common/MattersImage';
+import { AvatarPickerModal } from './AvatarPickerModal';
+import {
+  getStoredUserAvatar,
+  setStoredUserAvatar,
+  INDIAN_MALE_AVATARS,
+} from '../../data/avatars';
 
 interface ProfileViewProps {
   onOpenSchemaModal?: () => void;
@@ -54,6 +60,28 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   );
   const [saving, setSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
+  const [currentAvatar, setCurrentAvatar] = useState<string>(() => {
+    return (
+      getStoredUserAvatar() ||
+      (user as any)?.avatar_url ||
+      INDIAN_MALE_AVATARS[0].image
+    );
+  });
+
+  const handleAvatarChange = (newAvatarUrl: string) => {
+    setCurrentAvatar(newAvatarUrl);
+    setStoredUserAvatar(newAvatarUrl);
+    try {
+      window.dispatchEvent(
+        new CustomEvent('matters:avatar-changed', {
+          detail: { avatarUrl: newAvatarUrl },
+        })
+      );
+    } catch {
+      // ignore
+    }
+  };
 
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
   const totalXp = stats?.total_xp || 1250;
@@ -89,9 +117,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
     }
   };
 
-  const avatarUrl =
-    (user as any)?.avatar_url ||
-    USER_AVATAR_IMAGE;
+  const avatarUrl = currentAvatar || (user as any)?.avatar_url || USER_AVATAR_IMAGE;
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-5 py-2 space-y-4 animate-fadeIn pb-28">
@@ -109,19 +135,32 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
         {/* Circular Avatar Overlapping Cover with Edit Pencil Badge */}
         <div className="relative -mt-14 flex flex-col items-center text-center">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full border-4 border-white dark:border-[#131926] overflow-hidden shadow-md bg-[#090D16]">
-              <MattersImage
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="relative w-24 h-24 rounded-full border-4 border-white dark:border-[#131926] overflow-hidden shadow-md bg-[#090D16] focus:outline-none focus:ring-4 focus:ring-violet-500/40 cursor-pointer transition-transform active:scale-95 block"
+              title="Change profile avatar"
+              aria-label="Change profile avatar"
+            >
+              <img
                 src={avatarUrl}
-                fallbackSrc={USER_AVATAR_IMAGE}
-                alt={user?.name || 'Anurag'}
-                className="w-full h-full object-cover"
+                alt={user?.name || 'User Profile'}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-200"
               />
-            </div>
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+            </button>
             {/* Edit pencil icon */}
-            <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-xs border-2 border-white dark:border-[#131926]">
-              <Pencil className="w-3 h-3" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="absolute bottom-0 right-1 w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-md border-2 border-white dark:border-[#131926] transition-transform active:scale-90 cursor-pointer"
+              title="Change profile avatar"
+              aria-label="Change profile avatar"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* User Name & Info */}
@@ -431,6 +470,14 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           </button>
         </div>
       )}
+
+      {/* Avatar Selection Modal */}
+      <AvatarPickerModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={avatarUrl}
+        onSelectAvatar={handleAvatarChange}
+      />
     </div>
   );
 };
