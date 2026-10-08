@@ -61,7 +61,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ onSelectSubject }) =
   ];
 
   if (subView === 'calendar') {
-    return <LearningActivityCalendar onBack={() => setSubView('main')} />;
+    return (
+      <LearningActivityCalendar
+        onBack={() => setSubView('main')}
+        onSelectSubject={onSelectSubject}
+      />
+    );
   }
 
   if (subView === 'all-courses') {
