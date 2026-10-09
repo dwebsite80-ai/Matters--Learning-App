@@ -28,6 +28,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
   const getRingColor = () => {
     switch (state) {
       case 'listening':
+      case 'followup_listening':
         return size === 'xs'
           ? 'ring-2 ring-emerald-400/60 animate-pulse'
           : 'ring-4 ring-emerald-400/60 animate-pulse';
@@ -50,7 +51,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
       className={`relative inline-flex items-center justify-center rounded-full select-none ${className} ${onClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
     >
       {/* Outer Pulse Rings for Listening / Speaking */}
-      {state === 'listening' && (
+      {(state === 'listening' || state === 'followup_listening') && (
         <span className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
       )}
       {state === 'speaking' && (
@@ -68,7 +69,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
             <div className="flex items-center gap-1.5 mb-0.5">
               <span
                 className={`w-1.5 h-2.5 rounded-full bg-white transition-all ${
-                  state === 'listening'
+                  state === 'listening' || state === 'followup_listening'
                     ? 'scale-y-125 bg-emerald-300'
                     : state === 'thinking'
                     ? 'animate-bounce bg-amber-300'
@@ -79,7 +80,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
               />
               <span
                 className={`w-1.5 h-2.5 rounded-full bg-white transition-all ${
-                  state === 'listening'
+                  state === 'listening' || state === 'followup_listening'
                     ? 'scale-y-125 bg-emerald-300'
                     : state === 'thinking'
                     ? 'animate-bounce delay-100 bg-amber-300'
@@ -97,7 +98,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
                 <span className="w-0.5 h-3 bg-white animate-pulse delay-75" />
                 <span className="w-0.5 h-1.5 bg-white animate-pulse delay-150" />
               </div>
-            ) : state === 'listening' ? (
+            ) : state === 'listening' || state === 'followup_listening' ? (
               <div className="w-3 h-1 bg-emerald-300 rounded-full animate-pulse" />
             ) : state === 'thinking' ? (
               <div className="w-2 h-2 rounded-full border-t border-amber-300 animate-spin" />
@@ -117,7 +118,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
       {showBadge && (
         <div
           className={`absolute -bottom-1 -right-1 p-1 rounded-full text-white text-[9px] shadow-sm border border-white ${
-            state === 'listening'
+            state === 'listening' || state === 'followup_listening'
               ? 'bg-emerald-500'
               : state === 'thinking'
               ? 'bg-amber-500'
@@ -126,7 +127,7 @@ export const TiaAvatar: React.FC<TiaAvatarProps> = ({
               : 'bg-[#1A1A1A]'
           }`}
         >
-          {state === 'listening' ? (
+          {state === 'listening' || state === 'followup_listening' ? (
             <Mic className="w-2.5 h-2.5 animate-pulse" />
           ) : state === 'speaking' ? (
             <Volume2 className="w-2.5 h-2.5 animate-bounce" />

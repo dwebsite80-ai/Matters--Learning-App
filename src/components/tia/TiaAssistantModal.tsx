@@ -52,15 +52,33 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     setTiaState,
     isListening,
     isSpeaking,
+    isFollowUpActive,
+    followUpCountdown,
     transcript,
     languageConfig,
     startListening,
+    startFollowUpListening,
     stopListening,
     speakText,
     stopSpeaking,
     replayLastSpeech,
     voiceVolumeLevel,
   } = useTiaVoice(currentLanguage);
+
+  // Helper to speak text with follow-up listening trigger upon completion
+  const speakWithFollowUp = (textToSpeak: string, allowFollowUp = true) => {
+    if (!voiceEnabled || !textToSpeak) return;
+    try {
+      speakText(textToSpeak, () => {
+        // When Tia finishes speaking, automatically open follow-up listening window
+        if (allowFollowUp && voiceEnabled) {
+          startFollowUpListening();
+        }
+      });
+    } catch (ttsErr) {
+      console.warn('[Tia Frontend] speakWithFollowUp error:', ttsErr);
+    }
+  };
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -248,11 +266,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       setTiaState('idle');
 
       if (voiceEnabled) {
-        try {
-          speakText(response.speechText || response.text);
-        } catch (ttsErr) {
-          console.warn('[Tia Frontend] TTS error during mode trigger:', ttsErr);
-        }
+        speakWithFollowUp(response.speechText || response.text, true);
       }
     } catch (e) {
       console.error('Error generating Tia response:', e);
@@ -345,12 +359,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       setTiaState('idle');
 
       if (voiceEnabled) {
-        try {
-          speakText(response.speechText || response.text);
-        } catch (ttsErr) {
-          console.warn('[Tia Frontend] Optional TTS playback failed:', ttsErr);
-          setTiaState('idle');
-        }
+        speakWithFollowUp(response.speechText || response.text, true);
       }
       return;
     }
@@ -377,11 +386,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     setMessages((prev) => [...prev, fallbackMsg]);
 
     if (voiceEnabled) {
-      try {
-        speakText(fallbackMsg.speechText || fallbackMsg.text);
-      } catch (ttsErr) {
-        console.warn('[Tia Frontend] Optional TTS fallback speech failed:', ttsErr);
-      }
+      speakWithFollowUp(fallbackMsg.speechText || fallbackMsg.text, false);
     }
   };
 
@@ -461,7 +466,9 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
               <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-slate-400">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isListening
+                    isFollowUpActive
+                      ? 'bg-amber-400 animate-ping'
+                      : isListening
                       ? 'bg-emerald-500 animate-ping'
                       : isSpeaking
                       ? 'bg-indigo-500 animate-pulse'
@@ -471,7 +478,11 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                   }`}
                 />
                 <span className="font-mono text-[11px]">
-                  {isListening
+                  {isFollowUpActive
+                    ? isHindi
+                      ? `फॉलो-अप सुन रही हूँ (${followUpCountdown}s)... बोलिए`
+                      : `Listening for follow-up (${followUpCountdown}s)...`
+                    : isListening
                     ? isHindi
                       ? 'आपकी बात सुन रही हूँ... बेझिझक बोलिए'
                       : 'Listening to you... Speak freely'
@@ -668,20 +679,49 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             </div>
           ))}
 
-          {/* Live transcript bubble while user is speaking */}
+          {/* Live transcript bubble while user is speaking or during follow-up listening */}
           {isListening && (
             <div className="flex flex-col items-end space-y-1 animate-fadeIn">
-              <div className="max-w-[80%] rounded-3xl p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100 text-xs sm:text-sm shadow-2xs">
-                <div className="flex items-center gap-1.5 font-bold text-[10px] text-emerald-800 dark:text-emerald-300 uppercase tracking-widest mb-1 font-mono">
-                  <Mic className="w-3 h-3 text-emerald-600 dark:text-emerald-400 animate-ping" />
+              <div
+                className={`max-w-[80%] rounded-3xl p-4 border text-xs sm:text-sm shadow-2xs ${
+                  isFollowUpActive
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/50 text-amber-950 dark:text-amber-100'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100'
+                }`}
+              >
+                <div
+                  className={`flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-widest mb-1 font-mono ${
+                    isFollowUpActive
+                      ? 'text-amber-800 dark:text-amber-300'
+                      : 'text-emerald-800 dark:text-emerald-300'
+                  }`}
+                >
+                  <Mic
+                    className={`w-3 h-3 ${
+                      isFollowUpActive
+                        ? 'text-amber-600 dark:text-amber-400 animate-pulse'
+                        : 'text-emerald-600 dark:text-emerald-400 animate-ping'
+                    }`}
+                  />
                   <span>
-                    {isHindi
+                    {isFollowUpActive
+                      ? isHindi
+                        ? `🎙️ फॉलो-अप सवाल पूछिए (${followUpCountdown}s)`
+                        : `🎙️ Ask Follow-Up Question (${followUpCountdown}s)`
+                      : isHindi
                       ? '🎙️ लाइव वॉइस ट्रांसक्रिप्ट (hi-IN)'
                       : '🎙️ Live Voice Transcript (en-IN)'}
                   </span>
                 </div>
                 <p className="italic font-mono text-xs">
-                  {transcript || (isHindi ? 'सुन रही हूँ... बोलिए!' : 'Listening... Speak now.')}
+                  {transcript ||
+                    (isFollowUpActive
+                      ? isHindi
+                        ? 'अगला सवाल पूछिए या शांत रहकर खत्म करें...'
+                        : 'Ask your follow-up, or stay quiet to finish...'
+                      : isHindi
+                      ? 'सुन रही हूँ... बोलिए!'
+                      : 'Listening... Speak now.')}
                 </p>
               </div>
             </div>
@@ -708,12 +748,23 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             <button
               onClick={isListening ? stopListening : startListening}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer ${
-                isListening
+                isFollowUpActive
+                  ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse'
+                  : isListening
                   ? 'bg-rose-500 text-white hover:bg-rose-600 animate-pulse'
                   : 'bg-[#121212] dark:bg-violet-600 text-white hover:bg-black dark:hover:bg-violet-500 active:scale-95'
               }`}
             >
-              {isListening ? (
+              {isFollowUpActive ? (
+                <>
+                  <MicOff className="w-4 h-4" />
+                  <span>
+                    {isHindi
+                      ? `फॉलो-अप रोकें (${followUpCountdown}s)`
+                      : `Stop Follow-Up (${followUpCountdown}s)`}
+                  </span>
+                </>
+              ) : isListening ? (
                 <>
                   <MicOff className="w-4 h-4" />
                   <span>{isHindi ? 'सुनना बंद करें' : 'Stop Listening'}</span>

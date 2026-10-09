@@ -11,11 +11,14 @@ export interface UseTiaVoiceReturn {
   setTiaState: (state: TiaState) => void;
   isListening: boolean;
   isSpeaking: boolean;
+  isFollowUpActive: boolean;
+  followUpCountdown: number;
   transcript: string;
   isVoiceSupported: boolean;
   isSpeechSynthesisSupported: boolean;
   languageConfig: TiaLanguageConfig;
   startListening: () => void;
+  startFollowUpListening: () => void;
   stopListening: () => void;
   speakText: (text: string, onEnd?: () => void) => void;
   stopSpeaking: () => void;
@@ -74,6 +77,8 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
   const [tiaState, setTiaState] = useState<TiaState>('idle');
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [isFollowUpActive, setIsFollowUpActive] = useState<boolean>(false);
+  const [followUpCountdown, setFollowUpCountdown] = useState<number>(0);
   const [transcript, setTranscript] = useState<string>('');
   const [voiceVolumeLevel, setVoiceVolumeLevel] = useState<number>(0);
   const lastSpokenTextRef = useRef<string>('');
@@ -84,6 +89,12 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const volumeIntervalRef = useRef<any>(null);
   const currentLanguageRef = useRef<AppLanguage>(currentLanguage);
+
+  // Follow-up listening references
+  const isFollowUpModeRef = useRef<boolean>(false);
+  const followUpTimeoutRef = useRef<any>(null);
+  const followUpIntervalRef = useRef<any>(null);
+  const speechDetectedDuringFollowUpRef = useRef<boolean>(false);
 
   // Speech Queue references to ensure full completion of long responses
   const speechQueueRef = useRef<string[]>([]);
@@ -102,6 +113,42 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
     );
 
   const isSpeechSynthesisSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  // Cleanup helper for follow-up timer
+  const clearFollowUpTimer = useCallback(() => {
+    if (followUpTimeoutRef.current) {
+      clearTimeout(followUpTimeoutRef.current);
+      followUpTimeoutRef.current = null;
+    }
+    if (followUpIntervalRef.current) {
+      clearInterval(followUpIntervalRef.current);
+      followUpIntervalRef.current = null;
+    }
+    isFollowUpModeRef.current = false;
+    setIsFollowUpActive(false);
+    setFollowUpCountdown(0);
+  }, []);
+
+  // Stop listening handler
+  const stopListening = useCallback(() => {
+    clearFollowUpTimer();
+    speechDetectedDuringFollowUpRef.current = false;
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+    setIsListening(false);
+    if (volumeIntervalRef.current) {
+      clearInterval(volumeIntervalRef.current);
+      volumeIntervalRef.current = null;
+    }
+    setVoiceVolumeLevel(0);
+    setTiaState('idle');
+  }, [clearFollowUpTimer]);
 
   // Initialize Speech Synthesis reference
   useEffect(() => {
@@ -124,8 +171,9 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
       if (volumeIntervalRef.current) {
         clearInterval(volumeIntervalRef.current);
       }
+      clearFollowUpTimer();
     };
-  }, []);
+  }, [clearFollowUpTimer]);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -144,13 +192,19 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
 
         recognition.onstart = () => {
           setIsListening(true);
-          setTiaState('listening');
+          if (isFollowUpModeRef.current) {
+            setTiaState('followup_listening');
+          } else {
+            setTiaState('listening');
+          }
           setTranscript('');
 
           // Start volume wave animation simulation
-          volumeIntervalRef.current = setInterval(() => {
-            setVoiceVolumeLevel(Math.random() * 0.8 + 0.2);
-          }, 120);
+          if (!volumeIntervalRef.current) {
+            volumeIntervalRef.current = setInterval(() => {
+              setVoiceVolumeLevel(Math.random() * 0.8 + 0.2);
+            }, 120);
+          }
         };
 
         recognition.onresult = (event: any) => {
@@ -159,19 +213,37 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
             currentTranscript += event.results[i][0].transcript;
           }
           setTranscript(currentTranscript);
+
+          // If speech detected during follow-up, mark it and promote to full listening
+          if (currentTranscript.trim().length > 0) {
+            speechDetectedDuringFollowUpRef.current = true;
+            if (isFollowUpModeRef.current) {
+              // Cancel follow-up timer early since user is speaking
+              clearFollowUpTimer();
+              setTiaState('listening');
+            }
+          }
         };
 
         recognition.onerror = (err: any) => {
           console.warn('Speech recognition warning/fallback:', err);
           setIsListening(false);
+          clearFollowUpTimer();
           setTiaState('idle');
-          if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
+          if (volumeIntervalRef.current) {
+            clearInterval(volumeIntervalRef.current);
+            volumeIntervalRef.current = null;
+          }
           setVoiceVolumeLevel(0);
         };
 
         recognition.onend = () => {
           setIsListening(false);
-          if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
+          clearFollowUpTimer();
+          if (volumeIntervalRef.current) {
+            clearInterval(volumeIntervalRef.current);
+            volumeIntervalRef.current = null;
+          }
           setVoiceVolumeLevel(0);
         };
 
@@ -180,7 +252,7 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
         console.warn('Could not initialize SpeechRecognition:', e);
       }
     }
-  }, []);
+  }, [clearFollowUpTimer]);
 
   // When language changes: stop current speech immediately & update recognition locale
   useEffect(() => {
@@ -191,18 +263,27 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
       if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
       setVoiceVolumeLevel(0);
     }
+    clearFollowUpTimer();
 
     if (recognitionRef.current) {
       recognitionRef.current.lang = currentLanguage === 'hi' ? 'hi-IN' : 'en-IN';
     }
-  }, [currentLanguage]);
+  }, [currentLanguage, clearFollowUpTimer]);
 
   // Mock voice input fallback for sandbox or when mic permission isn't granted
-  const simulateVoiceInput = useCallback(() => {
+  const simulateVoiceInput = useCallback((isFollowUp = false) => {
     const isHindi = currentLanguageRef.current === 'hi';
     setIsListening(true);
-    setTiaState('listening');
-    setTranscript(isHindi ? 'आपकी बात सुन रही हूँ... बोलिए!' : 'Listening to you... Speak freely.');
+    setTiaState(isFollowUp ? 'followup_listening' : 'listening');
+    setTranscript(
+      isFollowUp
+        ? isHindi
+          ? 'फॉलो-अप सुन रही हूँ...'
+          : 'Listening for follow-up...'
+        : isHindi
+        ? 'आपकी बात सुन रही हूँ... बोलिए!'
+        : 'Listening to you... Speak freely.'
+    );
 
     volumeIntervalRef.current = setInterval(() => {
       setVoiceVolumeLevel(Math.random() * 0.8 + 0.2);
@@ -221,8 +302,11 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
     }, 2400);
   }, []);
 
-  // Start listening handler
+  // Start listening handler (manual tap on mic)
   const startListening = useCallback(() => {
+    clearFollowUpTimer();
+    speechDetectedDuringFollowUpRef.current = false;
+
     // If speaking, stop speaking first
     if (synthRef.current && synthRef.current.speaking) {
       synthRef.current.cancel();
@@ -231,13 +315,11 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
 
     if (recognitionRef.current) {
       try {
-        // Dynamically ensure recognition uses selected language
         recognitionRef.current.lang = currentLanguageRef.current === 'hi' ? 'hi-IN' : 'en-IN';
         recognitionRef.current.start();
         setIsListening(true);
         setTiaState('listening');
       } catch {
-        // Recognition already started or error -> restart
         try {
           recognitionRef.current.stop();
           setTimeout(() => {
@@ -247,29 +329,83 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
             }
           }, 150);
         } catch {
-          // fallback simulation
-          simulateVoiceInput();
+          simulateVoiceInput(false);
         }
       }
     } else {
-      simulateVoiceInput();
+      simulateVoiceInput(false);
     }
-  }, [simulateVoiceInput]);
+  }, [clearFollowUpTimer, simulateVoiceInput]);
 
-  // Stop listening handler
-  const stopListening = useCallback(() => {
+  // Start follow-up listening mode (opened automatically ONLY after Tia finishes speaking)
+  const startFollowUpListening = useCallback(() => {
+    // If user explicitly muted or recognition isn't present, exit gracefully
+    clearFollowUpTimer();
+    speechDetectedDuringFollowUpRef.current = false;
+    isFollowUpModeRef.current = true;
+    setIsFollowUpActive(true);
+
+    const initialDurationSec = 4;
+    setFollowUpCountdown(initialDurationSec);
+
+    // Set countdown interval (ticks every 1000ms)
+    followUpIntervalRef.current = setInterval(() => {
+      setFollowUpCountdown((prev) => {
+        if (prev <= 1) {
+          if (followUpIntervalRef.current) {
+            clearInterval(followUpIntervalRef.current);
+            followUpIntervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Auto-timeout after duration: if silence, close mic & return to idle
+    followUpTimeoutRef.current = setTimeout(() => {
+      // If user started speaking, don't kill speech!
+      if (!speechDetectedDuringFollowUpRef.current) {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch {
+            // ignore
+          }
+        }
+        setIsListening(false);
+        setTiaState('idle');
+        if (volumeIntervalRef.current) {
+          clearInterval(volumeIntervalRef.current);
+          volumeIntervalRef.current = null;
+        }
+        setVoiceVolumeLevel(0);
+      }
+      clearFollowUpTimer();
+    }, initialDurationSec * 1000);
+
+    // Turn on speech recognition for this follow-up listening window
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.lang = currentLanguageRef.current === 'hi' ? 'hi-IN' : 'en-IN';
+        recognitionRef.current.start();
+        setIsListening(true);
+        setTiaState('followup_listening');
       } catch {
-        // ignore
+        try {
+          recognitionRef.current.stop();
+          setTimeout(() => {
+            if (recognitionRef.current && isFollowUpModeRef.current) {
+              recognitionRef.current.lang = currentLanguageRef.current === 'hi' ? 'hi-IN' : 'en-IN';
+              recognitionRef.current.start();
+            }
+          }, 150);
+        } catch {
+          // ignore in environments without recognition
+        }
       }
     }
-    setIsListening(false);
-    if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
-    setVoiceVolumeLevel(0);
-    setTiaState('idle');
-  }, []);
+  }, [clearFollowUpTimer]);
 
   // Speak text with dynamic language voice matching currentLanguage (hi-IN or en-IN)
   // Uses a sentence-level speech queue so long AI answers finish completely without browser cutoffs
@@ -441,11 +577,14 @@ export function useTiaVoice(currentLanguage: AppLanguage = 'en'): UseTiaVoiceRet
     setTiaState,
     isListening,
     isSpeaking,
+    isFollowUpActive,
+    followUpCountdown,
     transcript,
     isVoiceSupported,
     isSpeechSynthesisSupported,
     languageConfig,
     startListening,
+    startFollowUpListening,
     stopListening,
     speakText,
     stopSpeaking,

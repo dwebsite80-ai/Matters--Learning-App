@@ -194,7 +194,7 @@ export interface UserStats {
 
 export type ActiveTab = 'home' | 'learn' | 'revision' | 'progress' | 'profile';
 
-export type TiaState = 'idle' | 'listening' | 'thinking' | 'speaking';
+export type TiaState = 'idle' | 'listening' | 'followup_listening' | 'thinking' | 'speaking';
 
 export type TiaMode =
   | 'chat'
