@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Flame,
   Brain,
@@ -13,13 +13,15 @@ import { getSubjectThumbnail, getImageObjectPosition } from '../../data/courseIm
 import { MattersImage } from '../common/MattersImage';
 import { LearningActivityCalendar } from './LearningActivityCalendar';
 import { AllCoursesProgressView } from './AllCoursesProgressView';
+import { getStoredDailyGoal } from '../../data/preferencesStorage';
+import { getLocalDateString } from '../../lib/streakHelper';
 
 interface ProgressViewProps {
   onSelectSubject?: (subjectId: SubjectId) => void;
 }
 
 export const ProgressView: React.FC<ProgressViewProps> = ({ onSelectSubject }) => {
-  const { preferences } = useAuth();
+  const { user, preferences } = useAuth();
   const {
     stats,
     progressMap,
@@ -29,13 +31,43 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ onSelectSubject }) =
   } = useLearning();
   const { language } = useLanguage();
 
+  const [dailyGoalTarget, setDailyGoalTarget] = useState<number>(() => {
+    return getStoredDailyGoal(user?.id);
+  });
+
+  useEffect(() => {
+    setDailyGoalTarget(getStoredDailyGoal(user?.id));
+
+    const handleGoalChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ goal: number }>;
+      if (customEvent.detail && typeof customEvent.detail.goal === 'number') {
+        setDailyGoalTarget(customEvent.detail.goal);
+      } else {
+        setDailyGoalTarget(getStoredDailyGoal(user?.id));
+      }
+    };
+
+    window.addEventListener('matters:daily-goal-changed', handleGoalChanged);
+    return () => {
+      window.removeEventListener('matters:daily-goal-changed', handleGoalChanged);
+    };
+  }, [user?.id]);
+
   const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all');
   const [subView, setSubView] = useState<'main' | 'calendar' | 'all-courses'>('main');
 
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
   const totalXp = stats?.total_xp || 1250;
   const lessonsCompleted = stats?.lessons_completed_count || 12;
-  const dailyGoalRatio = '2/3';
+
+  // Calculate actual lessons completed today from progressMap; fallback to 2 to preserve existing progress state
+  const todayDateStr = getLocalDateString();
+  const todayProgressCount = Object.values(progressMap || {}).filter((p) => {
+    if (!p.completed || !p.completed_at) return false;
+    return p.completed_at.startsWith(todayDateStr);
+  }).length;
+  const completedTodayCount = todayProgressCount > 0 ? todayProgressCount : 2;
+  const dailyGoalRatio = `${completedTodayCount}/${dailyGoalTarget}`;
 
   // Level calculations matching mockup
   const currentLevel = 2;

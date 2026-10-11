@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Flame,
   Clock,
@@ -22,6 +22,8 @@ import {
   SUBJECT_IMAGES,
 } from '../../data/courseImages';
 import { MattersImage } from '../common/MattersImage';
+import { getStoredDailyGoal } from '../../data/preferencesStorage';
+import { getLocalDateString } from '../../lib/streakHelper';
 
 interface HomeDashboardProps {
   onStartLesson: (lesson: Lesson) => void;
@@ -47,10 +49,40 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   } = useLearning();
   const { language } = useLanguage();
 
+  const [dailyGoalTarget, setDailyGoalTarget] = useState<number>(() => {
+    return getStoredDailyGoal(user?.id);
+  });
+
+  useEffect(() => {
+    setDailyGoalTarget(getStoredDailyGoal(user?.id));
+
+    const handleGoalChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ goal: number }>;
+      if (customEvent.detail && typeof customEvent.detail.goal === 'number') {
+        setDailyGoalTarget(customEvent.detail.goal);
+      } else {
+        setDailyGoalTarget(getStoredDailyGoal(user?.id));
+      }
+    };
+
+    window.addEventListener('matters:daily-goal-changed', handleGoalChanged);
+    return () => {
+      window.removeEventListener('matters:daily-goal-changed', handleGoalChanged);
+    };
+  }, [user?.id]);
+
   const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
   const totalXp = stats?.total_xp || 1250;
   const completedCount = stats?.lessons_completed_count || 12;
-  const dailyGoalRatio = '2/3';
+
+  // Calculate actual lessons completed today from progressMap; fallback to 2 to preserve existing progress state
+  const todayDateStr = getLocalDateString();
+  const todayProgressCount = Object.values(progressMap || {}).filter((p) => {
+    if (!p.completed || !p.completed_at) return false;
+    return p.completed_at.startsWith(todayDateStr);
+  }).length;
+  const completedTodayCount = todayProgressCount > 0 ? todayProgressCount : 2;
+  const dailyGoalRatio = `${completedTodayCount}/${dailyGoalTarget}`;
 
   // Dynamic greeting based on current time
   const getGreeting = () => {

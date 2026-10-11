@@ -86,33 +86,43 @@ async function startServer() {
     isCloudRun ||
     process.env.npm_lifecycle_event === 'start';
 
-  const candidates = [
-    path.join(process.cwd(), 'dist'),
-    path.resolve(__dirname, 'dist'),
-    path.resolve(__dirname, '..', 'dist'),
-    '/app/applet/dist',
-    '/workspace/dist',
-  ];
-  const distPath = candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html')));
+  // Find dist directory dynamically if built, or use Vite middleware in dev
+  const getDistPath = () => {
+    const candidates = [
+      path.join(process.cwd(), 'dist'),
+      path.resolve(__dirname, 'dist'),
+      path.resolve(__dirname, '..', 'dist'),
+      '/app/applet/dist',
+      '/workspace/dist',
+    ];
+    return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html')));
+  };
 
-  if (isProduction || distPath) {
-    if (distPath) {
-      console.log(`[Server] Serving production build from: ${distPath}`);
-      app.use(express.static(distPath));
-      app.get('*', (req, res) => {
-        const indexPath = path.join(distPath, 'index.html');
+  const initialDist = getDistPath();
+
+  if (isProduction || initialDist) {
+    // Serve static files dynamically from dist
+    app.use((req, res, next) => {
+      const currentDist = getDistPath();
+      if (currentDist) {
+        express.static(currentDist)(req, res, next);
+      } else {
+        next();
+      }
+    });
+
+    // SPA fallback: return index.html if dist exists
+    app.get('*', (req, res) => {
+      const currentDist = getDistPath();
+      if (currentDist) {
+        const indexPath = path.join(currentDist, 'index.html');
         if (fs.existsSync(indexPath)) {
-          res.sendFile(indexPath);
-        } else {
-          res.status(404).send('Application build artifact index.html not found. Run npm run build.');
+          return res.sendFile(indexPath);
         }
-      });
-    } else {
-      console.warn('[Server] Running in production mode but dist folder was not found. Serving fallback.');
-      app.get('*', (req, res) => {
-        res.status(200).send('<!doctype html><html><head><title>Matters</title></head><body><h1>Matters is starting up...</h1><script>setTimeout(() => location.reload(), 2000);</script></body></html>');
-      });
-    }
+      }
+
+      res.status(200).send('<!doctype html><html><head><title>Matters</title><meta http-equiv="refresh" content="2"></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#0b0f19;color:#e2e8f0;"><div style="text-align:center;"><h2 style="font-size:1.5rem;margin-bottom:0.5rem;">Matters is starting up...</h2><p style="color:#94a3b8;font-size:0.95rem;">Building application and preparing workspace, please wait...</p></div></body></html>');
+    });
   } else {
     console.log('[Server] Initializing Vite middleware for development');
     const { createServer: createViteServer } = await import('vite');
