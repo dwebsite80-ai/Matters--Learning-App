@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X,
   Mic,
@@ -10,6 +10,7 @@ import {
   Send,
   BookOpen,
   Languages,
+  AlertCircle,
 } from 'lucide-react';
 import { TiaAvatar } from './TiaAvatar';
 import { TiaMarkdownRenderer } from './TiaMarkdownRenderer';
@@ -46,6 +47,12 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const prevLangRef = useRef<string>(currentLanguage);
+  const followUpScheduleTimerRef = useRef<any>(null);
+  const handleSendUserTextRef = useRef<(text: string, isVoice?: boolean) => void>(() => {});
+
+  const handleSpeechRecognized = useCallback((recognizedText: string) => {
+    handleSendUserTextRef.current(recognizedText, true);
+  }, []);
 
   const {
     tiaState,
@@ -55,6 +62,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     isFollowUpActive,
     followUpCountdown,
     transcript,
+    errorMessage,
+    clearErrorMessage,
     languageConfig,
     startListening,
     startFollowUpListening,
@@ -63,22 +72,36 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     stopSpeaking,
     replayLastSpeech,
     voiceVolumeLevel,
-  } = useTiaVoice(currentLanguage);
+  } = useTiaVoice(currentLanguage, handleSpeechRecognized);
 
-  // Helper to speak text with follow-up listening trigger upon completion
-  const speakWithFollowUp = (textToSpeak: string, allowFollowUp = true) => {
-    if (!voiceEnabled || !textToSpeak) return;
-    try {
-      speakText(textToSpeak, () => {
-        // When Tia finishes speaking, automatically open follow-up listening window
-        if (allowFollowUp && voiceEnabled) {
-          startFollowUpListening();
-        }
-      });
-    } catch (ttsErr) {
-      console.warn('[Tia Frontend] speakWithFollowUp error:', ttsErr);
-    }
-  };
+  // Helper to speak text with follow-up listening trigger upon completion (after 300-500ms delay)
+  const speakWithFollowUp = useCallback(
+    (textToSpeak: string, allowFollowUp = true) => {
+      if (!voiceEnabled || !textToSpeak) return;
+
+      if (followUpScheduleTimerRef.current) {
+        clearTimeout(followUpScheduleTimerRef.current);
+        followUpScheduleTimerRef.current = null;
+      }
+
+      try {
+        speakText(textToSpeak, () => {
+          // When Tia completely finishes speaking: wait 300–500ms then open follow-up listening
+          if (allowFollowUp && voiceEnabled && isOpen) {
+            console.log('[Tia Voice] Follow-up listening scheduled');
+            followUpScheduleTimerRef.current = setTimeout(() => {
+              if (voiceEnabled && isOpen) {
+                startFollowUpListening();
+              }
+            }, 400);
+          }
+        });
+      } catch (ttsErr) {
+        console.warn('[Tia Frontend] speakWithFollowUp error:', ttsErr);
+      }
+    },
+    [voiceEnabled, isOpen, speakText, startFollowUpListening]
+  );
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -145,13 +168,24 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
+      if (followUpScheduleTimerRef.current) {
+        clearTimeout(followUpScheduleTimerRef.current);
+        followUpScheduleTimerRef.current = null;
+      }
+      stopSpeaking();
+      stopListening();
     }
-  }, [isOpen]);
+  }, [isOpen, stopSpeaking, stopListening]);
 
   // Language switch
   useEffect(() => {
     if (prevLangRef.current !== currentLanguage) {
+      if (followUpScheduleTimerRef.current) {
+        clearTimeout(followUpScheduleTimerRef.current);
+        followUpScheduleTimerRef.current = null;
+      }
       stopSpeaking();
+      stopListening();
       prevLangRef.current = currentLanguage;
 
       const isHi = currentLanguage === 'hi';
@@ -208,7 +242,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
         handleTriggerModeAction(activeMode);
       }
     }
-  }, [currentLanguage, context, stopSpeaking, activeMode, isOpen]);
+  }, [currentLanguage, context, stopSpeaking, stopListening, activeMode, isOpen]);
 
   // Handle when mode changes via prop or user selection
   useEffect(() => {
@@ -217,13 +251,6 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       handleTriggerModeAction(initialMode as TiaMode);
     }
   }, [initialMode]);
-
-  // Speech recognition transcript completion
-  useEffect(() => {
-    if (transcript && !isListening && transcript.trim().length > 2) {
-      handleSendUserText(transcript, true);
-    }
-  }, [isListening]);
 
   // Core action triggers
   const handleTriggerModeAction = async (mode: TiaMode) => {
@@ -261,6 +288,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
           break;
       }
 
+      console.log('[Tia] Answer received');
       setMessages((prev) => [...prev, response]);
       setIsLoading(false);
       setTiaState('idle');
@@ -354,6 +382,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     if (currentRequestId !== activeRequestIdRef.current) return;
 
     if (response) {
+      console.log('[Tia] Answer received');
       setMessages((prev) => [...prev, response!]);
       setIsLoading(false);
       setTiaState('idle');
@@ -389,6 +418,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       speakWithFollowUp(fallbackMsg.speechText || fallbackMsg.text, false);
     }
   };
+
+  handleSendUserTextRef.current = handleSendUserText;
 
   const handleToggleVoice = () => {
     if (voiceEnabled) {
@@ -545,6 +576,10 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             {/* Close Button */}
             <button
               onClick={() => {
+                if (followUpScheduleTimerRef.current) {
+                  clearTimeout(followUpScheduleTimerRef.current);
+                  followUpScheduleTimerRef.current = null;
+                }
                 stopSpeaking();
                 stopListening();
                 onClose();
@@ -556,6 +591,23 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Error notification banner if microphone or voice fails */}
+        {errorMessage && (
+          <div className="px-4 py-2.5 bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200 shrink-0 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+            <button
+              onClick={clearErrorMessage}
+              className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-md transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Lesson Context Banner */}
         {context && (

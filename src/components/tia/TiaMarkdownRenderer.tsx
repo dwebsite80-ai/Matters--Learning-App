@@ -27,8 +27,8 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
       blocks.push(
         <ul key={`ul-${blocks.length}`} className="my-1.5 space-y-1 pl-1">
           {currentList.items.map((item, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="text-amber-600 font-bold select-none leading-relaxed">•</span>
+            <li key={i} className="flex items-start gap-2 text-slate-800 dark:text-slate-100">
+              <span className="text-amber-600 dark:text-amber-400 font-bold select-none leading-relaxed">•</span>
               <span className="flex-1">{renderInline(item)}</span>
             </li>
           ))}
@@ -38,8 +38,8 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
       blocks.push(
         <ol key={`ol-${blocks.length}`} className="my-1.5 space-y-1 pl-1">
           {currentList.items.map((item, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="font-mono text-xs font-bold text-gray-500 select-none pt-0.5 min-w-4">
+            <li key={i} className="flex items-start gap-2 text-slate-800 dark:text-slate-100">
+              <span className="font-mono text-xs font-bold text-gray-500 dark:text-slate-400 select-none pt-0.5 min-w-4">
                 {i + 1}.
               </span>
               <span className="flex-1">{renderInline(item)}</span>
@@ -96,12 +96,12 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
       blocks.push(
         <div
           key={`header-${blocks.length}`}
-          className={`font-semibold text-[#1A1A1A] mt-2 mb-1 ${
+          className={`font-semibold mt-2 mb-1 text-slate-900 dark:text-white ${
             level === 1
               ? 'text-base font-bold'
               : level === 2
               ? 'text-sm font-bold'
-              : 'text-xs font-semibold uppercase tracking-wider text-gray-700'
+              : 'text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300'
           }`}
         >
           {renderInline(text)}
@@ -112,7 +112,7 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
 
     // Standard paragraph
     blocks.push(
-      <p key={`p-${blocks.length}`} className="leading-relaxed mb-2 last:mb-0">
+      <p key={`p-${blocks.length}`} className="leading-relaxed mb-2 last:mb-0 text-slate-800 dark:text-slate-100">
         {renderInline(rawLine)}
       </p>
     );
@@ -120,21 +120,26 @@ export const TiaMarkdownRenderer: React.FC<TiaMarkdownRendererProps> = ({
 
   flushList();
 
-  return <div className={`tia-formatted-content text-xs sm:text-sm ${className}`}>{blocks}</div>;
+  return (
+    <div className={`tia-formatted-content text-xs sm:text-sm text-slate-800 dark:text-slate-100 ${className}`}>
+      {blocks}
+    </div>
+  );
 };
 
 /**
- * Parses inline formatting: **bold**, *italic*, and `code`
+ * Parses inline formatting: [link](url), **bold**, *italic*, and `code`
  */
 function renderInline(text: string): React.ReactNode {
   if (!text) return null;
 
   // Regex tokenizing:
-  // 1: `code`
-  // 2: **bold**
-  // 3: *italic* or _italic_
+  // 1: [link](url)
+  // 2: `code`
+  // 3: **bold**
+  // 4: *italic* or _italic_
   const parts: React.ReactNode[] = [];
-  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
+  const regex = /(\[[^\]]+\]\([^)]+\)|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -145,18 +150,35 @@ function renderInline(text: string): React.ReactNode {
     }
 
     const token = match[0];
-    if (token.startsWith('`') && token.endsWith('`')) {
+    if (token.startsWith('[') && token.includes('](')) {
+      const linkMatch = token.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        parts.push(
+          <a
+            key={`a-${match.index}`}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 dark:text-indigo-400 underline underline-offset-2 hover:opacity-80 font-medium"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        parts.push(token);
+      }
+    } else if (token.startsWith('`') && token.endsWith('`')) {
       parts.push(
         <code
           key={`code-${match.index}`}
-          className="px-1.5 py-0.5 rounded bg-black/5 font-mono text-[11px] text-amber-900 border border-black/5"
+          className="px-1.5 py-0.5 rounded bg-amber-500/10 dark:bg-amber-400/15 font-mono text-[11px] text-amber-900 dark:text-amber-200 border border-amber-500/20 dark:border-amber-400/30 font-semibold"
         >
           {token.slice(1, -1)}
         </code>
       );
     } else if (token.startsWith('**') && token.endsWith('**')) {
       parts.push(
-        <strong key={`b-${match.index}`} className="font-semibold text-[#1A1A1A]">
+        <strong key={`b-${match.index}`} className="font-bold text-slate-900 dark:text-white">
           {token.slice(2, -2)}
         </strong>
       );
@@ -165,7 +187,7 @@ function renderInline(text: string): React.ReactNode {
       (token.startsWith('_') && token.endsWith('_'))
     ) {
       parts.push(
-        <em key={`i-${match.index}`} className="italic text-gray-800">
+        <em key={`i-${match.index}`} className="italic text-slate-700 dark:text-slate-200">
           {token.slice(1, -1)}
         </em>
       );
