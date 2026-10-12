@@ -60,13 +60,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ onSelectSubject }) =
   const totalXp = stats?.total_xp || 1250;
   const lessonsCompleted = stats?.lessons_completed_count || 12;
 
-  // Calculate actual lessons completed today from progressMap; fallback to 2 to preserve existing progress state
+  // Calculate unique lessons actually completed today by the current user from authoritative progress records
   const todayDateStr = getLocalDateString();
-  const todayProgressCount = Object.values(progressMap || {}).filter((p) => {
+  const completedTodayCount = Object.values(progressMap || {}).filter((p) => {
     if (!p.completed || !p.completed_at) return false;
-    return p.completed_at.startsWith(todayDateStr);
+    const d = new Date(p.completed_at);
+    if (isNaN(d.getTime())) return false;
+    return getLocalDateString(d) === todayDateStr;
   }).length;
-  const completedTodayCount = todayProgressCount > 0 ? todayProgressCount : 2;
   const dailyGoalRatio = `${completedTodayCount}/${dailyGoalTarget}`;
 
   // Level calculations matching mockup
