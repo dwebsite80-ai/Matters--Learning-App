@@ -50,6 +50,13 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     return getStoredTiaSettings().voice.autoSpeakResponse;
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [activeVoiceDiagnostic, setActiveVoiceDiagnostic] = useState<{
+    engine: string;
+    voiceName: string;
+    model?: string;
+    isFallback: boolean;
+    reason?: string;
+  } | null>(null);
 
   // Sync settings when changed from Settings View
   useEffect(() => {
@@ -110,7 +117,21 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
       const engine = currentSettings.voice.engine || 'browser';
 
       // Fallback runner: existing native browser voice synthesis
-      const runBrowserSynthesis = () => {
+      const runBrowserSynthesis = (fallbackReason?: string) => {
+        if (engine !== 'browser') {
+          setActiveVoiceDiagnostic({
+            engine: 'Browser Voice (Fallback)',
+            voiceName: currentSettings.voice.geminiVoice || 'Aoede',
+            isFallback: true,
+            reason: fallbackReason || 'Cloud audio unavailable',
+          });
+        } else {
+          setActiveVoiceDiagnostic({
+            engine: 'Browser Voice',
+            voiceName: currentLanguage === 'hi' ? 'Female Hindi' : 'Female English',
+            isFallback: false,
+          });
+        }
         try {
           speakText(textToSpeak, () => {
             if (allowFollowUp && voiceEnabled && isOpen && currentSettings.voice.enableFollowUpListening) {
@@ -144,6 +165,9 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
           engine === 'gemini_tts'
             ? currentSettings.voice.geminiVoice || 'Aoede'
             : currentSettings.voice.chirpVoice || 'hi-IN-Chirp3-HD-F',
+        onDiagnosticUpdate: (diag) => {
+          setActiveVoiceDiagnostic(diag);
+        },
         onStart: () => {
           setTiaState('speaking');
         },
@@ -161,9 +185,9 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
         onError: (err) => {
           console.warn('[Tia Voice] Cloud audio playback failed, falling back to browser:', err);
         },
-        fallbackToBrowser: () => {
-          console.log('[Tia Voice] Invoking browser synthesis fallback');
-          runBrowserSynthesis();
+        fallbackToBrowser: (reason) => {
+          console.log('[Tia Voice] Invoking browser synthesis fallback, reason:', reason);
+          runBrowserSynthesis(reason);
         },
       });
     },
@@ -564,6 +588,24 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                 <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black/60 dark:text-slate-300 border border-black/[0.04] dark:border-white/[0.08]">
                   {languageConfig.locale}
                 </span>
+                {activeVoiceDiagnostic && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[9px] font-mono font-semibold truncate max-w-[130px] sm:max-w-none ${
+                      activeVoiceDiagnostic.isFallback
+                        ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60'
+                        : activeVoiceDiagnostic.engine.includes('Gemini')
+                        ? 'bg-violet-100 dark:bg-violet-950/70 text-violet-800 dark:text-violet-200 border border-violet-300 dark:border-violet-700/60'
+                        : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-200'
+                    }`}
+                    title={activeVoiceDiagnostic.reason || activeVoiceDiagnostic.engine}
+                  >
+                    {activeVoiceDiagnostic.engine.includes('Gemini')
+                      ? `✨ Studio HD: ${activeVoiceDiagnostic.voiceName}`
+                      : activeVoiceDiagnostic.isFallback
+                      ? '⚠️ Browser Voice Fallback'
+                      : 'Browser Voice'}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-slate-400">
                 <span

@@ -17,6 +17,39 @@ function getCacheKey(text: string, voiceName: string, lang: string): string {
   return `${voiceName}:${lang}:${text.slice(0, 120).trim()}`;
 }
 
+/**
+ * Converts raw 24kHz 16-bit Mono L16 PCM audio into standard WAV format
+ * so browsers (HTML5 Audio element) can decode and play it seamlessly.
+ */
+function pcmToWav(pcmBuffer: Buffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16): Buffer {
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = pcmBuffer.length;
+  const wavBuffer = Buffer.alloc(44 + dataSize);
+
+  // RIFF header
+  wavBuffer.write('RIFF', 0);
+  wavBuffer.writeUInt32LE(36 + dataSize, 4);
+  wavBuffer.write('WAVE', 8);
+
+  // fmt subchunk
+  wavBuffer.write('fmt ', 12);
+  wavBuffer.writeUInt32LE(16, 16); // subchunk1 size (16 for PCM)
+  wavBuffer.writeUInt16LE(1, 20); // audio format (1 = Linear PCM)
+  wavBuffer.writeUInt16LE(numChannels, 22);
+  wavBuffer.writeUInt32LE(sampleRate, 24);
+  wavBuffer.writeUInt32LE(byteRate, 28);
+  wavBuffer.writeUInt16LE(blockAlign, 32);
+  wavBuffer.writeUInt16LE(bitsPerSample, 34);
+
+  // data subchunk
+  wavBuffer.write('data', 36);
+  wavBuffer.writeUInt32LE(dataSize, 40);
+  pcmBuffer.copy(wavBuffer, 44);
+
+  return wavBuffer;
+}
+
 export function getTtsStatus() {
   const hasGeminiKey = Boolean(getGeminiApiKey());
   const hasGcpCreds = Boolean(
@@ -39,6 +72,7 @@ export function getTtsStatus() {
         available: hasGeminiKey,
         status: hasGeminiKey ? 'active' : 'missing_key',
         name: 'Gemini Premium Studio HD',
+        model: 'gemini-2.5-flash-preview-tts',
         voices: ['Aoede', 'Kore'],
         cost: 'Included in Gemini API tier (~₹0.002 / response)',
         latency: 'Cloud neural audio (~600ms - 1.2s)',
@@ -81,6 +115,7 @@ export async function synthesizeTiaAudio(body: {
 
   if (audioCache.has(cacheKey)) {
     const cached = audioCache.get(cacheKey)!;
+    console.log(`[Tia TTS] Cache hit for "${voiceName}" (${language})`);
     return {
       status: 200,
       data: {
@@ -90,6 +125,7 @@ export async function synthesizeTiaAudio(body: {
         cached: true,
         voiceName,
         provider,
+        model: 'gemini-2.5-flash-preview-tts',
       },
     };
   }
@@ -98,12 +134,14 @@ export async function synthesizeTiaAudio(body: {
   if (provider === 'gemini_tts') {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
+      console.warn('[Tia TTS] Missing GEMINI_API_KEY');
       return {
         status: 503,
         data: {
           ok: false,
           error: 'GEMINI_API_KEY is not configured on the server',
           code: 'MISSING_GEMINI_KEY',
+          fallbackToBrowser: true,
         },
       };
     }
@@ -122,21 +160,24 @@ export async function synthesizeTiaAudio(body: {
       const selectedVoice =
         voiceName.toLowerCase().includes('kore') ? 'Kore' : 'Aoede';
 
-      // Model cascade for audio modality
-      const ttsModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
-      let audioResult: { audioBase64: string; mimeType: string } | null = null;
+      // Use the verified, officially supported Gemini TTS model
+      const ttsModels = [
+        'gemini-2.5-flash-preview-tts',
+        'gemini-3.8-flash-lite-tts',
+        'gemini-3.8-flash-tts',
+        'gemini-3.1-flash-tts-preview',
+      ];
+
+      let audioResult: { audioBase64: string; mimeType: string; rawModel: string } | null = null;
       let lastError: any = null;
 
       for (const modelName of ttsModels) {
         try {
-          const prompt =
-            language === 'hi'
-              ? `Read this response naturally in spoken Hindi as an encouraging, friendly mentor named Tia: "${cleanText}"`
-              : `Read this response naturally in conversational Indian English as an encouraging, friendly mentor named Tia: "${cleanText}"`;
+          console.log(`[Tia TTS] Requesting synthesis | Model: ${modelName} | Voice: ${selectedVoice} | Lang: ${language} | Length: ${cleanText.length}`);
 
           const response = await ai.models.generateContent({
             model: modelName,
-            contents: prompt,
+            contents: cleanText,
             config: {
               responseModalities: ['AUDIO'],
               speechConfig: {
@@ -153,10 +194,25 @@ export async function synthesizeTiaAudio(body: {
           const parts = candidate?.content?.parts || [];
           for (const p of parts) {
             if (p.inlineData && p.inlineData.data) {
+              const rawMime = p.inlineData.mimeType || 'audio/L16;codec=pcm;rate=24000';
+              let finalBase64 = p.inlineData.data;
+              let finalMime = 'audio/wav';
+
+              // If Gemini returns raw PCM (audio/L16), wrap it in a proper WAV container
+              if (rawMime.includes('audio/L16') || rawMime.includes('pcm')) {
+                const pcmBuffer = Buffer.from(p.inlineData.data, 'base64');
+                const wavBuffer = pcmToWav(pcmBuffer, 24000, 1, 16);
+                finalBase64 = wavBuffer.toString('base64');
+              } else {
+                finalMime = rawMime;
+              }
+
               audioResult = {
-                audioBase64: p.inlineData.data,
-                mimeType: p.inlineData.mimeType || 'audio/wav',
+                audioBase64: finalBase64,
+                mimeType: finalMime,
+                rawModel: modelName,
               };
+              console.log(`[Tia TTS] Successfully generated audio via ${modelName} | Size: ${finalBase64.length} chars | Format: ${finalMime}`);
               break;
             }
           }
@@ -164,7 +220,7 @@ export async function synthesizeTiaAudio(body: {
           if (audioResult) break;
         } catch (modelErr: any) {
           lastError = modelErr;
-          console.warn(`[Tia TTS] ${modelName} audio generation spike/issue:`, modelErr?.message || modelErr);
+          console.warn(`[Tia TTS] Model ${modelName} issue:`, modelErr?.message || modelErr);
         }
       }
 
@@ -188,11 +244,12 @@ export async function synthesizeTiaAudio(body: {
             mimeType: audioResult.mimeType,
             voiceName: selectedVoice,
             provider: 'gemini_tts',
+            model: audioResult.rawModel,
           },
         };
       }
 
-      // If audio modality is not available in current region / model demand spike, return clean fallback code
+      console.error('[Tia TTS] All Gemini TTS models failed:', lastError?.message || lastError);
       return {
         status: 503,
         data: {
@@ -234,7 +291,6 @@ export async function synthesizeTiaAudio(body: {
       };
     }
 
-    // If credentials were provided in future, actual GCP REST call with OAuth token would execute here.
     return {
       status: 503,
       data: {

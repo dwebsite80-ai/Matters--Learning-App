@@ -56,6 +56,13 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
 
   // Server-side provider availability status
   const [serverTtsStatus, setServerTtsStatus] = useState<any>(null);
+  const [lastTestResult, setLastTestResult] = useState<{
+    engine: string;
+    voiceName: string;
+    model?: string;
+    isFallback: boolean;
+    reason?: string;
+  } | null>(null);
 
   useEffect(() => {
     // Fetch live TTS status from server
@@ -206,6 +213,11 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
     };
 
     if (settings.voice.engine === 'browser') {
+      setLastTestResult({
+        engine: 'Browser Voice',
+        voiceName: language === 'hi' ? 'Female Hindi' : 'Female English',
+        isFallback: false,
+      });
       runBrowserFallback();
       return;
     }
@@ -220,13 +232,22 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
           settings.voice.engine === 'gemini_tts'
             ? settings.voice.geminiVoice
             : settings.voice.chirpVoice,
+        onDiagnosticUpdate: (diag) => {
+          setLastTestResult(diag);
+        },
         onStart: () => setIsPlayingPreview(true),
         onEnd: () => setIsPlayingPreview(false),
         onError: (err) => {
           console.warn('[Tia Preview] Cloud preview issue, falling back to browser:', err);
         },
-        fallbackToBrowser: () => {
-          console.log('[Tia Preview] Executing browser fallback');
+        fallbackToBrowser: (reason) => {
+          console.log('[Tia Preview] Executing browser fallback, reason:', reason);
+          setLastTestResult({
+            engine: 'Browser Voice (Fallback)',
+            voiceName: settings.voice.geminiVoice,
+            isFallback: true,
+            reason: reason || 'Cloud synthesis unavailable',
+          });
           runBrowserFallback();
         },
       });
@@ -609,6 +630,26 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
                   : activeVoiceName}
               </span>
             </div>
+
+            {lastTestResult && (
+              <div
+                className={`p-2 rounded-xl text-xs flex items-center justify-between border ${
+                  lastTestResult.isFallback
+                    ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 text-amber-900 dark:text-amber-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 text-emerald-900 dark:text-emerald-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold">{lastTestResult.engine}</span>
+                  {lastTestResult.model && (
+                    <span className="font-mono text-[10px] opacity-80">({lastTestResult.model})</span>
+                  )}
+                </div>
+                <span className="font-mono text-[10px] font-bold">
+                  {lastTestResult.isFallback ? 'Fallback Triggered' : 'Real HD Audio Playing'}
+                </span>
+              </div>
+            )}
 
             {previewError && (
               <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
