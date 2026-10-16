@@ -13,7 +13,9 @@ import {
   LogOut,
   Save,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
+import { TiaSettingsView } from '../tia/TiaSettingsView';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -73,6 +75,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [isDailyGoalModalOpen, setIsDailyGoalModalOpen] = useState<boolean>(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
+  const [isTiaSettingsModalOpen, setIsTiaSettingsModalOpen] = useState<boolean>(false);
 
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
     return getStoredDailyGoal(user?.id);
@@ -380,6 +383,35 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
 
+          {/* Tia Assistant Settings Row */}
+          <div
+            onClick={() => setIsTiaSettingsModalOpen(true)}
+            id="profile-tia-settings-btn"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-violet-300 dark:hover:border-violet-700/50 active:scale-[0.99] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
+                    {language === 'hi' ? 'टिया एआई सेटिंग्स' : 'Tia AI Settings'}
+                  </p>
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
+                    Voice & Persona
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
+                  {language === 'hi'
+                    ? 'आवाज़, गति, हास्य और बोलने का अंदाज़'
+                    : 'Voice, speed, humor, and assistant behavior'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-violet-600 transition-colors" />
+          </div>
+
           {/* Appearance Row with 3-Way Toggle: Light / Dark / System */}
           <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
             <div className="flex items-center gap-3">
@@ -540,6 +572,15 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
         currentSettings={notificationSettings}
         onSaveSettings={handleSaveNotificationSettings}
       />
+
+      {/* Dedicated Tia Assistant Settings Modal */}
+      {isTiaSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-[#FAFAF8] dark:bg-[#0E131F] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden animate-slideUp transition-colors">
+            <TiaSettingsView onBack={() => setIsTiaSettingsModalOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

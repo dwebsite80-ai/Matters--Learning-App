@@ -11,7 +11,10 @@ import {
   BookOpen,
   Languages,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
+import { TiaSettingsView } from './TiaSettingsView';
+import { getStoredTiaSettings } from '../../services/tiaSettingsStorage';
 import { TiaAvatar } from './TiaAvatar';
 import { TiaMarkdownRenderer } from './TiaMarkdownRenderer';
 import { useTiaVoice } from '../../lib/useTiaVoice';
@@ -42,7 +45,24 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
   const [activeMode, setActiveMode] = useState<TiaMode>(initialMode);
   const [messages, setMessages] = useState<TiaMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
-  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
+    return getStoredTiaSettings().voice.autoSpeakResponse;
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  // Sync settings when changed from Settings View
+  useEffect(() => {
+    const handleSettingsChanged = (e: any) => {
+      const updated = e.detail?.settings;
+      if (updated && updated.voice) {
+        setVoiceEnabled(updated.voice.autoSpeakResponse);
+      }
+    };
+    window.addEventListener('matters:tia-settings-changed', handleSettingsChanged);
+    return () => {
+      window.removeEventListener('matters:tia-settings-changed', handleSettingsChanged);
+    };
+  }, []);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -478,6 +498,10 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       {/* Container / Sheet */}
       <div className="bg-[#FAFAF8] dark:bg-[#0E131F] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden animate-slideUp transition-colors">
+        {isSettingsOpen ? (
+          <TiaSettingsView onBack={() => setIsSettingsOpen(false)} />
+        ) : (
+          <>
         {/* 1. Header */}
         <div className="p-4 sm:p-5 bg-white dark:bg-[#131926] border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -550,6 +574,17 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             >
               <Languages className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
               <span>{isHindi ? 'हिन्दी' : 'English'}</span>
+            </button>
+
+            {/* Tia Dedicated Settings Control Button */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A2234] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-black/60 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
+              title={isHindi ? 'टिया सेटिंग्स खोलें' : 'Open Tia Settings'}
+              aria-label="Open Tia Settings"
+            >
+              <Settings className="w-4 h-4" />
             </button>
 
             {/* Audio Toggle */}
@@ -918,6 +953,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
             ))}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
