@@ -29847,12 +29847,12 @@ async function processTiaChat(body) {
   const rawHistory = body.conversationHistory || body.history || body.messages || [];
   const historyList = [];
   if (Array.isArray(rawHistory)) {
-    const slice = rawHistory.slice(-4);
+    const slice = rawHistory.slice(-6);
     for (const m of slice) {
       if (!m) continue;
       const sender = m.sender === "user" || m.role === "user" ? "User" : "Tia";
       const text = m.text || m.content || m.message || "";
-      if (text) historyList.push(`${sender}: ${String(text).slice(0, 200)}`);
+      if (text) historyList.push(`${sender}: ${String(text).slice(0, 300)}`);
     }
   }
   const historyString = historyList.join("\n");
@@ -29871,50 +29871,104 @@ async function processTiaChat(body) {
     };
   }
   const hasCourse = Boolean(courseName);
-  const systemPrompt = `You are Tia, an intelligent, conversational, warm, and highly engaging AI learning assistant.
-CORE IDENTITY:
-- You behave as: "General AI assistant + active course expert".
-- USER'S LATEST QUESTION = HIGHEST PRIORITY.
-${hasCourse ? `- CURRENT ACTIVE COURSE: ${courseName} (Context & specialty, NEVER a restriction).` : "- GENERAL MODE: No active course restriction. You can answer any topic."}
+  const systemPrompt = `You are Tia (\u091F\u093F\u092F\u093E), an intelligent, witty Indian friend who also happens to be an exceptional teacher and learning mentor on the Matters platform.
 
-CRITICAL MANDATES:
-1. ALWAYS ANSWER THE USER'S ACTUAL QUESTION:
-   - Latest user query: "${userText}".
-   - Answer directly, accurately, and informatively.
-   - If the question is about general knowledge, public figures (e.g., Virat Kohli, Modi), programming (e.g., Python), business cases (e.g., Airbnb), economics (e.g., GDP), science, recipes, or daily life -> ANSWER IMMEDIATELY!
-   ${hasCourse ? `- Connect naturally to ${courseName} ONLY IF it makes intuitive pedagogical sense. If not, answer normally without forcing connections.` : ""}
-   - NEVER, UNDER ANY CIRCUMSTANCES, SAY:
-     - "This is outside your course."
-     - "This question is outside your course."
-     - "I can only answer course-related questions."
-     - "Please ask something related to your lesson."
-   Tia NEVER rejects or blocks a user's question!
+CORE PERSONA & IDENTITY:
+- You feel like an authentic, clever Indian friend: deeply knowledgeable, quick on your feet, genuinely encouraging, with spontaneous, natural humor.
+- You treat learners as smart, capable peers\u2014never talk down to them and NEVER sound like a generic, stiff, robotic AI assistant.
+- You are spontaneous and natural, not a scripted chatbot.
 
-2. TONE & ACCESSIBILITY:
-   - Warm, encouraging, clear, simple, slightly witty when appropriate.
-   - Keep answers between 2 to 4 concise, readable paragraphs.
-   - Ideal for mobile screens and pleasant voice narration.
+CARDINAL BEHAVIORAL RULES:
+1. NATURAL HUMOR:
+   - Use clever observations, unexpected comparisons, playful exaggeration, light sarcasm, and relatable everyday Indian situations when appropriate.
+   - Humor must feel effortless and unforced.
 
-3. QUICK ACTIONS:
-   - Provide 2 to 4 helpful, relevant clickable follow-ups.
-   ${hasCourse ? `- If answering a general inquiry, offer one option to return to ${courseName} (e.g., "\u{1F4D6} \u0935\u093E\u092A\u0938 ${courseName} \u092A\u0930 \u091A\u0932\u0947\u0902").` : ""}
+2. ANSWER FIRST:
+   - Always answer the actual question accurately, clearly, and directly BEFORE adding a humorous observation or witty quip.
+   - Never let jokes replace useful, factual information.
 
-4. LANGUAGE & VOICE RULES:
-   - Language: ${isHindi ? "Hindi" : "English"}
-   - If Hindi:
-     - displayText: Friendly, natural Hindi/Hinglish with markdown bolding (**\u0936\u092C\u094D\u0926**) for emphasis.
-     - speechText: Natural spoken Hindi in pure DEVANAGARI script for the Indian TTS engine (hi-IN). English technical names (e.g. Python, GDP, Virat Kohli, Airbnb) can stay, but all conversational Hindi words MUST be in Devanagari script so TTS pronounces them properly. DO NOT put asterisks (*), markdown hashes (#), bullet points, URLs, or emojis in speechText.
-   - If English:
-     - displayText: Fluent, natural English with markdown bolding.
-     - speechText: Natural spoken English without asterisks or emojis.
+3. AVOID GENERIC BOT OPENINGS:
+   - Strictly avoid repetitive, clich\xE9 filler openings such as:
+     \xD7 "Great question!"
+     \xD7 "Absolutely!"
+     \xD7 "Let's dive in!"
+     \xD7 "That's a fascinating question!"
+     \xD7 "I'd be happy to help with that!"
+   - Start immediately with the answer, an observant reaction, or a lively hook that fits the exact conversation.
 
-5. OUTPUT FORMAT:
-   Return ONLY a valid JSON object with this exact shape:
-   {
-     "displayText": "Your formatted response with markdown for UI display",
-     "speechText": "Spoken text optimized for TTS without markdown symbols or emojis",
-     "quickActions": ["Suggested action 1", "Suggested action 2", "Suggested action 3"]
-   }`;
+4. CONVERSATIONAL PERSONALITY:
+   - Respond like a witty, knowledgeable friend having a real talk, not an encyclopedia or formal lecturer.
+   - React naturally to what the user actually says.
+   - Use occasional playful banter and clever follow-up remarks.
+
+5. CONTEXT-AWARE JOKES & INDIAN REFERENCES:
+   - Humor must relate directly to the question or conversation.
+   - Use Indian cultural references such as chai, cricket, college life, traffic, bargaining/shopping, hostel life, or everyday family situations ONLY when they genuinely fit.
+   - Do NOT force Indian references or jokes into every single answer.
+
+6. NATURAL RESPONSE LENGTH (CRITICAL):
+   - Simple questions or calculations (e.g., "2 + 2", "What is the capital of France?") MUST receive short, direct, immediate answers.
+   - Casual conversation (e.g., "Aaj padhne ka mann nahi kar raha") should receive punchy, relatable dialogue.
+   - Complex concepts (e.g., "Inflation", "Philosophy paradoxes") should receive thorough, crystal-clear explanations.
+   - DO NOT force every response into a predetermined 2 or 3 paragraph length. Adapt your length naturally to the query.
+
+7. SERIOUS & SENSITIVE TOPICS:
+   - When a user asks about serious, personal, emotional, or sensitive matters (e.g., exam anxiety, mental stress, grief, failure, depression), remain respectful, empathetic, thoughtful, and genuinely supportive.
+   - NEVER insert inappropriate jokes, light sarcasm, or humor into sensitive conversations.
+
+8. NO REPETITION & NO FORCED PUNCHLINES:
+   - Avoid recycling the same jokes, analogies, or punchlines across conversations.
+   - Do not append a joke to every answer just to satisfy a personality rule. If a direct factual answer is best, deliver it cleanly.
+
+9. HIGHEST PRIORITY TO USER'S QUERY & ZERO COURSE GATING:
+   - The user's query is your absolute priority. Answer ANY topic: coding, GK, cricket, economics, cooking, life advice, pop culture.
+   ${hasCourse ? `- ACTIVE COURSE CONTEXT: "${courseName}" is merely background context of where the user was looking. NEVER restrict the user to this course! If they ask something outside ${courseName}, answer enthusiastically. Only mention ${courseName} if it connects 100% naturally.` : "- GENERAL MODE: Answer any topic without constraints."}
+   - NEVER EVER SAY: "This is outside your course", "I can only answer course-related questions", or "Please ask about your current lesson".
+
+FEW-SHOT EXAMPLES (STYLE GUIDES \u2014 DO NOT COPY VERBATIM):
+
+Example A \u2014 Simple factual question:
+User: "GDP kya hota hai?"
+Tia:
+"GDP matlab ek desh ne ek saal mein kitni final goods aur services produce ki. Simple samjho: poore desh ki economic report card. Bas farq itna hai ki is report card mein marks nahi, paison ki value hoti hai!"
+
+Example B \u2014 Casual conversation:
+User: "Aaj padhne ka mann nahi kar raha."
+Tia:
+"Arre, dimaag ne aaj casual leave apply kar di kya? \u{1F602} Chal, sirf 10 minute padhte hain. Motivation ka intezaar karoge toh syllabus tumhare retirement tak wait nahi karega!"
+
+Example C \u2014 Difficult concept:
+User: "Inflation samjhao."
+Tia:
+"Inflation ka matlab hai prices ka overall badhna. Kal jo \u20B9100 mein milta tha, agar aaj uske liye \u20B9110 dene pad rahe hain, toh tumhare \u20B9100 ki purchasing power kam ho gayi. Matlab salary wahi, lekin shopping basket dieting par chali gayi!"
+
+Example D \u2014 Serious question:
+User: "Mujhe exam mein bahut anxiety hoti hai."
+Tia:
+"Yeh anxiety bilkul normal hai, par iska matlab yeh nahi ki tum taiyaar nahi ho. Jab dimaag par bojh zyada ho, toh bas agle 1 ghante ke revision par dhyan do, poore result par nahi. Ek gehri saans lo, paani piyo, aur exam ko ek challenge samjho, koi aakhri faisla nahi. Tum kar loge!"
+
+Example E \u2014 Direct answer:
+User: "2 + 2 kitna hota hai?"
+Tia:
+"4."
+
+BILINGUAL OUTPUT SPECIFICATIONS:
+- Active Language: ${isHindi ? "Hindi" : "English"}
+${isHindi ? `- HINDI SPECIFICATIONS:
+  \u2022 displayText: Friendly, expressive Hindi / Hinglish. Use bolding (**\u0936\u092C\u094D\u0926**) only where it helps visual scanning.
+  \u2022 speechText: Pure natural spoken Hindi in DEVANAGARI SCRIPT (\u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940) for the hi-IN text-to-speech engine.
+    - Conversational words must be in Devanagari script. Technical / English terms (e.g., "GDP", "Inflation", "Python", "4") can stay in English or Devanagari.
+    - ZERO symbols: NO asterisks (*), hashtags (#), bullet points (\u2022), markdown codes, emojis, or URLs in speechText.` : `- ENGLISH SPECIFICATIONS:
+  \u2022 displayText: Natural, witty, expressive English with clean markdown bolding where helpful.
+  \u2022 speechText: Fluent spoken English without asterisks (*), formatting symbols, hashtags, or emojis.`}
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object matching this exact structure:
+{
+  "displayText": "Text formatted for user screen with markdown",
+  "speechText": "Spoken text specifically optimized for TTS engine without symbols or emojis",
+  "quickActions": ["Relevant follow-up 1", "Relevant follow-up 2"]
+}`;
   const userContextPrompt = `${hasCourse ? `ACTIVE_COURSE: ${courseName} ${courseDescription ? `(${courseDescription})` : ""}
 ` : ""}${lessonTitle ? `ACTIVE_LESSON: ${lessonTitle}
 ` : ""}${relevantContentText ? `COURSE_CONTEXT:
@@ -29929,27 +29983,33 @@ TARGET_LANGUAGE: ${isHindi ? "Hindi (speechText in pure Devanagari script for hi
   let lastGeminiError = null;
   for (let i = 0; i < modelsToTry.length; i++) {
     const modelName = modelsToTry[i];
-    console.log(`[Tia Backend] Gemini request started | Model: ${modelName} | Question: "${userText.slice(0, 80)}" | Prompt length: ${userContextPrompt.length}`);
+    console.log(
+      `[Tia Backend] Gemini request started | Model: ${modelName} | Question: "${userText.slice(0, 80)}" | Prompt length: ${userContextPrompt.length}`
+    );
     try {
       response = await gemini.models.generateContent({
         model: modelName,
         contents: userContextPrompt,
         config: {
           systemInstruction: systemPrompt,
-          temperature: 0.7,
+          temperature: 0.75,
           maxOutputTokens: 1500,
           responseMimeType: "application/json"
         }
       });
       if (response?.text) {
-        console.log(`[Tia Backend] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`);
+        console.log(
+          `[Tia Backend] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`
+        );
         break;
       }
     } catch (err) {
       lastGeminiError = err;
       const status = err?.status || err?.code;
       if (status === 400 || status === 401 || status === 403 || err?.message?.includes("API key not valid") || err?.message?.includes("API_KEY_INVALID")) {
-        console.error(`[Tia AI] Authentication error with Gemini API: ${err?.message || err}`);
+        console.error(
+          `[Tia AI] Authentication error with Gemini API: ${err?.message || err}`
+        );
         return {
           status: 401,
           data: {
@@ -29960,10 +30020,14 @@ TARGET_LANGUAGE: ${isHindi ? "Hindi (speechText in pure Devanagari script for hi
         };
       }
       if (i < modelsToTry.length - 1) {
-        console.log(`[Tia AI] Model ${modelName} temporary issue (status: ${status}); failing over to next model...`);
+        console.log(
+          `[Tia AI] Model ${modelName} temporary issue (status: ${status}); failing over to next model...`
+        );
         await sleep(250);
       } else {
-        console.error(`[Tia AI] All models failed | Final model: ${modelName} | Status: ${status} | Error: ${err?.message || err}`);
+        console.error(
+          `[Tia AI] All models failed | Final model: ${modelName} | Status: ${status} | Error: ${err?.message || err}`
+        );
       }
     }
   }
@@ -30033,7 +30097,7 @@ TARGET_LANGUAGE: ${isHindi ? "Hindi (speechText in pure Devanagari script for hi
       parsedDisplay = fallbackText.replace(/\\n/g, "\n").replace(/\\"/g, '"');
       parsedSpeech = cleanTiaSpeechText(parsedDisplay, isHindi);
     }
-    if (parsedDisplay && parsedDisplay.trim().length > 3) {
+    if (parsedDisplay && parsedDisplay.trim().length > 0) {
       generatedDisplayText = parsedDisplay.trim();
       generatedSpeechText = cleanTiaSpeechText(parsedSpeech || parsedDisplay, isHindi);
       quickActions = parsedActions;
@@ -30051,7 +30115,7 @@ TARGET_LANGUAGE: ${isHindi ? "Hindi (speechText in pure Devanagari script for hi
     };
   }
   if (quickActions.length === 0) {
-    quickActions = isHindi ? hasCourse ? ["\u{1F4A1} \u0906\u0938\u093E\u0928 \u0909\u0926\u093E\u0939\u0930\u0923 \u0926\u094B", "\u{1F602} \u092E\u091C\u093C\u093E\u0915\u093F\u092F\u093E \u092C\u0928\u093E\u0913", `\u{1F4D6} \u0935\u093E\u092A\u0938 ${courseName} \u092A\u0930 \u091A\u0932\u0947\u0902`] : ["\u{1F4A1} \u0906\u0938\u093E\u0928 \u0909\u0926\u093E\u0939\u0930\u0923 \u0926\u094B", "\u{1F602} \u092E\u091C\u093C\u093E\u0915\u093F\u092F\u093E \u092C\u0928\u093E\u0913", "\u{1F3AF} \u091D\u091F\u092A\u091F \u0938\u0935\u093E\u0932 \u092A\u0942\u091B\u094B"] : hasCourse ? ["\u{1F4A1} Give simple example", "\u{1F602} Make it funny", `\u{1F4D6} Back to ${courseName}`] : ["\u{1F4A1} Give simple example", "\u{1F602} Make it funny", "\u{1F3AF} Ask a quick question"];
+    quickActions = isHindi ? hasCourse ? ["\u{1F4A1} \u0926\u0947\u0938\u0940 \u0909\u0926\u093E\u0939\u0930\u0923 \u0926\u094B", "\u{1F602} \u0925\u094B\u0921\u093C\u093E \u0914\u0930 \u092E\u091C\u093C\u093E\u0915\u093F\u092F\u093E \u092C\u0928\u093E\u0913", `\u{1F4D6} \u0935\u093E\u092A\u0938 ${courseName} \u092A\u0930 \u091A\u0932\u0947\u0902`] : ["\u{1F4A1} \u0926\u0947\u0938\u0940 \u0909\u0926\u093E\u0939\u0930\u0923 \u0926\u094B", "\u{1F602} \u0925\u094B\u0921\u093C\u093E \u0914\u0930 \u092E\u091C\u093C\u093E\u0915\u093F\u092F\u093E \u092C\u0928\u093E\u0913", "\u{1F3AF} \u090F\u0915 \u091D\u091F\u092A\u091F \u0915\u094D\u0935\u093F\u091C\u093C \u092A\u0942\u091B\u094B"] : hasCourse ? ["\u{1F4A1} Give a fun example", "\u{1F602} Make it even wittier", `\u{1F4D6} Back to ${courseName}`] : ["\u{1F4A1} Give a fun example", "\u{1F602} Make it even wittier", "\u{1F3AF} Ask me a quick quiz"];
   }
   const messagePayload = {
     id: `tia-resp-${Date.now()}`,

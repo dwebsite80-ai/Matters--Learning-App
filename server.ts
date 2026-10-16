@@ -80,10 +80,10 @@ async function startServer() {
   });
 
   // Detect Cloud Run container vs local dev environment
+  // Detect deployed Cloud Run production container vs local/cloud preview dev environment
   const isCloudRun = Boolean(process.env.K_SERVICE || process.env.K_REVISION);
   const isProduction =
     process.env.NODE_ENV === 'production' ||
-    isCloudRun ||
     process.env.npm_lifecycle_event === 'start';
 
   // Find dist directory dynamically if built, or use Vite middleware in dev
