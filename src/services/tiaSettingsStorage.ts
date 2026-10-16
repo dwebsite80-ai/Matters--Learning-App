@@ -2,13 +2,14 @@
  * Matters — Tia Dedicated Settings & Control Storage
  * 
  * Persists user preferences for Tia Assistant:
- * - Active Voice & Synthesis options (Pitch, Rate, Female voice preference, Auto-speech)
+ * - Active Voice & Synthesis options (Browser, Gemini Aoede/Kore, Cloud Chirp 3 HD)
+ * - Pitch, Rate, Female voice preference, Auto-speech
  * - Language configuration (Hindi / English)
  * - Personality & Tone flags (Humor, Explanatory Depth, Relatable analogies)
  * - Assistant Behavior (Voice response toggle, Auto follow-up listening)
  */
 
-export type TiaVoiceEngine = 'browser' | 'gemini_tts' | 'google_cloud_tts';
+export type TiaVoiceEngine = 'browser' | 'gemini_tts' | 'google_cloud_chirp';
 export type TiaReplyStyle = 'conversational' | 'concise' | 'detailed';
 
 export interface TiaPersonalitySettings {
@@ -20,8 +21,10 @@ export interface TiaPersonalitySettings {
 
 export interface TiaVoiceControls {
   engine: TiaVoiceEngine;
+  geminiVoice: 'Aoede' | 'Kore';
+  chirpVoice: 'hi-IN-Chirp3-HD-F' | 'en-IN-Chirp3-HD-F';
   femaleVoiceOnly: boolean;
-  rate: number; // 0.8 - 1.3
+  rate: number; // 0.8 - 1.25
   pitch: number; // 0.9 - 1.3
   autoSpeakResponse: boolean;
   enableFollowUpListening: boolean;
@@ -37,7 +40,9 @@ export interface TiaAppSettings {
 export const DEFAULT_TIA_SETTINGS: TiaAppSettings = {
   language: 'hi',
   voice: {
-    engine: 'browser',
+    engine: 'browser', // Default reliable, zero-cost fallback
+    geminiVoice: 'Aoede',
+    chirpVoice: 'hi-IN-Chirp3-HD-F',
     femaleVoiceOnly: true,
     rate: 1.0,
     pitch: 1.08,

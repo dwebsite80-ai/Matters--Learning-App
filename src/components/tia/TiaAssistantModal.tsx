@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { TiaSettingsView } from './TiaSettingsView';
 import { getStoredTiaSettings } from '../../services/tiaSettingsStorage';
+import { stopActiveAudioPlayback, playTiaResponseAudio } from '../../services/tiaAudioPlayer';
 import { TiaAvatar } from './TiaAvatar';
 import { TiaMarkdownRenderer } from './TiaMarkdownRenderer';
 import { useTiaVoice } from '../../lib/useTiaVoice';
@@ -94,7 +95,8 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
     voiceVolumeLevel,
   } = useTiaVoice(currentLanguage, handleSpeechRecognized);
 
-  // Helper to speak text with follow-up listening trigger upon completion (after 300-500ms delay)
+  // Helper to speak text with multi-provider routing (Gemini Studio HD / Cloud Chirp / Browser fallback)
+  // Guarantees follow-up listening triggers ONLY after audio completely ends.
   const speakWithFollowUp = useCallback(
     (textToSpeak: string, allowFollowUp = true) => {
       if (!voiceEnabled || !textToSpeak) return;
@@ -104,23 +106,68 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
         followUpScheduleTimerRef.current = null;
       }
 
-      try {
-        speakText(textToSpeak, () => {
-          // When Tia completely finishes speaking: wait 300–500ms then open follow-up listening
-          if (allowFollowUp && voiceEnabled && isOpen) {
-            console.log('[Tia Voice] Follow-up listening scheduled');
+      const currentSettings = getStoredTiaSettings();
+      const engine = currentSettings.voice.engine || 'browser';
+
+      // Fallback runner: existing native browser voice synthesis
+      const runBrowserSynthesis = () => {
+        try {
+          speakText(textToSpeak, () => {
+            if (allowFollowUp && voiceEnabled && isOpen && currentSettings.voice.enableFollowUpListening) {
+              console.log('[Tia Voice] Follow-up listening scheduled after browser speech');
+              followUpScheduleTimerRef.current = setTimeout(() => {
+                if (voiceEnabled && isOpen) {
+                  startFollowUpListening();
+                }
+              }, 400);
+            }
+          });
+        } catch (ttsErr) {
+          console.warn('[Tia Frontend] Browser speak error:', ttsErr);
+        }
+      };
+
+      if (engine === 'browser') {
+        runBrowserSynthesis();
+        return;
+      }
+
+      // Premium Engine runner (Gemini TTS / Google Cloud Chirp 3 HD)
+      stopSpeaking(); // Stop browser engine if active
+      setTiaState('speaking');
+
+      playTiaResponseAudio({
+        text: textToSpeak,
+        language: currentLanguage as 'hi' | 'en',
+        provider: engine,
+        voiceName:
+          engine === 'gemini_tts'
+            ? currentSettings.voice.geminiVoice || 'Aoede'
+            : currentSettings.voice.chirpVoice || 'hi-IN-Chirp3-HD-F',
+        onStart: () => {
+          setTiaState('speaking');
+        },
+        onEnd: () => {
+          setTiaState('idle');
+          if (allowFollowUp && voiceEnabled && isOpen && currentSettings.voice.enableFollowUpListening) {
+            console.log('[Tia Voice] Follow-up listening scheduled after cloud audio');
             followUpScheduleTimerRef.current = setTimeout(() => {
               if (voiceEnabled && isOpen) {
                 startFollowUpListening();
               }
             }, 400);
           }
-        });
-      } catch (ttsErr) {
-        console.warn('[Tia Frontend] speakWithFollowUp error:', ttsErr);
-      }
+        },
+        onError: (err) => {
+          console.warn('[Tia Voice] Cloud audio playback failed, falling back to browser:', err);
+        },
+        fallbackToBrowser: () => {
+          console.log('[Tia Voice] Invoking browser synthesis fallback');
+          runBrowserSynthesis();
+        },
+      });
     },
-    [voiceEnabled, isOpen, speakText, startFollowUpListening]
+    [voiceEnabled, isOpen, speakText, stopSpeaking, startFollowUpListening, setTiaState, currentLanguage]
   );
 
   // Scroll to bottom of messages
@@ -615,6 +662,7 @@ export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
                   clearTimeout(followUpScheduleTimerRef.current);
                   followUpScheduleTimerRef.current = null;
                 }
+                stopActiveAudioPlayback();
                 stopSpeaking();
                 stopListening();
                 onClose();

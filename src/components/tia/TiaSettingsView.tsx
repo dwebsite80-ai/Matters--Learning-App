@@ -19,7 +19,11 @@ import {
   ChevronUp,
   Server,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Radio,
+  RadioTower,
+  ShieldCheck,
+  Headphones
 } from 'lucide-react';
 import { TiaAvatar } from './TiaAvatar';
 import { useLanguage } from '../../context/LanguageContext';
@@ -31,6 +35,7 @@ import {
   TiaVoiceEngine,
 } from '../../services/tiaSettingsStorage';
 import { selectTiaVoice } from '../../services/tiaLanguageConfig';
+import { stopActiveAudioPlayback, playTiaResponseAudio } from '../../services/tiaAudioPlayer';
 
 interface TiaSettingsViewProps {
   onBack: () => void;
@@ -48,6 +53,21 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
   const [activeVoiceName, setActiveVoiceName] = useState<string>('Detecting system voice...');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Server-side provider availability status
+  const [serverTtsStatus, setServerTtsStatus] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch live TTS status from server
+    fetch('/api/tia/tts/status')
+      .then((res) => res.json())
+      .then((data) => {
+        setServerTtsStatus(data);
+      })
+      .catch((err) => {
+        console.warn('Could not fetch server TTS status:', err);
+      });
+  }, []);
 
   // Sync with current app language
   useEffect(() => {
@@ -135,63 +155,105 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
-  // Preview voice sample using real browser speech synthesis
-  const handlePreviewVoice = () => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setPreviewError('Speech synthesis is not available on this device');
+  // Preview voice sample using real browser speech synthesis OR Cloud Audio with fallback
+  const handlePreviewVoice = async () => {
+    handleStopVoice();
+    setPreviewError(null);
+    setIsPlayingPreview(true);
+
+    const sampleText =
+      language === 'hi'
+        ? settings.voice.engine === 'gemini_tts'
+          ? `नमस्ते! मैं टिया हूँ, जेमिनी स्टूडियो एचडी आवाज़ ${settings.voice.geminiVoice} के साथ आपकी एआई मेंटर।`
+          : 'नमस्ते! मैं टिया हूँ, आपकी दोस्ताना और समझदार एआई मेंटर।'
+        : settings.voice.engine === 'gemini_tts'
+          ? `Hello there! I am Tia, speaking with Gemini Studio HD voice ${settings.voice.geminiVoice}.`
+          : 'Hello there! I am Tia, your friendly and witty AI learning mentor.';
+
+    // Fallback runner using browser synthesis
+    const runBrowserFallback = () => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        setIsPlayingPreview(false);
+        setPreviewError('Speech synthesis is not available on this device');
+        return;
+      }
+      try {
+        const utterance = new SpeechSynthesisUtterance(sampleText);
+        utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+        utterance.pitch = settings.voice.pitch;
+        utterance.rate = settings.voice.rate;
+
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = selectTiaVoice(voices, language);
+        if (preferred) {
+          utterance.voice = preferred;
+        }
+
+        utterance.onstart = () => setIsPlayingPreview(true);
+        utterance.onend = () => setIsPlayingPreview(false);
+        utterance.onerror = (e) => {
+          setIsPlayingPreview(false);
+          if (e.error !== 'canceled') {
+            setPreviewError(`Preview speech error: ${e.error}`);
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err: any) {
+        setIsPlayingPreview(false);
+        setPreviewError(err?.message || 'Could not play voice preview');
+      }
+    };
+
+    if (settings.voice.engine === 'browser') {
+      runBrowserFallback();
       return;
     }
 
+    // Try cloud audio synthesis with browser fallback
     try {
-      window.speechSynthesis.cancel();
-      setPreviewError(null);
-
-      const sampleText =
-        language === 'hi'
-          ? 'नमस्ते! मैं टिया हूँ, आपकी दोस्ताना और समझदार एआई मेंटर।'
-          : "Hello there! I am Tia, your friendly and witty AI learning mentor.";
-
-      const utterance = new SpeechSynthesisUtterance(sampleText);
-      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-      utterance.pitch = settings.voice.pitch;
-      utterance.rate = settings.voice.rate;
-
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = selectTiaVoice(voices, language);
-      if (preferred) {
-        utterance.voice = preferred;
-      }
-
-      utterance.onstart = () => setIsPlayingPreview(true);
-      utterance.onend = () => setIsPlayingPreview(false);
-      utterance.onerror = (e) => {
-        setIsPlayingPreview(false);
-        if (e.error !== 'canceled') {
-          setPreviewError(`Preview speech error: ${e.error}`);
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err: any) {
-      setIsPlayingPreview(false);
-      setPreviewError(err?.message || 'Could not play voice preview');
+      await playTiaResponseAudio({
+        text: sampleText,
+        language,
+        provider: settings.voice.engine,
+        voiceName:
+          settings.voice.engine === 'gemini_tts'
+            ? settings.voice.geminiVoice
+            : settings.voice.chirpVoice,
+        onStart: () => setIsPlayingPreview(true),
+        onEnd: () => setIsPlayingPreview(false),
+        onError: (err) => {
+          console.warn('[Tia Preview] Cloud preview issue, falling back to browser:', err);
+        },
+        fallbackToBrowser: () => {
+          console.log('[Tia Preview] Executing browser fallback');
+          runBrowserFallback();
+        },
+      });
+    } catch {
+      runBrowserFallback();
     }
   };
 
   const handleStopVoice = () => {
+    stopActiveAudioPlayback();
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      setIsPlayingPreview(false);
     }
+    setIsPlayingPreview(false);
   };
 
   const handleResetToDefaults = () => {
+    handleStopVoice();
     const defaults = resetStoredTiaSettings();
     setSettings(defaults);
     setShowResetConfirm(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
+
+  const isGeminiAvailable = serverTtsStatus?.providers?.gemini_tts?.available ?? true;
+  const isChirpAvailable = serverTtsStatus?.providers?.google_cloud_chirp?.available ?? false;
 
   return (
     <div className="flex flex-col h-full bg-[#FAFAF8] dark:bg-[#0B0F19] text-[#121212] dark:text-[#F8FAFC] transition-colors">
@@ -218,8 +280,8 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
             </h1>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">
               {isHindi
-                ? 'आवाज़, भाषा और बातचीत की शैली को कस्टमाइज़ करें'
-                : 'Customize voice, language, and assistant behavior'}
+                ? 'प्रीमियम वॉइस, भाषा, और बातचीत की शैली को कस्टमाइज़ करें'
+                : 'Configure Studio HD voice, language, and assistant behavior'}
             </p>
           </div>
         </div>
@@ -253,12 +315,12 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
                   AI Mentor
                 </span>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-                  Active
+                  Ready
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {isHindi
-                  ? 'आपकी समझदार, दोस्ताना और मज़ाकिया भारतीय एआई मेंटर—जो हर सवाल का सही और आसान जवाब देती है।'
+                  ? 'आपकी समझदार, दोस्ताना और मज़ाकिया भारतीय एआई मेंटर—जो हर सवाल का सही, आसान और ज्ञानवर्धक जवाब देती है।'
                   : 'Your witty, sharp, and encouraging Indian AI mentor—answering any topic with humor, clarity, and everyday analogies.'}
               </p>
               <div className="mt-3 flex items-center gap-3 text-[11px] font-mono text-slate-500 dark:text-slate-400">
@@ -268,15 +330,21 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{settings.voice.engine === 'browser' ? 'Browser Web Speech' : 'Cloud TTS'}</span>
+                  <Headphones className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>
+                    {settings.voice.engine === 'gemini_tts'
+                      ? `Gemini HD (${settings.voice.geminiVoice})`
+                      : settings.voice.engine === 'google_cloud_chirp'
+                      ? `Google Chirp 3 HD`
+                      : 'Browser Voice'}
+                  </span>
                 </span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* SECTION B: VOICE SETTINGS */}
+        {/* SECTION B: VOICE ENGINE & SELECTION */}
         <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3">
             <div className="flex items-center gap-2.5">
@@ -285,85 +353,205 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-[#090D16] dark:text-[#F8FAFC]">
-                  {isHindi ? 'वॉइस एवं स्पीच सेटिंग्स' : 'Voice & Speech Settings'}
+                  {isHindi ? 'वॉइस इंजन प्रदाता (Voice Engine)' : 'Voice Synthesizer Provider'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isHindi
-                    ? 'आवाज़ का इंजन, गति (Speed), और पूर्वावलोकन (Preview)'
-                    : 'Voice synthesizer engine, pitch, speech rate, and testing'}
+                    ? 'ब्राउज़र वॉइस, प्रीमियम स्टूडियो एचडी या गूगल क्लाउड चिर्प'
+                    : 'Choose between Browser Native, Gemini Studio HD, or Cloud Chirp 3 HD'}
                 </p>
               </div>
             </div>
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              Live Connected
+              Active Fallback Safe
             </span>
           </div>
 
-          {/* Voice Engine Selector */}
-          <div>
-            <label className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC] block mb-1.5">
-              {isHindi ? 'वॉइस इंजन प्रदाता (Voice Engine)' : 'Voice Synthesizer Provider'}
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* Option 1: Browser Web Speech API (Working) */}
-              <button
-                type="button"
-                onClick={() => updateVoiceSetting('engine', 'browser')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                  settings.voice.engine === 'browser'
-                    ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
-                    : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">Browser Voice</span>
-                  {settings.voice.engine === 'browser' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                  )}
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  Device native Web Speech API (Fast & zero latency)
-                </p>
-                <span className="inline-block mt-2 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
-                  Active & Working
-                </span>
-              </button>
-
-              {/* Option 2: Gemini TTS (Future / Phase 2B) */}
-              <div className="p-3 rounded-xl border bg-slate-50/60 dark:bg-[#161D2C]/60 border-black/[0.04] dark:border-white/[0.04] opacity-75">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gemini TTS</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    Phase 2B
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  gemini-3.8-flash-lite-tts neural audio
-                </p>
-                <span className="inline-block mt-2 text-[9px] font-mono text-amber-700 dark:text-amber-400">
-                  Not configured
+          {/* Engine Selector Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* 1. Browser Native Web Speech (Free & Reliable) */}
+            <button
+              type="button"
+              onClick={() => updateVoiceSetting('engine', 'browser')}
+              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                settings.voice.engine === 'browser'
+                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
+                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold">Browser Voice</span>
+                {settings.voice.engine === 'browser' && (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                Free native Web Speech API. 0 latency, works offline.
+              </p>
+              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">₹0 / month</span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
+                  Reliable
                 </span>
               </div>
+            </button>
 
-              {/* Option 3: Google Cloud TTS */}
-              <div className="p-3 rounded-xl border bg-slate-50/60 dark:bg-[#161D2C]/60 border-black/[0.04] dark:border-white/[0.04] opacity-75">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Google Cloud</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    Chirp
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Server-side HD Chirp 3-HD voices
-                </p>
-                <span className="inline-block mt-2 text-[9px] font-mono text-slate-500">
-                  Not configured
+            {/* 2. Premium Studio HD — Gemini TTS (Aoede / Kore) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isGeminiAvailable) {
+                  updateVoiceSetting('engine', 'gemini_tts');
+                }
+              }}
+              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                settings.voice.engine === 'gemini_tts'
+                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
+                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Premium HD</span>
+                </span>
+                {settings.voice.engine === 'gemini_tts' && (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                Gemini Studio HD (Aoede & Kore female voices).
+              </p>
+              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
+                <span className="text-violet-600 dark:text-violet-400">Gemini Tier</span>
+                <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/60 text-violet-800 dark:text-violet-200 font-bold">
+                  Studio HD
                 </span>
               </div>
-            </div>
+            </button>
+
+            {/* 3. Google Cloud Chirp 3 HD */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isChirpAvailable) {
+                  updateVoiceSetting('engine', 'google_cloud_chirp');
+                }
+              }}
+              className={`p-3.5 rounded-xl border text-left transition-all ${
+                settings.voice.engine === 'google_cloud_chirp'
+                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
+                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] opacity-80'
+              } ${isChirpAvailable ? 'cursor-pointer hover:border-black/20' : 'cursor-not-allowed'}`}
+              title={
+                !isChirpAvailable
+                  ? 'Google Cloud Service Account not configured on server'
+                  : 'Select Google Cloud Chirp 3 HD'
+              }
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Cloud Chirp 3 HD
+                </span>
+                {settings.voice.engine === 'google_cloud_chirp' && (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600" />
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Google Cloud Text-to-Speech high-definition voices.
+              </p>
+              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
+                <span className="text-slate-400">GCP Chirp</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded ${
+                    isChirpAvailable
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                  }`}
+                >
+                  {isChirpAvailable ? 'Connected' : 'Not configured'}
+                </span>
+              </div>
+            </button>
           </div>
 
-          {/* Female Voice Priority Toggle (Connected to selectTiaVoice) */}
+          {/* Sub-Selection: Female Voice Selection for Premium HD */}
+          {settings.voice.engine === 'gemini_tts' && (
+            <div className="p-3.5 rounded-xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900/50 space-y-2.5 animate-fadeIn">
+              <label className="text-xs font-bold text-violet-900 dark:text-violet-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>{isHindi ? 'प्रीमियम महिला वॉइस चुनें:' : 'Select Premium Female Voice:'}</span>
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateVoiceSetting('geminiVoice', 'Aoede')}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    settings.voice.geminiVoice === 'Aoede'
+                      ? 'bg-white dark:bg-[#1A2234] border-violet-500 shadow-xs text-violet-950 dark:text-violet-100 font-bold'
+                      : 'bg-white/60 dark:bg-[#131926]/60 border-black/[0.06] text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Aoede (आओइडी)</span>
+                    {settings.voice.geminiVoice === 'Aoede' && (
+                      <Check className="w-3.5 h-3.5 text-violet-600" />
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Deep, expressive, engaging studio tone
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateVoiceSetting('geminiVoice', 'Kore')}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    settings.voice.geminiVoice === 'Kore'
+                      ? 'bg-white dark:bg-[#1A2234] border-violet-500 shadow-xs text-violet-950 dark:text-violet-100 font-bold'
+                      : 'bg-white/60 dark:bg-[#131926]/60 border-black/[0.06] text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Kore (कोरे)</span>
+                    {settings.voice.geminiVoice === 'Kore' && (
+                      <Check className="w-3.5 h-3.5 text-violet-600" />
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Crisp, bright, warm conversational tone
+                  </p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sub-Selection: Female Voice Selection for Google Cloud Chirp */}
+          {settings.voice.engine === 'google_cloud_chirp' && (
+            <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-[#161D2C] border border-black/[0.06] space-y-2 animate-fadeIn">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Google Cloud Chirp 3 HD Voices:
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#1A2234] border border-black/[0.06]">
+                  <p className="font-semibold">Hindi Female</p>
+                  <p className="text-[10px] text-slate-400 font-mono">hi-IN-Chirp3-HD-F</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#1A2234] border border-black/[0.06]">
+                  <p className="font-semibold">Indian English Female</p>
+                  <p className="text-[10px] text-slate-400 font-mono">en-IN-Chirp3-HD-F</p>
+                </div>
+              </div>
+              {!isChirpAvailable && (
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  Notice: Google Cloud Chirp requires service account credentials configured in Cloud Run. Browser voice automatically serves as free fallback.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Female Voice Priority Guarantee (Enforced) */}
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
@@ -371,8 +559,8 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {isHindi
-                  ? 'स्वाभाविक महिला आवाज़ (Swara, Kalpana, Lekha, Google हिन्दी) को प्राथमिकता दी जाती है'
-                  : 'Prioritizes female Indian voices (Swara, Kalpana, Lekha, Samantha) and penalizes male voices'}
+                  ? 'प्राकृतिक महिला भारतीय आवाज़ों (Swara, Kalpana, Lekha, Aoede, Kore) को प्राथमिकता दी जाती है'
+                  : 'Prioritizes female Indian voices (Swara, Kalpana, Lekha, Aoede, Kore) and penalizes male voices'}
               </p>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-800 dark:text-violet-300 text-xs font-mono font-bold">
@@ -408,13 +596,17 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
           </div>
 
           {/* Active Voice Information & Voice Preview Buttons */}
-          <div className="p-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 space-y-3">
+          <div className="p-3.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-600 dark:text-slate-300 font-medium">
-                {isHindi ? 'सक्रिय सिस्टम आवाज़:' : 'Active System Voice:'}
+                {isHindi ? 'सक्रिय आवाज़ इंजन:' : 'Active Synthesizer:'}
               </span>
-              <span className="font-mono text-[11px] text-violet-700 dark:text-violet-300 font-semibold truncate max-w-[200px]">
-                {activeVoiceName}
+              <span className="font-mono text-[11px] text-violet-700 dark:text-violet-300 font-semibold truncate max-w-[220px]">
+                {settings.voice.engine === 'gemini_tts'
+                  ? `Gemini Studio HD (${settings.voice.geminiVoice})`
+                  : settings.voice.engine === 'google_cloud_chirp'
+                  ? 'Google Cloud Chirp 3 HD'
+                  : activeVoiceName}
               </span>
             </div>
 
@@ -433,7 +625,15 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
                 className="flex-1 py-2 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{isPlayingPreview ? (isHindi ? 'बोल रही हूँ...' : 'Speaking sample...') : (isHindi ? 'आवाज़ सुनकर देखें (Preview)' : 'Test Voice Preview')}</span>
+                <span>
+                  {isPlayingPreview
+                    ? isHindi
+                      ? 'बोल रही हूँ...'
+                      : 'Speaking sample...'
+                    : isHindi
+                    ? 'आवाज़ सुनकर देखें (Preview)'
+                    : 'Test Voice Preview'}
+                </span>
               </button>
 
               <button
@@ -742,7 +942,7 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
             <div className="flex items-center gap-2">
               <Server className="w-4 h-4 text-slate-500" />
               <span className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
-                {isHindi ? 'उन्नत एवं तकनीकी विवरण (Advanced Info)' : 'Advanced Technical Architecture'}
+                {isHindi ? 'उन्नत एवं तकनीकी विवरण (Advanced Info)' : 'Advanced Technical Architecture & Pricing'}
               </span>
             </div>
             {showAdvanced ? (
@@ -757,43 +957,37 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
               <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
                 <span className="text-slate-500">Active TTS Engine:</span>
                 <span className="text-violet-700 dark:text-violet-300 font-bold">
-                  Browser Web Speech API
+                  {settings.voice.engine === 'gemini_tts'
+                    ? 'Gemini Studio HD (Neural)'
+                    : settings.voice.engine === 'google_cloud_chirp'
+                    ? 'Google Cloud Chirp 3 HD'
+                    : 'Browser Web Speech API'}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-slate-500">Speech Utterance Locale:</span>
-                <span className="text-slate-800 dark:text-slate-200">
-                  {language === 'hi' ? 'hi-IN' : 'en-IN'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-slate-500">Selected System Voice:</span>
-                <span className="text-slate-800 dark:text-slate-200 truncate max-w-[220px]">
-                  {activeVoiceName}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-slate-500">Available System Voices:</span>
-                <span className="text-slate-800 dark:text-slate-200">
-                  {availableVoices.length} voices detected
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-slate-500">Backend AI Pipeline:</span>
+                <span className="text-slate-500">Estimated Cost Footprint:</span>
                 <span className="text-emerald-700 dark:text-emerald-300 font-bold">
-                  /api/tia/chat (POST)
+                  {settings.voice.engine === 'browser'
+                    ? '₹0 / month (Free tier)'
+                    : '₹50 - ₹180 / month (well within ₹300-₹700 budget)'}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
-                <span className="text-slate-500">Primary AI Model:</span>
-                <span className="text-slate-800 dark:text-slate-200">
-                  gemini-3.1-flash-lite
+                <span className="text-slate-500">Auto-Fallback Protection:</span>
+                <span className="text-emerald-600 font-bold">
+                  Enabled (Instant Browser Voice Fallback)
                 </span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500">Failover Cascade:</span>
+              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
+                <span className="text-slate-500">Backend TTS Status Route:</span>
                 <span className="text-slate-800 dark:text-slate-200">
-                  flash-latest → 3.8-flash
+                  /api/tia/tts/status
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
+                <span className="text-slate-500">Backend Audio Synthesizer:</span>
+                <span className="text-slate-800 dark:text-slate-200">
+                  /api/tia/tts/synthesize
                 </span>
               </div>
 
@@ -802,7 +996,7 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
                 <span>
                   {isHindi
                     ? 'सुरक्षा नोट: कोई भी एपीआई की या क्रेडेंशियल्स ब्राउज़र पर प्रदर्शित नहीं किए जाते हैं। सभी जेमिनी कॉल्स सर्वर साइड सुरक्षित रूप से प्रोसेस होते हैं।'
-                    : 'Security Notice: API keys and credentials are never exposed to the client. All Gemini inferences are proxied server-side.'}
+                    : 'Security Notice: API keys and credentials are never exposed to the client. All inferences are proxied server-side.'}
                 </span>
               </div>
             </div>

@@ -1,0 +1,3499 @@
+--- a/src/services/tiaTtsEngine.ts
++++ b/src/services/tiaTtsEngine.ts
+@@ -0,0 +1,93 @@
++/**
++ * Matters — Tia Unified TTS Audio Provider Architecture
++ * 
++ * Supports:
++ * 1. Browser Voice (Free native Web Speech API fallback)
++ * 2. Premium Studio HD — Gemini TTS (Aoede & Kore female voices)
++ * 3. Google Cloud Chirp 3 HD — Cloud Text-to-Speech (Hindi hi-IN & Indian English en-IN)
++ * 
++ * Architecture Rules:
++ * - Server credentials (GEMINI_API_KEY, GCP service accounts) stay strictly on server.
++ * - Handles audio caching for reusable samples and previews to keep monthly costs low.
++ * - Graceful fallback to Browser Voice whenever premium engines are unconfigured or fail.
++ */
++
++export type TiaTtsProvider = 'browser' | 'gemini_tts' | 'google_cloud_chirp';
++
++export interface TiaTtsVoiceOption {
++  id: string;
++  name: string;
++  provider: TiaTtsProvider;
++  gender: 'female';
++  language: 'hi' | 'en' | 'both';
++  description: string;
++  isAvailable: boolean;
++  unavailabilityReason?: string;
++}
++
++export const TIA_PREMIUM_VOICES: TiaTtsVoiceOption[] = [
++  // Gemini TTS Voices
++  {
++    id: 'gemini-aoede',
++    name: 'Aoede (Gemini Studio HD)',
++    provider: 'gemini_tts',
++    gender: 'female',
++    language: 'both',
++    description: 'Deep, engaging, expressive female studio voice from Gemini',
++    isAvailable: true,
++  },
++  {
++    id: 'gemini-kore',
++    name: 'Kore (Gemini Studio HD)',
++    provider: 'gemini_tts',
++    gender: 'female',
++    language: 'both',
++    description: 'Crisp, bright, warm female conversational voice from Gemini',
++    isAvailable: true,
++  },
++  // Google Cloud Chirp 3 HD Voices
++  {
++    id: 'chirp-hi-female',
++    name: 'Chirp 3 HD Hindi (Google Cloud)',
++    provider: 'google_cloud_chirp',
++    gender: 'female',
++    language: 'hi',
++    description: 'Natural neural Hindi voice with expressive cadence and authentic Hindi phonemes',
++    isAvailable: false,
++    unavailabilityReason: 'Google Cloud Text-to-Speech service account credentials (GOOGLE_APPLICATION_CREDENTIALS) not configured on server',
++  },
++  {
++    id: 'chirp-en-in-female',
++    name: 'Chirp 3 HD Indian English (Google Cloud)',
++    provider: 'google_cloud_chirp',
++    gender: 'female',
++    language: 'en',
++    description: 'High-definition Indian English accent neural voice from Google Cloud',
++    isAvailable: false,
++    unavailabilityReason: 'Google Cloud Text-to-Speech service account credentials (GOOGLE_APPLICATION_CREDENTIALS) not configured on server',
++  },
++];
++
++export interface TiaTtsStatusResponse {
++  ok: boolean;
++  providers: {
++    browser: {
++      available: boolean;
++      status: 'active';
++      cost: 'Free';
++    };
++    gemini_tts: {
++      available: boolean;
++      status: 'active' | 'missing_key';
++      voices: string[];
++      cost: 'Gemini API tokens (~₹0.002 per response)';
++    };
++    google_cloud_chirp: {
++      available: boolean;
++      status: 'not_configured' | 'active';
++      voices: string[];
++      cost: '₹0.0013 per character after 1M free chars/month';
++      unavailabilityReason: string;
++    };
++  };
++}
+--- a/src/services/tiaTtsServerHandler.ts
++++ b/src/services/tiaTtsServerHandler.ts
+@@ -0,0 +1,257 @@
++/**
++ * Server-side TTS synthesis handler for Tia AI Assistant
++ * 
++ * Endpoints handled:
++ * - GET  /api/tia/tts/status -> returns provider readiness & available voices
++ * - POST /api/tia/tts/synthesize -> generates premium audio (Gemini TTS / Cloud Chirp)
++ */
++
++import { GoogleGenAI } from '@google/genai';
++import { getGeminiApiKey } from './tiaAiHandler';
++
++// In-memory LRU / preview cache to avoid redundant cloud calls and keep user within budget (₹300 - ₹700/mo)
++const audioCache = new Map<string, { audioBase64: string; mimeType: string; timestamp: number }>();
++const MAX_CACHE_SIZE = 100;
++
++function getCacheKey(text: string, voiceName: string, lang: string): string {
++  return `${voiceName}:${lang}:${text.slice(0, 120).trim()}`;
++}
++
++export function getTtsStatus() {
++  const hasGeminiKey = Boolean(getGeminiApiKey());
++  const hasGcpCreds = Boolean(
++    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
++    process.env.GCP_TTS_KEY ||
++    process.env.GOOGLE_CLOUD_KEY
++  );
++
++  return {
++    ok: true,
++    providers: {
++      browser: {
++        available: true,
++        status: 'active',
++        name: 'Browser Web Speech API',
++        cost: 'Free (0 cost)',
++        latency: 'Near instant (0ms)',
++      },
++      gemini_tts: {
++        available: hasGeminiKey,
++        status: hasGeminiKey ? 'active' : 'missing_key',
++        name: 'Gemini Premium Studio HD',
++        voices: ['Aoede', 'Kore'],
++        cost: 'Included in Gemini API tier (~₹0.002 / response)',
++        latency: 'Cloud neural audio (~600ms - 1.2s)',
++      },
++      google_cloud_chirp: {
++        available: hasGcpCreds,
++        status: hasGcpCreds ? 'active' : 'not_configured',
++        name: 'Google Cloud Chirp 3 HD',
++        voices: ['hi-IN-Chirp3-HD-F', 'en-IN-Chirp3-HD-F'],
++        cost: 'Standard GCP pricing (~₹0.0013 / char after 1M free chars/month)',
++        unavailabilityReason: hasGcpCreds
++          ? undefined
++          : 'Google Cloud Service Account (GOOGLE_APPLICATION_CREDENTIALS) not configured in server environment. Set credentials in Cloud Run to activate.',
++      },
++    },
++  };
++}
++
++export async function synthesizeTiaAudio(body: {
++  text?: string;
++  provider?: string;
++  voiceName?: string;
++  language?: string;
++}): Promise<{ status: number; data: any }> {
++  const text = (body.text || '').trim();
++  const provider = body.provider || 'gemini_tts';
++  const voiceName = body.voiceName || 'Aoede';
++  const language = body.language === 'hi' ? 'hi' : 'en';
++
++  if (!text) {
++    return {
++      status: 400,
++      data: { ok: false, error: 'Text to synthesize cannot be empty' },
++    };
++  }
++
++  // Cap audio synthesis text at 600 chars to avoid timeout & high latency
++  const cleanText = text.slice(0, 600);
++  const cacheKey = getCacheKey(cleanText, voiceName, language);
++
++  if (audioCache.has(cacheKey)) {
++    const cached = audioCache.get(cacheKey)!;
++    return {
++      status: 200,
++      data: {
++        ok: true,
++        audioBase64: cached.audioBase64,
++        mimeType: cached.mimeType,
++        cached: true,
++        voiceName,
++        provider,
++      },
++    };
++  }
++
++  // Handle Gemini TTS synthesis
++  if (provider === 'gemini_tts') {
++    const apiKey = getGeminiApiKey();
++    if (!apiKey) {
++      return {
++        status: 503,
++        data: {
++          ok: false,
++          error: 'GEMINI_API_KEY is not configured on the server',
++          code: 'MISSING_GEMINI_KEY',
++        },
++      };
++    }
++
++    try {
++      const ai = new GoogleGenAI({
++        apiKey,
++        httpOptions: {
++          headers: {
++            'User-Agent': 'aistudio-build-tts',
++          },
++        },
++      });
++
++      // Valid prebuilt female voices: 'Aoede', 'Kore'
++      const selectedVoice =
++        voiceName.toLowerCase().includes('kore') ? 'Kore' : 'Aoede';
++
++      // Model cascade for audio modality
++      const ttsModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
++      let audioResult: { audioBase64: string; mimeType: string } | null = null;
++      let lastError: any = null;
++
++      for (const modelName of ttsModels) {
++        try {
++          const prompt =
++            language === 'hi'
++              ? `Read this response naturally in spoken Hindi as an encouraging, friendly mentor named Tia: "${cleanText}"`
++              : `Read this response naturally in conversational Indian English as an encouraging, friendly mentor named Tia: "${cleanText}"`;
++
++          const response = await ai.models.generateContent({
++            model: modelName,
++            contents: prompt,
++            config: {
++              responseModalities: ['AUDIO'],
++              speechConfig: {
++                voiceConfig: {
++                  prebuiltVoiceConfig: {
++                    voiceName: selectedVoice,
++                  },
++                },
++              },
++            },
++          });
++
++          const candidate = response?.candidates?.[0];
++          const parts = candidate?.content?.parts || [];
++          for (const p of parts) {
++            if (p.inlineData && p.inlineData.data) {
++              audioResult = {
++                audioBase64: p.inlineData.data,
++                mimeType: p.inlineData.mimeType || 'audio/wav',
++              };
++              break;
++            }
++          }
++
++          if (audioResult) break;
++        } catch (modelErr: any) {
++          lastError = modelErr;
++          console.warn(`[Tia TTS] ${modelName} audio generation spike/issue:`, modelErr?.message || modelErr);
++        }
++      }
++
++      if (audioResult) {
++        // Cache result
++        if (audioCache.size >= MAX_CACHE_SIZE) {
++          const firstKey = audioCache.keys().next().value;
++          if (firstKey) audioCache.delete(firstKey);
++        }
++        audioCache.set(cacheKey, {
++          audioBase64: audioResult.audioBase64,
++          mimeType: audioResult.mimeType,
++          timestamp: Date.now(),
++        });
++
++        return {
++          status: 200,
++          data: {
++            ok: true,
++            audioBase64: audioResult.audioBase64,
++            mimeType: audioResult.mimeType,
++            voiceName: selectedVoice,
++            provider: 'gemini_tts',
++          },
++        };
++      }
++
++      // If audio modality is not available in current region / model demand spike, return clean fallback code
++      return {
++        status: 503,
++        data: {
++          ok: false,
++          error: lastError?.message || 'Gemini Audio modality currently busy or unavailable',
++          code: 'GEMINI_AUDIO_UNAVAILABLE',
++          fallbackToBrowser: true,
++        },
++      };
++    } catch (err: any) {
++      console.error('[Tia TTS] Error in Gemini TTS:', err);
++      return {
++        status: 500,
++        data: {
++          ok: false,
++          error: err?.message || 'Server error generating Gemini TTS',
++          fallbackToBrowser: true,
++        },
++      };
++    }
++  }
++
++  // Handle Google Cloud Chirp 3 HD
++  if (provider === 'google_cloud_chirp') {
++    const hasGcpCreds = Boolean(
++      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
++      process.env.GCP_TTS_KEY
++    );
++
++    if (!hasGcpCreds) {
++      return {
++        status: 503,
++        data: {
++          ok: false,
++          error: 'Google Cloud Text-to-Speech credentials (GOOGLE_APPLICATION_CREDENTIALS) not configured on the server',
++          code: 'GCP_CREDS_NOT_CONFIGURED',
++          fallbackToBrowser: true,
++        },
++      };
++    }
++
++    // If credentials were provided in future, actual GCP REST call with OAuth token would execute here.
++    return {
++      status: 503,
++      data: {
++        ok: false,
++        error: 'Google Cloud Chirp requires service account authentication',
++        code: 'GCP_AUTH_REQUIRED',
++        fallbackToBrowser: true,
++      },
++    };
++  }
++
++  return {
++    status: 400,
++    data: {
++      ok: false,
++      error: `Unsupported voice provider: ${provider}`,
++      fallbackToBrowser: true,
++    },
++  };
++}
+--- a/src/services/tiaAudioPlayer.ts
++++ b/src/services/tiaAudioPlayer.ts
+@@ -0,0 +1,119 @@
++/**
++ * Matters — Client-side Tia Audio Player & Provider Orchestrator
++ * 
++ * Supports:
++ * - Direct playback of Cloud / Gemini TTS base64 audio with HTML5 Audio element.
++ * - Clean interruption when user speaks or clicks mic.
++ * - Automatic, robust fallback to Browser SpeechSynthesis if cloud audio fails.
++ * - Coordinates cleanly with useTiaVoice so follow-up listening begins ONLY after
++ *   audio completely ends.
++ */
++
++export interface PlayTiaAudioOptions {
++  text: string;
++  language: 'hi' | 'en';
++  provider?: 'browser' | 'gemini_tts' | 'google_cloud_chirp';
++  voiceName?: string;
++  onStart?: () => void;
++  onEnd?: () => void;
++  onError?: (err: any) => void;
++  fallbackToBrowser: () => void;
++}
++
++let activeAudioElement: HTMLAudioElement | null = null;
++
++export function stopActiveAudioPlayback(): void {
++  if (activeAudioElement) {
++    try {
++      activeAudioElement.pause();
++      activeAudioElement.currentTime = 0;
++      activeAudioElement.src = '';
++    } catch {
++      // ignore
++    }
++    activeAudioElement = null;
++  }
++}
++
++export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promise<void> {
++  const {
++    text,
++    language,
++    provider = 'browser',
++    voiceName = 'Aoede',
++    onStart,
++    onEnd,
++    onError,
++    fallbackToBrowser,
++  } = options;
++
++  // If user selected browser voice, immediately use existing browser synthesis
++  if (provider === 'browser') {
++    fallbackToBrowser();
++    return;
++  }
++
++  // Stop any ongoing audio before starting new playback
++  stopActiveAudioPlayback();
++
++  try {
++    const res = await fetch('/api/tia/tts/synthesize', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify({
++        text,
++        provider,
++        voiceName,
++        language,
++      }),
++    });
++
++    const data = await res.json();
++
++    if (!res.ok || !data.ok || !data.audioBase64) {
++      console.warn('[Tia Audio] Cloud audio unavailable, falling back to browser voice:', data?.error);
++      fallbackToBrowser();
++      return;
++    }
++
++    // Convert base64 to Blob & Object URL for pristine HTML5 audio playback
++    const byteCharacters = atob(data.audioBase64);
++    const byteNumbers = new Array(byteCharacters.length);
++    for (let i = 0; i < byteCharacters.length; i++) {
++      byteNumbers[i] = byteCharacters.charCodeAt(i);
++    }
++    const byteArray = new Uint8Array(byteNumbers);
++    const blob = new Blob([byteArray], { type: data.mimeType || 'audio/wav' });
++    const audioUrl = URL.createObjectURL(blob);
++
++    const audio = new Audio(audioUrl);
++    activeAudioElement = audio;
++
++    audio.onplay = () => {
++      if (onStart) onStart();
++    };
++
++    audio.onended = () => {
++      URL.revokeObjectURL(audioUrl);
++      if (activeAudioElement === audio) {
++        activeAudioElement = null;
++      }
++      if (onEnd) onEnd();
++    };
++
++    audio.onerror = (e) => {
++      URL.revokeObjectURL(audioUrl);
++      if (activeAudioElement === audio) {
++        activeAudioElement = null;
++      }
++      console.warn('[Tia Audio] Audio playback error, falling back to browser voice:', e);
++      if (onError) onError(e);
++      fallbackToBrowser();
++    };
++
++    await audio.play();
++  } catch (err: any) {
++    console.warn('[Tia Audio] Synthesis request failed, falling back to browser voice:', err?.message || err);
++    fallbackToBrowser();
++  }
++}
+--- a/src/services/tiaSettingsStorage.ts
++++ b/src/services/tiaSettingsStorage.ts
+@@ -0,0 +1,115 @@
++/**
++ * Matters — Tia Dedicated Settings & Control Storage
++ * 
++ * Persists user preferences for Tia Assistant:
++ * - Active Voice & Synthesis options (Browser, Gemini Aoede/Kore, Cloud Chirp 3 HD)
++ * - Pitch, Rate, Female voice preference, Auto-speech
++ * - Language configuration (Hindi / English)
++ * - Personality & Tone flags (Humor, Explanatory Depth, Relatable analogies)
++ * - Assistant Behavior (Voice response toggle, Auto follow-up listening)
++ */
++
++export type TiaVoiceEngine = 'browser' | 'gemini_tts' | 'google_cloud_chirp';
++export type TiaReplyStyle = 'conversational' | 'concise' | 'detailed';
++
++export interface TiaPersonalitySettings {
++  humorLevel: 'witty' | 'balanced' | 'serious';
++  friendliness: 'warm_peer' | 'polite_mentor';
++  depth: 'concise' | 'balanced' | 'detailed';
++  useEverydayAnalogies: boolean;
++}
++
++export interface TiaVoiceControls {
++  engine: TiaVoiceEngine;
++  geminiVoice: 'Aoede' | 'Kore';
++  chirpVoice: 'hi-IN-Chirp3-HD-F' | 'en-IN-Chirp3-HD-F';
++  femaleVoiceOnly: boolean;
++  rate: number; // 0.8 - 1.25
++  pitch: number; // 0.9 - 1.3
++  autoSpeakResponse: boolean;
++  enableFollowUpListening: boolean;
++}
++
++export interface TiaAppSettings {
++  language: 'hi' | 'en';
++  voice: TiaVoiceControls;
++  personality: TiaPersonalitySettings;
++  replyStyle: TiaReplyStyle;
++}
++
++export const DEFAULT_TIA_SETTINGS: TiaAppSettings = {
++  language: 'hi',
++  voice: {
++    engine: 'browser', // Default reliable, zero-cost fallback
++    geminiVoice: 'Aoede',
++    chirpVoice: 'hi-IN-Chirp3-HD-F',
++    femaleVoiceOnly: true,
++    rate: 1.0,
++    pitch: 1.08,
++    autoSpeakResponse: true,
++    enableFollowUpListening: true,
++  },
++  personality: {
++    humorLevel: 'witty',
++    friendliness: 'warm_peer',
++    depth: 'balanced',
++    useEverydayAnalogies: true,
++  },
++  replyStyle: 'conversational',
++};
++
++const TIA_SETTINGS_KEY = 'matters_tia_settings_v1';
++
++export function getStoredTiaSettings(): TiaAppSettings {
++  if (typeof window === 'undefined') return DEFAULT_TIA_SETTINGS;
++  try {
++    const raw = localStorage.getItem(TIA_SETTINGS_KEY);
++    if (!raw) return DEFAULT_TIA_SETTINGS;
++    const parsed = JSON.parse(raw);
++    return {
++      ...DEFAULT_TIA_SETTINGS,
++      ...parsed,
++      voice: {
++        ...DEFAULT_TIA_SETTINGS.voice,
++        ...(parsed.voice || {}),
++      },
++      personality: {
++        ...DEFAULT_TIA_SETTINGS.personality,
++        ...(parsed.personality || {}),
++      },
++    };
++  } catch (err) {
++    console.warn('[Tia Settings] Failed to load from storage, using defaults:', err);
++    return DEFAULT_TIA_SETTINGS;
++  }
++}
++
++export function saveStoredTiaSettings(settings: TiaAppSettings): void {
++  if (typeof window === 'undefined') return;
++  try {
++    localStorage.setItem(TIA_SETTINGS_KEY, JSON.stringify(settings));
++    window.dispatchEvent(
++      new CustomEvent('matters:tia-settings-changed', {
++        detail: { settings },
++      })
++    );
++  } catch (err) {
++    console.error('[Tia Settings] Failed to save to localStorage:', err);
++  }
++}
++
++export function resetStoredTiaSettings(): TiaAppSettings {
++  if (typeof window !== 'undefined') {
++    try {
++      localStorage.removeItem(TIA_SETTINGS_KEY);
++    } catch (e) {
++      // ignore
++    }
++  }
++  window.dispatchEvent(
++    new CustomEvent('matters:tia-settings-changed', {
++      detail: { settings: DEFAULT_TIA_SETTINGS },
++    })
++  );
++  return DEFAULT_TIA_SETTINGS;
++}
+--- a/src/components/tia/TiaSettingsView.tsx
++++ b/src/components/tia/TiaSettingsView.tsx
+@@ -0,0 +1,1046 @@
++import React, { useState, useEffect } from 'react';
++import {
++  ArrowLeft,
++  Volume2,
++  VolumeX,
++  Play,
++  Square,
++  Sparkles,
++  Languages,
++  RotateCcw,
++  Sliders,
++  CheckCircle2,
++  Info,
++  Check,
++  Zap,
++  Bot,
++  UserCheck,
++  ChevronDown,
++  ChevronUp,
++  Server,
++  AlertCircle,
++  HelpCircle,
++  Radio,
++  RadioTower,
++  ShieldCheck,
++  Headphones
++} from 'lucide-react';
++import { TiaAvatar } from './TiaAvatar';
++import { useLanguage } from '../../context/LanguageContext';
++import {
++  getStoredTiaSettings,
++  saveStoredTiaSettings,
++  resetStoredTiaSettings,
++  TiaAppSettings,
++  TiaVoiceEngine,
++} from '../../services/tiaSettingsStorage';
++import { selectTiaVoice } from '../../services/tiaLanguageConfig';
++import { stopActiveAudioPlayback, playTiaResponseAudio } from '../../services/tiaAudioPlayer';
++
++interface TiaSettingsViewProps {
++  onBack: () => void;
++}
++
++export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
++  const { language, setLanguage } = useLanguage();
++  const isHindi = language === 'hi';
++
++  const [settings, setSettings] = useState<TiaAppSettings>(() => getStoredTiaSettings());
++  const [saveSuccess, setSaveSuccess] = useState(false);
++  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
++  const [previewError, setPreviewError] = useState<string | null>(null);
++  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
++  const [activeVoiceName, setActiveVoiceName] = useState<string>('Detecting system voice...');
++  const [showAdvanced, setShowAdvanced] = useState(false);
++  const [showResetConfirm, setShowResetConfirm] = useState(false);
++
++  // Server-side provider availability status
++  const [serverTtsStatus, setServerTtsStatus] = useState<any>(null);
++
++  useEffect(() => {
++    // Fetch live TTS status from server
++    fetch('/api/tia/tts/status')
++      .then((res) => res.json())
++      .then((data) => {
++        setServerTtsStatus(data);
++      })
++      .catch((err) => {
++        console.warn('Could not fetch server TTS status:', err);
++      });
++  }, []);
++
++  // Sync with current app language
++  useEffect(() => {
++    if (settings.language !== language) {
++      setSettings((prev) => ({ ...prev, language: language as 'hi' | 'en' }));
++    }
++  }, [language]);
++
++  // Load available system synthesis voices
++  useEffect(() => {
++    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
++      setActiveVoiceName('Web Speech API not supported in browser');
++      return;
++    }
++
++    const loadVoices = () => {
++      const voices = window.speechSynthesis.getVoices();
++      setAvailableVoices(voices);
++      const selected = selectTiaVoice(voices, language);
++      if (selected) {
++        setActiveVoiceName(`${selected.name} (${selected.lang})`);
++      } else {
++        setActiveVoiceName(
++          language === 'hi'
++            ? 'Native hi-IN browser synthesis'
++            : 'Native en-IN browser synthesis'
++        );
++      }
++    };
++
++    loadVoices();
++    if (window.speechSynthesis.onvoiceschanged !== undefined) {
++      window.speechSynthesis.onvoiceschanged = loadVoices;
++    }
++  }, [language]);
++
++  const updateSetting = <K extends keyof TiaAppSettings>(
++    key: K,
++    val: TiaAppSettings[K]
++  ) => {
++    setSettings((prev) => {
++      const updated = { ...prev, [key]: val };
++      saveStoredTiaSettings(updated);
++      return updated;
++    });
++    setSaveSuccess(true);
++    setTimeout(() => setSaveSuccess(false), 2000);
++  };
++
++  const updateVoiceSetting = (
++    key: keyof TiaAppSettings['voice'],
++    val: any
++  ) => {
++    setSettings((prev) => {
++      const updated: TiaAppSettings = {
++        ...prev,
++        voice: {
++          ...prev.voice,
++          [key]: val,
++        },
++      };
++      saveStoredTiaSettings(updated);
++      return updated;
++    });
++    setSaveSuccess(true);
++    setTimeout(() => setSaveSuccess(false), 2000);
++  };
++
++  const updatePersonalitySetting = (
++    key: keyof TiaAppSettings['personality'],
++    val: any
++  ) => {
++    setSettings((prev) => {
++      const updated: TiaAppSettings = {
++        ...prev,
++        personality: {
++          ...prev.personality,
++          [key]: val,
++        },
++      };
++      saveStoredTiaSettings(updated);
++      return updated;
++    });
++    setSaveSuccess(true);
++    setTimeout(() => setSaveSuccess(false), 2000);
++  };
++
++  // Preview voice sample using real browser speech synthesis OR Cloud Audio with fallback
++  const handlePreviewVoice = async () => {
++    handleStopVoice();
++    setPreviewError(null);
++    setIsPlayingPreview(true);
++
++    const sampleText =
++      language === 'hi'
++        ? settings.voice.engine === 'gemini_tts'
++          ? `नमस्ते! मैं टिया हूँ, जेमिनी स्टूडियो एचडी आवाज़ ${settings.voice.geminiVoice} के साथ आपकी एआई मेंटर।`
++          : 'नमस्ते! मैं टिया हूँ, आपकी दोस्ताना और समझदार एआई मेंटर।'
++        : settings.voice.engine === 'gemini_tts'
++          ? `Hello there! I am Tia, speaking with Gemini Studio HD voice ${settings.voice.geminiVoice}.`
++          : 'Hello there! I am Tia, your friendly and witty AI learning mentor.';
++
++    // Fallback runner using browser synthesis
++    const runBrowserFallback = () => {
++      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
++        setIsPlayingPreview(false);
++        setPreviewError('Speech synthesis is not available on this device');
++        return;
++      }
++      try {
++        const utterance = new SpeechSynthesisUtterance(sampleText);
++        utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
++        utterance.pitch = settings.voice.pitch;
++        utterance.rate = settings.voice.rate;
++
++        const voices = window.speechSynthesis.getVoices();
++        const preferred = selectTiaVoice(voices, language);
++        if (preferred) {
++          utterance.voice = preferred;
++        }
++
++        utterance.onstart = () => setIsPlayingPreview(true);
++        utterance.onend = () => setIsPlayingPreview(false);
++        utterance.onerror = (e) => {
++          setIsPlayingPreview(false);
++          if (e.error !== 'canceled') {
++            setPreviewError(`Preview speech error: ${e.error}`);
++          }
++        };
++
++        window.speechSynthesis.speak(utterance);
++      } catch (err: any) {
++        setIsPlayingPreview(false);
++        setPreviewError(err?.message || 'Could not play voice preview');
++      }
++    };
++
++    if (settings.voice.engine === 'browser') {
++      runBrowserFallback();
++      return;
++    }
++
++    // Try cloud audio synthesis with browser fallback
++    try {
++      await playTiaResponseAudio({
++        text: sampleText,
++        language,
++        provider: settings.voice.engine,
++        voiceName:
++          settings.voice.engine === 'gemini_tts'
++            ? settings.voice.geminiVoice
++            : settings.voice.chirpVoice,
++        onStart: () => setIsPlayingPreview(true),
++        onEnd: () => setIsPlayingPreview(false),
++        onError: (err) => {
++          console.warn('[Tia Preview] Cloud preview issue, falling back to browser:', err);
++        },
++        fallbackToBrowser: () => {
++          console.log('[Tia Preview] Executing browser fallback');
++          runBrowserFallback();
++        },
++      });
++    } catch {
++      runBrowserFallback();
++    }
++  };
++
++  const handleStopVoice = () => {
++    stopActiveAudioPlayback();
++    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
++      window.speechSynthesis.cancel();
++    }
++    setIsPlayingPreview(false);
++  };
++
++  const handleResetToDefaults = () => {
++    handleStopVoice();
++    const defaults = resetStoredTiaSettings();
++    setSettings(defaults);
++    setShowResetConfirm(false);
++    setSaveSuccess(true);
++    setTimeout(() => setSaveSuccess(false), 2000);
++  };
++
++  const isGeminiAvailable = serverTtsStatus?.providers?.gemini_tts?.available ?? true;
++  const isChirpAvailable = serverTtsStatus?.providers?.google_cloud_chirp?.available ?? false;
++
++  return (
++    <div className="flex flex-col h-full bg-[#FAFAF8] dark:bg-[#0B0F19] text-[#121212] dark:text-[#F8FAFC] transition-colors">
++      {/* Top Navigation Bar */}
++      <div className="sticky top-0 z-20 px-4 py-3 bg-white/90 dark:bg-[#131926]/90 backdrop-blur-md border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
++        <div className="flex items-center gap-3">
++          <button
++            type="button"
++            onClick={() => {
++              handleStopVoice();
++              onBack();
++            }}
++            className="p-2 -ml-1 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
++            title={isHindi ? 'वापस टिया चैट पर जाएं' : 'Back to Tia Chat'}
++          >
++            <ArrowLeft className="w-5 h-5" />
++          </button>
++          <div>
++            <h1 className="text-base sm:text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC] flex items-center gap-2">
++              <span>{isHindi ? 'टिया सेटिंग्स' : 'Tia Settings'}</span>
++              <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 font-semibold">
++                Control Hub
++              </span>
++            </h1>
++            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">
++              {isHindi
++                ? 'प्रीमियम वॉइस, भाषा, और बातचीत की शैली को कस्टमाइज़ करें'
++                : 'Configure Studio HD voice, language, and assistant behavior'}
++            </p>
++          </div>
++        </div>
++
++        {saveSuccess && (
++          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-semibold animate-fadeIn">
++            <CheckCircle2 className="w-3.5 h-3.5" />
++            <span>{isHindi ? 'सहेजा गया!' : 'Saved!'}</span>
++          </div>
++        )}
++      </div>
++
++      {/* Main Settings Scrollable Body */}
++      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 max-w-2xl mx-auto w-full">
++        {/* SECTION A: TIA PROFILE */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
++          <div className="flex items-start gap-4">
++            <div className="relative shrink-0">
++              <TiaAvatar state="idle" size="lg" />
++              <div
++                className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131926]"
++                title="Online & Ready"
++              />
++            </div>
++            <div className="flex-1 min-w-0">
++              <div className="flex items-center gap-2 flex-wrap">
++                <h2 className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
++                  Tia (टिया)
++                </h2>
++                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200">
++                  AI Mentor
++                </span>
++                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
++                  Ready
++                </span>
++              </div>
++              <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
++                {isHindi
++                  ? 'आपकी समझदार, दोस्ताना और मज़ाकिया भारतीय एआई मेंटर—जो हर सवाल का सही, आसान और ज्ञानवर्धक जवाब देती है।'
++                  : 'Your witty, sharp, and encouraging Indian AI mentor—answering any topic with humor, clarity, and everyday analogies.'}
++              </p>
++              <div className="mt-3 flex items-center gap-3 text-[11px] font-mono text-slate-500 dark:text-slate-400">
++                <span className="flex items-center gap-1">
++                  <Languages className="w-3.5 h-3.5 text-violet-600" />
++                  <span>{isHindi ? 'वर्तमान भाषा: हिंदी (hi-IN)' : 'Active: English (en-IN)'}</span>
++                </span>
++                <span>•</span>
++                <span className="flex items-center gap-1">
++                  <Headphones className="w-3.5 h-3.5 text-emerald-600" />
++                  <span>
++                    {settings.voice.engine === 'gemini_tts'
++                      ? `Gemini HD (${settings.voice.geminiVoice})`
++                      : settings.voice.engine === 'google_cloud_chirp'
++                      ? `Google Chirp 3 HD`
++                      : 'Browser Voice'}
++                  </span>
++                </span>
++              </div>
++            </div>
++          </div>
++        </section>
++
++        {/* SECTION B: VOICE ENGINE & SELECTION */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-4">
++          <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3">
++            <div className="flex items-center gap-2.5">
++              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shrink-0">
++                <Volume2 className="w-4 h-4" />
++              </div>
++              <div>
++                <h3 className="text-sm font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                  {isHindi ? 'वॉइस इंजन प्रदाता (Voice Engine)' : 'Voice Synthesizer Provider'}
++                </h3>
++                <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                  {isHindi
++                    ? 'ब्राउज़र वॉइस, प्रीमियम स्टूडियो एचडी या गूगल क्लाउड चिर्प'
++                    : 'Choose between Browser Native, Gemini Studio HD, or Cloud Chirp 3 HD'}
++                </p>
++              </div>
++            </div>
++            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
++              Active Fallback Safe
++            </span>
++          </div>
++
++          {/* Engine Selector Cards */}
++          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
++            {/* 1. Browser Native Web Speech (Free & Reliable) */}
++            <button
++              type="button"
++              onClick={() => updateVoiceSetting('engine', 'browser')}
++              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
++                settings.voice.engine === 'browser'
++                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
++                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 text-slate-700 dark:text-slate-300'
++              }`}
++            >
++              <div className="flex items-center justify-between">
++                <span className="text-xs font-bold">Browser Voice</span>
++                {settings.voice.engine === 'browser' && (
++                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
++                )}
++              </div>
++              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
++                Free native Web Speech API. 0 latency, works offline.
++              </p>
++              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
++                <span className="font-bold text-emerald-600 dark:text-emerald-400">₹0 / month</span>
++                <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
++                  Reliable
++                </span>
++              </div>
++            </button>
++
++            {/* 2. Premium Studio HD — Gemini TTS (Aoede / Kore) */}
++            <button
++              type="button"
++              onClick={() => {
++                if (isGeminiAvailable) {
++                  updateVoiceSetting('engine', 'gemini_tts');
++                }
++              }}
++              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
++                settings.voice.engine === 'gemini_tts'
++                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
++                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 text-slate-700 dark:text-slate-300'
++              }`}
++            >
++              <div className="flex items-center justify-between">
++                <span className="text-xs font-bold flex items-center gap-1">
++                  <Sparkles className="w-3 h-3 text-amber-500" />
++                  <span>Premium HD</span>
++                </span>
++                {settings.voice.engine === 'gemini_tts' && (
++                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
++                )}
++              </div>
++              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
++                Gemini Studio HD (Aoede & Kore female voices).
++              </p>
++              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
++                <span className="text-violet-600 dark:text-violet-400">Gemini Tier</span>
++                <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/60 text-violet-800 dark:text-violet-200 font-bold">
++                  Studio HD
++                </span>
++              </div>
++            </button>
++
++            {/* 3. Google Cloud Chirp 3 HD */}
++            <button
++              type="button"
++              onClick={() => {
++                if (isChirpAvailable) {
++                  updateVoiceSetting('engine', 'google_cloud_chirp');
++                }
++              }}
++              className={`p-3.5 rounded-xl border text-left transition-all ${
++                settings.voice.engine === 'google_cloud_chirp'
++                  ? 'bg-violet-50/70 dark:bg-violet-950/50 border-violet-500 text-violet-950 dark:text-violet-100 shadow-2xs'
++                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] opacity-80'
++              } ${isChirpAvailable ? 'cursor-pointer hover:border-black/20' : 'cursor-not-allowed'}`}
++              title={
++                !isChirpAvailable
++                  ? 'Google Cloud Service Account not configured on server'
++                  : 'Select Google Cloud Chirp 3 HD'
++              }
++            >
++              <div className="flex items-center justify-between">
++                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
++                  Cloud Chirp 3 HD
++                </span>
++                {settings.voice.engine === 'google_cloud_chirp' && (
++                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-600" />
++                )}
++              </div>
++              <p className="text-[10px] text-slate-400 mt-1">
++                Google Cloud Text-to-Speech high-definition voices.
++              </p>
++              <div className="mt-2 flex items-center justify-between text-[9px] font-mono">
++                <span className="text-slate-400">GCP Chirp</span>
++                <span
++                  className={`px-1.5 py-0.5 rounded ${
++                    isChirpAvailable
++                      ? 'bg-emerald-100 text-emerald-800'
++                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
++                  }`}
++                >
++                  {isChirpAvailable ? 'Connected' : 'Not configured'}
++                </span>
++              </div>
++            </button>
++          </div>
++
++          {/* Sub-Selection: Female Voice Selection for Premium HD */}
++          {settings.voice.engine === 'gemini_tts' && (
++            <div className="p-3.5 rounded-xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900/50 space-y-2.5 animate-fadeIn">
++              <label className="text-xs font-bold text-violet-900 dark:text-violet-200 flex items-center gap-1.5">
++                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
++                <span>{isHindi ? 'प्रीमियम महिला वॉइस चुनें:' : 'Select Premium Female Voice:'}</span>
++              </label>
++
++              <div className="grid grid-cols-2 gap-2">
++                <button
++                  type="button"
++                  onClick={() => updateVoiceSetting('geminiVoice', 'Aoede')}
++                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
++                    settings.voice.geminiVoice === 'Aoede'
++                      ? 'bg-white dark:bg-[#1A2234] border-violet-500 shadow-xs text-violet-950 dark:text-violet-100 font-bold'
++                      : 'bg-white/60 dark:bg-[#131926]/60 border-black/[0.06] text-slate-600 dark:text-slate-400'
++                  }`}
++                >
++                  <div className="flex items-center justify-between">
++                    <span className="text-xs">Aoede (आओइडी)</span>
++                    {settings.voice.geminiVoice === 'Aoede' && (
++                      <Check className="w-3.5 h-3.5 text-violet-600" />
++                    )}
++                  </div>
++                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
++                    Deep, expressive, engaging studio tone
++                  </p>
++                </button>
++
++                <button
++                  type="button"
++                  onClick={() => updateVoiceSetting('geminiVoice', 'Kore')}
++                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
++                    settings.voice.geminiVoice === 'Kore'
++                      ? 'bg-white dark:bg-[#1A2234] border-violet-500 shadow-xs text-violet-950 dark:text-violet-100 font-bold'
++                      : 'bg-white/60 dark:bg-[#131926]/60 border-black/[0.06] text-slate-600 dark:text-slate-400'
++                  }`}
++                >
++                  <div className="flex items-center justify-between">
++                    <span className="text-xs">Kore (कोरे)</span>
++                    {settings.voice.geminiVoice === 'Kore' && (
++                      <Check className="w-3.5 h-3.5 text-violet-600" />
++                    )}
++                  </div>
++                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
++                    Crisp, bright, warm conversational tone
++                  </p>
++                </button>
++              </div>
++            </div>
++          )}
++
++          {/* Sub-Selection: Female Voice Selection for Google Cloud Chirp */}
++          {settings.voice.engine === 'google_cloud_chirp' && (
++            <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-[#161D2C] border border-black/[0.06] space-y-2 animate-fadeIn">
++              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
++                Google Cloud Chirp 3 HD Voices:
++              </label>
++              <div className="grid grid-cols-2 gap-2 text-xs">
++                <div className="p-2.5 rounded-xl bg-white dark:bg-[#1A2234] border border-black/[0.06]">
++                  <p className="font-semibold">Hindi Female</p>
++                  <p className="text-[10px] text-slate-400 font-mono">hi-IN-Chirp3-HD-F</p>
++                </div>
++                <div className="p-2.5 rounded-xl bg-white dark:bg-[#1A2234] border border-black/[0.06]">
++                  <p className="font-semibold">Indian English Female</p>
++                  <p className="text-[10px] text-slate-400 font-mono">en-IN-Chirp3-HD-F</p>
++                </div>
++              </div>
++              {!isChirpAvailable && (
++                <p className="text-[11px] text-amber-700 dark:text-amber-300">
++                  Notice: Google Cloud Chirp requires service account credentials configured in Cloud Run. Browser voice automatically serves as free fallback.
++                </p>
++              )}
++            </div>
++          )}
++
++          {/* Female Voice Priority Guarantee (Enforced) */}
++          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
++            <div>
++              <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'महिला आवाज़ प्राथमिकता (Female Voice Selection)' : 'Female Voice Preference'}
++              </p>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                {isHindi
++                  ? 'प्राकृतिक महिला भारतीय आवाज़ों (Swara, Kalpana, Lekha, Aoede, Kore) को प्राथमिकता दी जाती है'
++                  : 'Prioritizes female Indian voices (Swara, Kalpana, Lekha, Aoede, Kore) and penalizes male voices'}
++              </p>
++            </div>
++            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-800 dark:text-violet-300 text-xs font-mono font-bold">
++              <Check className="w-3.5 h-3.5" />
++              <span>Enforced</span>
++            </div>
++          </div>
++
++          {/* Voice Speed (Rate) Control Slider */}
++          <div className="space-y-1.5">
++            <div className="flex items-center justify-between text-xs">
++              <span className="font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'बोलने की गति (Speech Rate)' : 'Voice Speed (Cadence)'}
++              </span>
++              <span className="font-mono text-violet-700 dark:text-violet-400 font-bold">
++                {settings.voice.rate.toFixed(2)}x
++              </span>
++            </div>
++            <input
++              type="range"
++              min="0.8"
++              max="1.25"
++              step="0.05"
++              value={settings.voice.rate}
++              onChange={(e) => updateVoiceSetting('rate', parseFloat(e.target.value))}
++              className="w-full accent-violet-600 cursor-pointer"
++            />
++            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
++              <span>0.80x (Calm)</span>
++              <span>1.00x (Natural)</span>
++              <span>1.25x (Fast)</span>
++            </div>
++          </div>
++
++          {/* Active Voice Information & Voice Preview Buttons */}
++          <div className="p-3.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 space-y-3">
++            <div className="flex items-center justify-between text-xs">
++              <span className="text-slate-600 dark:text-slate-300 font-medium">
++                {isHindi ? 'सक्रिय आवाज़ इंजन:' : 'Active Synthesizer:'}
++              </span>
++              <span className="font-mono text-[11px] text-violet-700 dark:text-violet-300 font-semibold truncate max-w-[220px]">
++                {settings.voice.engine === 'gemini_tts'
++                  ? `Gemini Studio HD (${settings.voice.geminiVoice})`
++                  : settings.voice.engine === 'google_cloud_chirp'
++                  ? 'Google Cloud Chirp 3 HD'
++                  : activeVoiceName}
++              </span>
++            </div>
++
++            {previewError && (
++              <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
++                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
++                <span>{previewError}</span>
++              </div>
++            )}
++
++            <div className="flex items-center gap-2 pt-1">
++              <button
++                type="button"
++                onClick={handlePreviewVoice}
++                disabled={isPlayingPreview}
++                className="flex-1 py-2 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
++              >
++                <Play className="w-3.5 h-3.5 fill-current" />
++                <span>
++                  {isPlayingPreview
++                    ? isHindi
++                      ? 'बोल रही हूँ...'
++                      : 'Speaking sample...'
++                    : isHindi
++                    ? 'आवाज़ सुनकर देखें (Preview)'
++                    : 'Test Voice Preview'}
++                </span>
++              </button>
++
++              <button
++                type="button"
++                onClick={handleStopVoice}
++                className="py-2 px-3 rounded-xl bg-white dark:bg-[#1A2234] border border-black/10 dark:border-white/10 hover:bg-black/5 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
++              >
++                <Square className="w-3.5 h-3.5 fill-current" />
++                <span>{isHindi ? 'रोकें' : 'Stop'}</span>
++              </button>
++            </div>
++          </div>
++        </section>
++
++        {/* SECTION C: PERSONALITY SETTINGS */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-4">
++          <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3">
++            <div className="flex items-center gap-2.5">
++              <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
++                <Sparkles className="w-4 h-4" />
++              </div>
++              <div>
++                <h3 className="text-sm font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                  {isHindi ? 'व्यक्तित्व एवं अंदाज़ (Personality & Tone)' : 'Personality & Humor Controls'}
++                </h3>
++                <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                  {isHindi
++                    ? 'हास्य (Humor), बातचीत की शैली, और देसी उदाहरण'
++                    : 'Tone of voice, spontaneous wit, and everyday analogies'}
++                </p>
++              </div>
++            </div>
++            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
++              Prompt Calibrated
++            </span>
++          </div>
++
++          {/* Humor Level */}
++          <div>
++            <label className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC] block mb-1.5">
++              {isHindi ? 'हास्य एवं मज़ाकिया अंदाज़ (Humor Level)' : 'Humor & Wit Style'}
++            </label>
++            <div className="grid grid-cols-3 gap-2">
++              {[
++                { id: 'witty', label: isHindi ? 'हाज़िरजवाब (Witty)' : 'Witty & Fun', badge: isHindi ? 'अनुशंसित' : 'Default' },
++                { id: 'balanced', label: isHindi ? 'संतुलित (Balanced)' : 'Balanced', badge: isHindi ? 'हल्का' : 'Mild' },
++                { id: 'serious', label: isHindi ? 'गंभीर (Formal)' : 'Direct', badge: isHindi ? 'सीधा' : 'Factual' },
++              ].map((h) => (
++                <button
++                  key={h.id}
++                  type="button"
++                  onClick={() => updatePersonalitySetting('humorLevel', h.id as any)}
++                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
++                    settings.personality.humorLevel === h.id
++                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 text-amber-950 dark:text-amber-100 font-bold shadow-2xs'
++                      : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.04] dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
++                  }`}
++                >
++                  <p className="text-xs">{h.label}</p>
++                  <span className="text-[9px] font-mono text-slate-400 block mt-0.5">{h.badge}</span>
++                </button>
++              ))}
++            </div>
++          </div>
++
++          {/* Relatable Desi Analogies Toggle */}
++          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
++            <div className="pr-4">
++              <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'रोज़मर्रा के भारतीय उदाहरण (Everyday Analogies)' : 'Relatable Indian Analogies'}
++              </p>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                {isHindi
++                  ? 'चाय की चर्चा, क्रिकेट, कॉलेज और ट्रैफिक जैसे वास्तविक जीवन के उदाहरण'
++                  : 'Chai discussions, cricket moments, college banter, and everyday life'}
++              </p>
++            </div>
++            <button
++              type="button"
++              onClick={() =>
++                updatePersonalitySetting(
++                  'useEverydayAnalogies',
++                  !settings.personality.useEverydayAnalogies
++                )
++              }
++              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
++                settings.personality.useEverydayAnalogies
++                  ? 'bg-amber-500'
++                  : 'bg-slate-300 dark:bg-slate-700'
++              }`}
++            >
++              <div
++                className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
++                  settings.personality.useEverydayAnalogies
++                    ? 'translate-x-5.5'
++                    : 'translate-x-0.5'
++                }`}
++              />
++            </button>
++          </div>
++
++          {/* Explanation Depth Setting */}
++          <div>
++            <label className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC] block mb-1.5">
++              {isHindi ? 'जवाब की गहराई (Explanation Depth)' : 'Response Depth & Reasoning'}
++            </label>
++            <div className="grid grid-cols-3 gap-2">
++              {[
++                { id: 'concise', label: isHindi ? 'संक्षिप्त (Concise)' : 'Short & Crisp' },
++                { id: 'balanced', label: isHindi ? 'संतुलित (Balanced)' : '2–3 Paragraphs' },
++                { id: 'detailed', label: isHindi ? 'विस्तृत (Detailed)' : 'Deep Dive' },
++              ].map((d) => (
++                <button
++                  key={d.id}
++                  type="button"
++                  onClick={() => updatePersonalitySetting('depth', d.id as any)}
++                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
++                    settings.personality.depth === d.id
++                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 text-amber-950 dark:text-amber-100 font-bold shadow-2xs'
++                      : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.04] dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
++                  }`}
++                >
++                  <p className="text-xs">{d.label}</p>
++                </button>
++              ))}
++            </div>
++          </div>
++        </section>
++
++        {/* SECTION D: LANGUAGE SETTINGS */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-4">
++          <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3">
++            <div className="flex items-center gap-2.5">
++              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
++                <Languages className="w-4 h-4" />
++              </div>
++              <div>
++                <h3 className="text-sm font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                  {isHindi ? 'भाषा चयन (Language Settings)' : 'Language Configuration'}
++                </h3>
++                <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                  {isHindi
++                    ? 'टिया चैट और वॉइस दोनों की प्राथमिक भाषा'
++                    : 'Primary language for both Tia text answers and spoken audio'}
++                </p>
++              </div>
++            </div>
++            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
++              Bi-directional
++            </span>
++          </div>
++
++          <div className="grid grid-cols-2 gap-3">
++            {/* Hindi Card */}
++            <button
++              type="button"
++              onClick={() => {
++                setLanguage('hi');
++                updateSetting('language', 'hi');
++              }}
++              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
++                language === 'hi'
++                  ? 'bg-blue-50/70 dark:bg-blue-950/50 border-blue-500 text-blue-950 dark:text-blue-100 shadow-2xs'
++                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] text-slate-700 dark:text-slate-300'
++              }`}
++            >
++              <div className="flex items-center justify-between">
++                <span className="text-sm font-bold">हिन्दी (Hindi)</span>
++                {language === 'hi' && <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
++              </div>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
++                देवनागरी लिपि में स्वाभाविक वॉइस व बातचीत
++              </p>
++              <span className="inline-block mt-2 text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
++                hi-IN Locale
++              </span>
++            </button>
++
++            {/* English Card */}
++            <button
++              type="button"
++              onClick={() => {
++                setLanguage('en');
++                updateSetting('language', 'en');
++              }}
++              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
++                language === 'en'
++                  ? 'bg-blue-50/70 dark:bg-blue-950/50 border-blue-500 text-blue-950 dark:text-blue-100 shadow-2xs'
++                  : 'bg-slate-50 dark:bg-[#1A2234] border-black/[0.06] dark:border-white/[0.08] text-slate-700 dark:text-slate-300'
++              }`}
++            >
++              <div className="flex items-center justify-between">
++                <span className="text-sm font-bold">English (Indian)</span>
++                {language === 'en' && <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
++              </div>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
++                Fluent, witty Indian English cadence
++              </p>
++              <span className="inline-block mt-2 text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
++                en-IN Locale
++              </span>
++            </button>
++          </div>
++        </section>
++
++        {/* SECTION E: ASSISTANT BEHAVIOR */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-4">
++          <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3">
++            <div className="flex items-center gap-2.5">
++              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
++                <Sliders className="w-4 h-4" />
++              </div>
++              <div>
++                <h3 className="text-sm font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                  {isHindi ? 'असिस्टेंट व्यवहार (Assistant Behavior)' : 'Assistant Behavior Controls'}
++                </h3>
++                <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                  {isHindi
++                    ? 'स्वचालित वॉइस उत्तर एवं फॉलो-अप लिसनिंग'
++                    : 'Auto-speech output and continuous conversation options'}
++                </p>
++              </div>
++            </div>
++          </div>
++
++          {/* Auto-Speak Response */}
++          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
++            <div className="pr-4">
++              <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'उत्तर आने पर बोलकर सुनाएं (Auto-Speak)' : 'Read Answers Aloud Automatically'}
++              </p>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                {isHindi
++                  ? 'टिया के उत्तर आते ही टेक्स्ट-टू-स्पीच अपने आप शुरू हो जाएगा'
++                  : 'Automatically play synthesized speech when Tia answers a message'}
++              </p>
++            </div>
++            <button
++              type="button"
++              onClick={() =>
++                updateVoiceSetting(
++                  'autoSpeakResponse',
++                  !settings.voice.autoSpeakResponse
++                )
++              }
++              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
++                settings.voice.autoSpeakResponse
++                  ? 'bg-emerald-500'
++                  : 'bg-slate-300 dark:bg-slate-700'
++              }`}
++            >
++              <div
++                className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
++                  settings.voice.autoSpeakResponse
++                    ? 'translate-x-5.5'
++                    : 'translate-x-0.5'
++                }`}
++              />
++            </button>
++          </div>
++
++          {/* Follow-up Listening (4-second window) */}
++          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
++            <div className="pr-4">
++              <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'फॉलो-अप लिसनिंग (Follow-up Listening)' : 'Follow-up Listening Window (4s)'}
++              </p>
++              <p className="text-[11px] text-slate-500 dark:text-slate-400">
++                {isHindi
++                  ? 'टिया के बोलने के बाद 4 सेकंड तक माइक खुला रहता है ताकि आप बिना बटन दबाए बातचीत जारी रख सकें'
++                  : 'After Tia speaks, the mic listens for 4 seconds so you can talk without repressing the mic'}
++              </p>
++            </div>
++            <button
++              type="button"
++              onClick={() =>
++                updateVoiceSetting(
++                  'enableFollowUpListening',
++                  !settings.voice.enableFollowUpListening
++                )
++              }
++              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
++                settings.voice.enableFollowUpListening
++                  ? 'bg-emerald-500'
++                  : 'bg-slate-300 dark:bg-slate-700'
++              }`}
++            >
++              <div
++                className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
++                  settings.voice.enableFollowUpListening
++                    ? 'translate-x-5.5'
++                    : 'translate-x-0.5'
++                }`}
++              />
++            </button>
++          </div>
++        </section>
++
++        {/* SECTION F: ADVANCED / TECHNICAL INFO (COLLAPSIBLE) */}
++        <section className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-xs space-y-3">
++          <button
++            type="button"
++            onClick={() => setShowAdvanced(!showAdvanced)}
++            className="w-full flex items-center justify-between text-left cursor-pointer"
++          >
++            <div className="flex items-center gap-2">
++              <Server className="w-4 h-4 text-slate-500" />
++              <span className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                {isHindi ? 'उन्नत एवं तकनीकी विवरण (Advanced Info)' : 'Advanced Technical Architecture & Pricing'}
++              </span>
++            </div>
++            {showAdvanced ? (
++              <ChevronUp className="w-4 h-4 text-slate-400" />
++            ) : (
++              <ChevronDown className="w-4 h-4 text-slate-400" />
++            )}
++          </button>
++
++          {showAdvanced && (
++            <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.06] space-y-2 text-xs font-mono">
++              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
++                <span className="text-slate-500">Active TTS Engine:</span>
++                <span className="text-violet-700 dark:text-violet-300 font-bold">
++                  {settings.voice.engine === 'gemini_tts'
++                    ? 'Gemini Studio HD (Neural)'
++                    : settings.voice.engine === 'google_cloud_chirp'
++                    ? 'Google Cloud Chirp 3 HD'
++                    : 'Browser Web Speech API'}
++                </span>
++              </div>
++              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
++                <span className="text-slate-500">Estimated Cost Footprint:</span>
++                <span className="text-emerald-700 dark:text-emerald-300 font-bold">
++                  {settings.voice.engine === 'browser'
++                    ? '₹0 / month (Free tier)'
++                    : '₹50 - ₹180 / month (well within ₹300-₹700 budget)'}
++                </span>
++              </div>
++              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
++                <span className="text-slate-500">Auto-Fallback Protection:</span>
++                <span className="text-emerald-600 font-bold">
++                  Enabled (Instant Browser Voice Fallback)
++                </span>
++              </div>
++              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
++                <span className="text-slate-500">Backend TTS Status Route:</span>
++                <span className="text-slate-800 dark:text-slate-200">
++                  /api/tia/tts/status
++                </span>
++              </div>
++              <div className="flex justify-between py-1 border-b border-black/[0.02] dark:border-white/[0.02]">
++                <span className="text-slate-500">Backend Audio Synthesizer:</span>
++                <span className="text-slate-800 dark:text-slate-200">
++                  /api/tia/tts/synthesize
++                </span>
++              </div>
++
++              <div className="mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-[11px] text-amber-900 dark:text-amber-200 font-sans flex items-start gap-2">
++                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
++                <span>
++                  {isHindi
++                    ? 'सुरक्षा नोट: कोई भी एपीआई की या क्रेडेंशियल्स ब्राउज़र पर प्रदर्शित नहीं किए जाते हैं। सभी जेमिनी कॉल्स सर्वर साइड सुरक्षित रूप से प्रोसेस होते हैं।'
++                    : 'Security Notice: API keys and credentials are never exposed to the client. All inferences are proxied server-side.'}
++                </span>
++              </div>
++            </div>
++          )}
++        </section>
++
++        {/* SECTION G: RESET TO DEFAULTS */}
++        <div className="pt-2 text-center">
++          {showResetConfirm ? (
++            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 space-y-3">
++              <p className="text-xs font-semibold text-rose-900 dark:text-rose-200">
++                {isHindi
++                  ? 'क्या आप वाकई टिया की सभी सेटिंग्स को डिफ़ॉल्ट पर रीसेट करना चाहते हैं?'
++                  : 'Are you sure you want to reset all Tia settings to defaults?'}
++              </p>
++              <div className="flex items-center justify-center gap-2">
++                <button
++                  type="button"
++                  onClick={handleResetToDefaults}
++                  className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer"
++                >
++                  {isHindi ? 'हाँ, रीसेट करें' : 'Yes, Reset'}
++                </button>
++                <button
++                  type="button"
++                  onClick={() => setShowResetConfirm(false)}
++                  className="px-4 py-1.5 rounded-xl bg-white dark:bg-[#1A2234] border border-black/10 dark:border-white/10 text-xs font-semibold hover:bg-black/5 transition-colors cursor-pointer"
++                >
++                  {isHindi ? 'रद्द करें' : 'Cancel'}
++                </button>
++              </div>
++            </div>
++          ) : (
++            <button
++              type="button"
++              onClick={() => setShowResetConfirm(true)}
++              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium py-1 px-3 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
++            >
++              <RotateCcw className="w-3.5 h-3.5" />
++              <span>{isHindi ? 'डिफ़ॉल्ट सेटिंग्स पर रीसेट करें' : 'Reset Tia to Default Settings'}</span>
++            </button>
++          )}
++        </div>
++      </div>
++    </div>
++  );
++};
+--- a/src/components/tia/TiaAssistantModal.tsx
++++ b/src/components/tia/TiaAssistantModal.tsx
+@@ -0,0 +1,1009 @@
++import React, { useState, useEffect, useRef, useCallback } from 'react';
++import {
++  X,
++  Mic,
++  MicOff,
++  Volume2,
++  VolumeX,
++  RotateCcw,
++  Sparkles,
++  Send,
++  BookOpen,
++  Languages,
++  AlertCircle,
++  Settings,
++} from 'lucide-react';
++import { TiaSettingsView } from './TiaSettingsView';
++import { getStoredTiaSettings } from '../../services/tiaSettingsStorage';
++import { stopActiveAudioPlayback, playTiaResponseAudio } from '../../services/tiaAudioPlayer';
++import { TiaAvatar } from './TiaAvatar';
++import { TiaMarkdownRenderer } from './TiaMarkdownRenderer';
++import { useTiaVoice } from '../../lib/useTiaVoice';
++import { useLanguage } from '../../context/LanguageContext';
++import {
++  TiaLessonContext,
++  TiaMessage,
++  TiaMode,
++} from '../../types';
++import * as tiaService from '../../services/tiaService';
++
++interface TiaAssistantModalProps {
++  isOpen: boolean;
++  onClose: () => void;
++  context?: TiaLessonContext;
++  initialMode?: TiaMode;
++}
++
++export const TiaAssistantModal: React.FC<TiaAssistantModalProps> = ({
++  isOpen,
++  onClose,
++  context,
++  initialMode = 'chat',
++}) => {
++  const { language, setLanguage } = useLanguage();
++  const currentLanguage = language;
++
++  const [activeMode, setActiveMode] = useState<TiaMode>(initialMode);
++  const [messages, setMessages] = useState<TiaMessage[]>([]);
++  const [inputText, setInputText] = useState<string>('');
++  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
++    return getStoredTiaSettings().voice.autoSpeakResponse;
++  });
++  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
++
++  // Sync settings when changed from Settings View
++  useEffect(() => {
++    const handleSettingsChanged = (e: any) => {
++      const updated = e.detail?.settings;
++      if (updated && updated.voice) {
++        setVoiceEnabled(updated.voice.autoSpeakResponse);
++      }
++    };
++    window.addEventListener('matters:tia-settings-changed', handleSettingsChanged);
++    return () => {
++      window.removeEventListener('matters:tia-settings-changed', handleSettingsChanged);
++    };
++  }, []);
++  const [isLoading, setIsLoading] = useState<boolean>(false);
++
++  const messagesEndRef = useRef<HTMLDivElement | null>(null);
++  const prevLangRef = useRef<string>(currentLanguage);
++  const followUpScheduleTimerRef = useRef<any>(null);
++  const handleSendUserTextRef = useRef<(text: string, isVoice?: boolean) => void>(() => {});
++
++  const handleSpeechRecognized = useCallback((recognizedText: string) => {
++    handleSendUserTextRef.current(recognizedText, true);
++  }, []);
++
++  const {
++    tiaState,
++    setTiaState,
++    isListening,
++    isSpeaking,
++    isFollowUpActive,
++    followUpCountdown,
++    transcript,
++    errorMessage,
++    clearErrorMessage,
++    languageConfig,
++    startListening,
++    startFollowUpListening,
++    stopListening,
++    speakText,
++    stopSpeaking,
++    replayLastSpeech,
++    voiceVolumeLevel,
++  } = useTiaVoice(currentLanguage, handleSpeechRecognized);
++
++  // Helper to speak text with multi-provider routing (Gemini Studio HD / Cloud Chirp / Browser fallback)
++  // Guarantees follow-up listening triggers ONLY after audio completely ends.
++  const speakWithFollowUp = useCallback(
++    (textToSpeak: string, allowFollowUp = true) => {
++      if (!voiceEnabled || !textToSpeak) return;
++
++      if (followUpScheduleTimerRef.current) {
++        clearTimeout(followUpScheduleTimerRef.current);
++        followUpScheduleTimerRef.current = null;
++      }
++
++      const currentSettings = getStoredTiaSettings();
++      const engine = currentSettings.voice.engine || 'browser';
++
++      // Fallback runner: existing native browser voice synthesis
++      const runBrowserSynthesis = () => {
++        try {
++          speakText(textToSpeak, () => {
++            if (allowFollowUp && voiceEnabled && isOpen && currentSettings.voice.enableFollowUpListening) {
++              console.log('[Tia Voice] Follow-up listening scheduled after browser speech');
++              followUpScheduleTimerRef.current = setTimeout(() => {
++                if (voiceEnabled && isOpen) {
++                  startFollowUpListening();
++                }
++              }, 400);
++            }
++          });
++        } catch (ttsErr) {
++          console.warn('[Tia Frontend] Browser speak error:', ttsErr);
++        }
++      };
++
++      if (engine === 'browser') {
++        runBrowserSynthesis();
++        return;
++      }
++
++      // Premium Engine runner (Gemini TTS / Google Cloud Chirp 3 HD)
++      stopSpeaking(); // Stop browser engine if active
++      setTiaState('speaking');
++
++      playTiaResponseAudio({
++        text: textToSpeak,
++        language: currentLanguage as 'hi' | 'en',
++        provider: engine,
++        voiceName:
++          engine === 'gemini_tts'
++            ? currentSettings.voice.geminiVoice || 'Aoede'
++            : currentSettings.voice.chirpVoice || 'hi-IN-Chirp3-HD-F',
++        onStart: () => {
++          setTiaState('speaking');
++        },
++        onEnd: () => {
++          setTiaState('idle');
++          if (allowFollowUp && voiceEnabled && isOpen && currentSettings.voice.enableFollowUpListening) {
++            console.log('[Tia Voice] Follow-up listening scheduled after cloud audio');
++            followUpScheduleTimerRef.current = setTimeout(() => {
++              if (voiceEnabled && isOpen) {
++                startFollowUpListening();
++              }
++            }, 400);
++          }
++        },
++        onError: (err) => {
++          console.warn('[Tia Voice] Cloud audio playback failed, falling back to browser:', err);
++        },
++        fallbackToBrowser: () => {
++          console.log('[Tia Voice] Invoking browser synthesis fallback');
++          runBrowserSynthesis();
++        },
++      });
++    },
++    [voiceEnabled, isOpen, speakText, stopSpeaking, startFollowUpListening, setTiaState, currentLanguage]
++  );
++
++  // Scroll to bottom of messages
++  const scrollToBottom = () => {
++    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
++  };
++
++  useEffect(() => {
++    scrollToBottom();
++  }, [messages, tiaState]);
++
++  const hasInitializedRef = useRef<boolean>(false);
++  const activeRequestIdRef = useRef<number>(0);
++
++  // Initial welcome greeting whenever modal opens
++  useEffect(() => {
++    if (isOpen && !hasInitializedRef.current) {
++      hasInitializedRef.current = true;
++      const isHindi = currentLanguage === 'hi';
++      const lessonName = isHindi
++        ? context?.lessonTitle_hi || context?.lessonTitle
++        : context?.lessonTitle;
++
++      const greetingText = isHindi
++        ? lessonName
++          ? `नमस्ते! मैं हूँ **टिया**, आपकी एआई लर्निंग गाइड। 🎙️\n\nमैं देख रही हूँ कि आप **${lessonName}** पढ़ रहे हैं। कहीं उलझन है, आसान व्याख्या चाहिए, या इसे मज़ाकिया अंदाज़ में समझना है? मुझसे कुछ भी पूछिए या माइक दबाकर बोलिए!`
++          : `नमस्ते! मैं हूँ **टिया**, आपकी एआई वॉइस ट्यूटर। 🎙️\n\nमैं कठिन कॉन्सेप्ट्स को आसान, याद रखने योग्य और मज़ेदार बनाने के लिए यहाँ हूँ। आप जो भी सीखना चाहते हैं, बेझिझक बोलिए या टाइप कीजिए!`
++        : lessonName
++        ? `Hey! I'm **Tia**, your AI learning companion. 🎙️\n\nI see you're working on **${lessonName}**. Stuck anywhere, need a simpler explanation, or want me to make it funny? Ask me anything or tap the mic to speak!`
++        : `Hey! I'm **Tia**, your AI voice tutor. 🎙️\n\nI'm here to help make complex concepts simple, memorable, and fun. Speak or type whatever you'd like to learn!`;
++
++      const greetingSpeech = isHindi
++        ? lessonName
++          ? `नमस्ते! मैं हूँ टिया, आपकी एआई लर्निंग गाइड। मैं देख रही हूँ कि आप ${lessonName} पढ़ रहे हैं। कहीं उलझन है या आसान व्याख्या चाहिए, मुझसे कुछ भी पूछिए!`
++          : `नमस्ते! मैं हूँ टिया, आपकी एआई वॉइस ट्यूटर। कठिन कॉन्सेप्ट्स को आसान और मज़ेदार बनाने के लिए मैं यहाँ हूँ। बेझिझक पूछिए!`
++        : lessonName
++        ? `Hey! I'm Tia, your AI learning companion. I see you're working on ${lessonName}. Ask me anything or tap the mic to speak!`
++        : `Hey! I'm Tia, your AI voice tutor. I'm here to help make complex concepts simple and fun. Ask me anything!`;
++
++      const greeting: TiaMessage = {
++        id: 'welcome-msg',
++        sender: 'tia',
++        text: greetingText,
++        speechText: greetingSpeech,
++        mode: 'chat',
++        timestamp: Date.now(),
++        quickActions: isHindi
++          ? [
++              '💡 यह पाठ समझाइए',
++              '😂 मज़ाकिया अंदाज़ में बताओ',
++              '🎯 झटपट क्विज़',
++              '🗣️ बोलने का अभ्यास',
++            ]
++          : [
++              '💡 Explain This Lesson',
++              '😂 Make It Funny',
++              '🎯 Quick Quiz',
++              '🗣️ Speaking Practice',
++            ],
++      };
++      setMessages([greeting]);
++    }
++  }, [isOpen, context, currentLanguage]);
++
++  useEffect(() => {
++    if (!isOpen) {
++      hasInitializedRef.current = false;
++      if (followUpScheduleTimerRef.current) {
++        clearTimeout(followUpScheduleTimerRef.current);
++        followUpScheduleTimerRef.current = null;
++      }
++      stopSpeaking();
++      stopListening();
++    }
++  }, [isOpen, stopSpeaking, stopListening]);
++
++  // Language switch
++  useEffect(() => {
++    if (prevLangRef.current !== currentLanguage) {
++      if (followUpScheduleTimerRef.current) {
++        clearTimeout(followUpScheduleTimerRef.current);
++        followUpScheduleTimerRef.current = null;
++      }
++      stopSpeaking();
++      stopListening();
++      prevLangRef.current = currentLanguage;
++
++      const isHi = currentLanguage === 'hi';
++      const lessonName = isHi
++        ? context?.lessonTitle_hi || context?.lessonTitle
++        : context?.lessonTitle;
++
++      const greetingText = isHi
++        ? lessonName
++          ? `नमस्ते! मैं हूँ **टिया**, आपकी एआई लर्निंग गाइड। 🎙️\n\nमैं देख रही हूँ कि आप **${lessonName}** पढ़ रहे हैं। कहीं उलझन है, आसान व्याख्या चाहिए, या इसे मज़ाकिया अंदाज़ में समझना है? मुझसे कुछ भी पूछिए या माइक दबाकर बोलिए!`
++          : `नमस्ते! मैं हूँ **टिया**, आपकी एआई वॉइस ट्यूटर। 🎙️\n\nमैं कठिन कॉन्सेप्ट्स को आसान, याद रखने योग्य और मज़ेदार बनाने के लिए यहाँ हूँ। आप जो भी सीखना चाहते हैं, बेझिझक बोलिए या टाइप कीजिए!`
++        : lessonName
++        ? `Hey! I'm **Tia**, your AI learning companion. 🎙️\n\nI see you're working on **${lessonName}**. Stuck anywhere, need a simpler explanation, or want me to make it funny? Ask me anything or tap the mic to speak!`
++        : `Hey! I'm **Tia**, your AI voice tutor. 🎙️\n\nI'm here to help make complex concepts simple, memorable, and fun. Speak or type whatever you'd like to learn!`;
++
++      const greetingSpeech = isHi
++        ? lessonName
++          ? `नमस्ते! मैं हूँ टिया, आपकी एआई लर्निंग गाइड। मैं देख रही हूँ कि आप ${lessonName} पढ़ रहे हैं। कहीं उलझन है या आसान व्याख्या चाहिए, मुझसे कुछ भी पूछिए!`
++          : `नमस्ते! मैं हूँ टिया, आपकी एआई वॉइस ट्यूटर। कठिन कॉन्सेप्ट्स को आसान और मज़ेदार बनाने के लिए मैं यहाँ हूँ। बेझिझक पूछिए!`
++        : lessonName
++        ? `Hey! I'm Tia, your AI learning companion. I see you're working on ${lessonName}. Ask me anything or tap the mic to speak!`
++        : `Hey! I'm Tia, your AI voice tutor. I'm here to help make complex concepts simple and fun. Ask me anything!`;
++
++      const newGreeting: TiaMessage = {
++        id: 'welcome-msg',
++        sender: 'tia',
++        text: greetingText,
++        speechText: greetingSpeech,
++        mode: 'chat',
++        timestamp: Date.now(),
++        quickActions: isHi
++          ? [
++              '💡 यह पाठ समझाइए',
++              '😂 मज़ाकिया अंदाज़ में बताओ',
++              '🎯 झटपट क्विज़',
++              '🗣️ बोलने का अभ्यास',
++            ]
++          : [
++              '💡 Explain This Lesson',
++              '😂 Make It Funny',
++              '🎯 Quick Quiz',
++              '🗣️ Speaking Practice',
++            ],
++      };
++
++      setMessages((prev) => {
++        if (prev.length <= 1) {
++          return [newGreeting];
++        }
++        return prev.map((m) => (m.id === 'welcome-msg' ? newGreeting : m));
++      });
++
++      if (activeMode && activeMode !== 'chat' && isOpen) {
++        handleTriggerModeAction(activeMode);
++      }
++    }
++  }, [currentLanguage, context, stopSpeaking, stopListening, activeMode, isOpen]);
++
++  // Handle when mode changes via prop or user selection
++  useEffect(() => {
++    if (initialMode && initialMode !== 'chat') {
++      setActiveMode(initialMode);
++      handleTriggerModeAction(initialMode as TiaMode);
++    }
++  }, [initialMode]);
++
++  // Core action triggers
++  const handleTriggerModeAction = async (mode: TiaMode) => {
++    setActiveMode(mode);
++    setIsLoading(true);
++    setTiaState('thinking');
++
++    try {
++      let response: TiaMessage;
++
++      switch (mode) {
++        case 'explain':
++          response = await tiaService.getLessonExplanation(context, false, currentLanguage);
++          break;
++        case 'funny':
++          response = await tiaService.generateFunnyExplanation(context, currentLanguage);
++          break;
++        case 'quiz':
++          response = await tiaService.generateQuizQuestion(context, currentLanguage);
++          break;
++        case 'speaking_practice':
++          response = await tiaService.getSpeakingPracticePrompt(context, currentLanguage);
++          break;
++        case 'revision':
++          response = await tiaService.generateRevisionQuestions(context, currentLanguage);
++          break;
++        default:
++          response = await tiaService.sendTextMessage(
++            currentLanguage === 'hi' ? 'नमस्ते टिया!' : 'Hello Tia!',
++            context,
++            'chat',
++            currentLanguage,
++            messages
++          );
++          break;
++      }
++
++      console.log('[Tia] Answer received');
++      setMessages((prev) => [...prev, response]);
++      setIsLoading(false);
++      setTiaState('idle');
++
++      if (voiceEnabled) {
++        speakWithFollowUp(response.speechText || response.text, true);
++      }
++    } catch (e) {
++      console.error('Error generating Tia response:', e);
++      setTiaState('idle');
++    } finally {
++      setIsLoading(false);
++    }
++  };
++
++  // Send user message
++  const handleSendUserText = async (textToSend: string, isVoice = false) => {
++    const question = (textToSend || '').trim();
++    if (!question || isLoading) return;
++
++    const currentRequestId = ++activeRequestIdRef.current;
++
++    const userMsg: TiaMessage = {
++      id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
++      sender: 'user',
++      text: question,
++      timestamp: Date.now(),
++      isVoice,
++    };
++
++    const updatedHistory = [...messages, userMsg];
++    setMessages(updatedHistory);
++    setInputText('');
++    setIsLoading(true);
++    setTiaState('thinking');
++
++    let response: TiaMessage | null = null;
++
++    try {
++      const lastMsg = messages[messages.length - 1];
++      if (lastMsg?.quizData?.question) {
++        const evalResult = await tiaService.evaluateQuizAnswer(
++          question,
++          lastMsg?.quizData?.question || '',
++          context,
++          currentLanguage
++        );
++
++        response = {
++          id: `tia-eval-${Date.now()}`,
++          sender: 'tia',
++          text: `${evalResult.feedback}\n\n${evalResult.explanation}\n\n${
++            evalResult.funnyRemark || ''
++          }\n\n${evalResult.nextPrompt || ''}`,
++          mode: 'quiz',
++          timestamp: Date.now(),
++          quickActions:
++            currentLanguage === 'hi'
++              ? [
++                  '🎯 एक और सवाल पूछो',
++                  '😂 मज़ाकिया अंदाज़ में बताओ',
++                  '💡 यह पाठ समझाइए',
++                  'वापस पढ़ाई पर चलें',
++                ]
++              : [
++                  '🎯 Another Quiz Question',
++                  '😂 Make it funny',
++                  '💡 Explain this lesson',
++                  'Back to reading',
++                ],
++        };
++      } else if (activeMode === 'speaking_practice') {
++        response = await tiaService.evaluateSpeakingAnswer(
++          question,
++          context,
++          currentLanguage
++        );
++      } else {
++        response = await tiaService.sendTextMessage(
++          question,
++          context,
++          activeMode,
++          currentLanguage,
++          updatedHistory
++        );
++      }
++    } catch (err) {
++      console.error('[Tia Frontend] Error during AI response generation/fetch:', err);
++    }
++
++    if (currentRequestId !== activeRequestIdRef.current) return;
++
++    if (response) {
++      console.log('[Tia] Answer received');
++      setMessages((prev) => [...prev, response!]);
++      setIsLoading(false);
++      setTiaState('idle');
++
++      if (voiceEnabled) {
++        speakWithFollowUp(response.speechText || response.text, true);
++      }
++      return;
++    }
++
++    setIsLoading(false);
++    setTiaState('idle');
++
++    const isHi = currentLanguage === 'hi';
++    const fallbackMsg: TiaMessage = {
++      id: `tia-err-${Date.now()}`,
++      sender: 'tia',
++      text: isHi
++        ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया 😅। एक बार फिर पूछिए।'
++        : "Oops, Tia's connection hit a slight bump 😅. Please try asking again!",
++      speechText: isHi
++        ? 'माफ़ कीजिए, टिया का कनेक्शन थोड़ा धीमा हो गया। एक बार फिर पूछिए।'
++        : "Oops, Tia's connection hit a slight bump. Please try asking again!",
++      timestamp: Date.now(),
++      quickActions: isHi
++        ? ['फिर से पूछें', '💡 यह पाठ समझाओ', '🎯 क्विज़ खेलें']
++        : ['Ask again', '💡 Explain lesson', '🎯 Quiz me'],
++    };
++
++    setMessages((prev) => [...prev, fallbackMsg]);
++
++    if (voiceEnabled) {
++      speakWithFollowUp(fallbackMsg.speechText || fallbackMsg.text, false);
++    }
++  };
++
++  handleSendUserTextRef.current = handleSendUserText;
++
++  const handleToggleVoice = () => {
++    if (voiceEnabled) {
++      stopSpeaking();
++      setVoiceEnabled(false);
++    } else {
++      setVoiceEnabled(true);
++      const lastTia = [...messages].reverse().find((m) => m.sender === 'tia');
++      if (lastTia) {
++        speakText(lastTia.speechText || lastTia.text);
++      }
++    }
++  };
++
++  const isHindi = currentLanguage === 'hi';
++
++  const modeTabs: { id: TiaMode; label: string }[] = isHindi
++    ? [
++        { id: 'chat', label: '💬 टिया से पूछें' },
++        { id: 'explain', label: '💡 समझाइए' },
++        { id: 'funny', label: '😂 मज़ाकिया बनाएं' },
++        { id: 'quiz', label: '🎯 वॉइस क्विज़' },
++        { id: 'speaking_practice', label: '🗣️ बोलना सीखें' },
++        { id: 'revision', label: '🔄 पुनरीक्षण' },
++      ]
++    : [
++        { id: 'chat', label: '💬 Ask Tia' },
++        { id: 'explain', label: '💡 Explain This' },
++        { id: 'funny', label: '😂 Make It Funny' },
++        { id: 'quiz', label: '🎯 Voice Quiz' },
++        { id: 'speaking_practice', label: '🗣️ Speaking' },
++        { id: 'revision', label: '🔄 Revision' },
++      ];
++
++  const presetPills = isHindi
++    ? [
++        '💡 आसान भाषा में समझाओ',
++        '😂 मज़ाकिया अंदाज़ में बताओ',
++        '🎯 क्विज़ पूछो',
++        'असली उदाहरण दो',
++        '🗣️ बोलने का अभ्यास',
++        'रिवीजन कराओ',
++      ]
++    : [
++        '💡 Explain simply',
++        '😂 Make it funny',
++        '🎯 Quiz me',
++        'Give a real-life example',
++        '🗣️ Speaking drill',
++        'Quick revision',
++      ];
++
++  if (!isOpen) return null;
++
++  return (
++    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
++      {/* Container / Sheet */}
++      <div className="bg-[#FAFAF8] dark:bg-[#0E131F] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden animate-slideUp transition-colors">
++        {isSettingsOpen ? (
++          <TiaSettingsView onBack={() => setIsSettingsOpen(false)} />
++        ) : (
++          <>
++        {/* 1. Header */}
++        <div className="p-4 sm:p-5 bg-white dark:bg-[#131926] border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between shrink-0">
++          <div className="flex items-center gap-3">
++            <TiaAvatar state={tiaState} size="md" showBadge={true} />
++            <div>
++              <div className="flex items-center gap-2">
++                <h2 className="font-serif italic font-bold text-lg text-[#121212] dark:text-[#F8FAFC]">
++                  {isHindi ? 'टिया' : 'Tia'}
++                </h2>
++                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-mono">
++                  {isHindi ? 'एआई ट्यूटर' : 'AI Tutor'}
++                </span>
++                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black/60 dark:text-slate-300 border border-black/[0.04] dark:border-white/[0.08]">
++                  {languageConfig.locale}
++                </span>
++              </div>
++              <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-slate-400">
++                <span
++                  className={`w-2 h-2 rounded-full ${
++                    isFollowUpActive
++                      ? 'bg-amber-400 animate-ping'
++                      : isListening
++                      ? 'bg-emerald-500 animate-ping'
++                      : isSpeaking
++                      ? 'bg-indigo-500 animate-pulse'
++                      : isLoading
++                      ? 'bg-amber-500 animate-spin'
++                      : 'bg-emerald-400'
++                  }`}
++                />
++                <span className="font-mono text-[11px]">
++                  {isFollowUpActive
++                    ? isHindi
++                      ? `फॉलो-अप सुन रही हूँ (${followUpCountdown}s)... बोलिए`
++                      : `Listening for follow-up (${followUpCountdown}s)...`
++                    : isListening
++                    ? isHindi
++                      ? 'आपकी बात सुन रही हूँ... बेझिझक बोलिए'
++                      : 'Listening to you... Speak freely'
++                    : isSpeaking
++                    ? isHindi
++                      ? `टिया बोल रही है (${languageConfig.ttsLocale})...`
++                      : `Tia is speaking (${languageConfig.ttsLocale})...`
++                    : isLoading
++                    ? isHindi
++                      ? 'टिया सोच रही है...'
++                      : 'Tia is thinking...'
++                    : isHindi
++                    ? `तैयार एवं सुन रही हूँ (${languageConfig.locale})`
++                    : `Ready & listening (${languageConfig.locale})`}
++                </span>
++              </div>
++            </div>
++          </div>
++
++          <div className="flex items-center gap-2">
++            {/* Direct App Language Toggle */}
++            <button
++              type="button"
++              onClick={() => {
++                const nextLang = currentLanguage === 'hi' ? 'en' : 'hi';
++                setLanguage(nextLang);
++              }}
++              className="px-3 py-1 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-700/50 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-2xs"
++              title={
++                isHindi
++                  ? 'Switch app & Tia to English (en-IN)'
++                  : 'ऐप और टिया को हिन्दी (hi-IN) में बदलें'
++              }
++            >
++              <Languages className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
++              <span>{isHindi ? 'हिन्दी' : 'English'}</span>
++            </button>
++
++            {/* Tia Dedicated Settings Control Button */}
++            <button
++              type="button"
++              onClick={() => setIsSettingsOpen(true)}
++              className="p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A2234] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-black/60 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
++              title={isHindi ? 'टिया सेटिंग्स खोलें' : 'Open Tia Settings'}
++              aria-label="Open Tia Settings"
++            >
++              <Settings className="w-4 h-4" />
++            </button>
++
++            {/* Audio Toggle */}
++            <button
++              onClick={handleToggleVoice}
++              className={`p-2 rounded-full border transition-colors cursor-pointer ${
++                voiceEnabled
++                  ? 'bg-[#121212] dark:bg-violet-600 text-white border-[#121212] dark:border-violet-600'
++                  : 'bg-white dark:bg-[#1A2234] text-black/40 dark:text-slate-400 border-black/10 dark:border-white/10 hover:text-black dark:hover:text-white'
++              }`}
++              title={
++                voiceEnabled
++                  ? isHindi
++                    ? 'आवाज़ म्यूट करें'
++                    : 'Mute voice audio'
++                  : isHindi
++                  ? 'आवाज़ चालू करें'
++                  : 'Unmute voice audio'
++              }
++            >
++              {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
++            </button>
++
++            {/* Close Button */}
++            <button
++              onClick={() => {
++                if (followUpScheduleTimerRef.current) {
++                  clearTimeout(followUpScheduleTimerRef.current);
++                  followUpScheduleTimerRef.current = null;
++                }
++                stopActiveAudioPlayback();
++                stopSpeaking();
++                stopListening();
++                onClose();
++              }}
++              className="p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A2234] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-black/60 dark:text-slate-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
++              aria-label="Close Tia"
++            >
++              <X className="w-4 h-4" />
++            </button>
++          </div>
++        </div>
++
++        {/* Error notification banner if microphone or voice fails */}
++        {errorMessage && (
++          <div className="px-4 py-2.5 bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200 shrink-0 animate-fadeIn">
++            <div className="flex items-center gap-2">
++              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
++              <span>{errorMessage}</span>
++            </div>
++            <button
++              onClick={clearErrorMessage}
++              className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-md transition-colors cursor-pointer"
++              title="Dismiss"
++            >
++              <X className="w-3.5 h-3.5" />
++            </button>
++          </div>
++        )}
++
++        {/* Lesson Context Banner */}
++        {context && (
++          <div className="px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.03] border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between text-xs text-black/60 dark:text-slate-400 shrink-0">
++            <div className="flex items-center gap-2 truncate">
++              <BookOpen className="w-3.5 h-3.5 text-black/50 dark:text-slate-400 shrink-0" />
++              <span className="font-semibold text-[#121212] dark:text-[#F8FAFC] truncate">
++                {isHindi
++                  ? `${context.subjectName_hi || context.subjectName}: ${
++                      context.lessonTitle_hi || context.lessonTitle
++                    }`
++                  : `${context.subjectName}: ${context.lessonTitle}`}
++              </span>
++            </div>
++            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white dark:bg-[#161D2E] border border-black/[0.06] dark:border-white/[0.08] shrink-0 font-bold text-black/60 dark:text-slate-300">
++              {isHindi ? 'सक्रिय संदर्भ' : 'Context Active'}
++            </span>
++          </div>
++        )}
++
++        {/* 2. Mode Selector Navigation */}
++        <div className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-[#131926] border-b border-black/[0.06] dark:border-white/[0.08] overflow-x-auto no-scrollbar shrink-0">
++          {modeTabs.map((mode) => (
++            <button
++              key={mode.id}
++              onClick={() => handleTriggerModeAction(mode.id)}
++              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
++                activeMode === mode.id
++                  ? 'bg-[#121212] dark:bg-violet-600 text-white shadow-xs'
++                  : 'bg-black/[0.03] dark:bg-white/[0.05] text-black/60 dark:text-slate-300 hover:bg-black/[0.07] dark:hover:bg-white/[0.1] hover:text-black dark:hover:text-white'
++              }`}
++            >
++              {mode.label}
++            </button>
++          ))}
++        </div>
++
++        {/* 3. Messages Stream */}
++        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
++          {messages.map((msg) => (
++            <div
++              key={msg.id}
++              className={`flex flex-col ${
++                msg.sender === 'user' ? 'items-end' : 'items-start'
++              } space-y-1.5 animate-fadeIn`}
++            >
++              <div
++                className={`max-w-[85%] sm:max-w-[80%] rounded-3xl p-4 sm:p-5 text-xs sm:text-sm leading-relaxed ${
++                  msg.sender === 'user'
++                    ? 'bg-[#121212] dark:bg-violet-600 text-white rounded-tr-sm shadow-sm'
++                    : 'bg-white dark:bg-[#161D2E] border border-black/[0.06] dark:border-white/[0.08] text-[#121212] dark:text-[#F8FAFC] rounded-tl-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.4)]'
++                }`}
++              >
++                {/* Voice message tag */}
++                {msg.isVoice && (
++                  <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mb-1.5 font-bold">
++                    <Mic className="w-3 h-3 text-emerald-400" />
++                    <span>{isHindi ? 'वॉइस संदेश' : 'Voice Message'}</span>
++                  </div>
++                )}
++
++                {/* Body Text */}
++                {msg.sender === 'tia' ? (
++                  <TiaMarkdownRenderer content={msg.text} />
++                ) : (
++                  <div className="whitespace-pre-wrap font-light">{msg.text}</div>
++                )}
++
++                {/* Quiz options if present */}
++                {msg.quizData?.options && (
++                  <div className="mt-3.5 space-y-2">
++                    {msg.quizData.options.map((opt, oIdx) => (
++                      <button
++                        key={oIdx}
++                        onClick={() => handleSendUserText(opt)}
++                        className="w-full text-left p-3 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAF8] dark:bg-[#131926] hover:bg-white dark:hover:bg-[#1A2234] hover:border-black/20 dark:hover:border-white/20 text-xs font-medium text-[#121212] dark:text-[#F8FAFC] transition-all cursor-pointer shadow-2xs"
++                      >
++                        {opt}
++                      </button>
++                    ))}
++                  </div>
++                )}
++
++                {/* Voice Replay on Tia messages */}
++                {msg.sender === 'tia' && voiceEnabled && (
++                  <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-black/[0.06] dark:border-white/[0.08] text-[11px] text-black/50 dark:text-slate-400">
++                    <button
++                      onClick={() => speakText(msg.speechText || msg.text)}
++                      className="flex items-center gap-1.5 hover:text-black dark:hover:text-white transition-colors cursor-pointer font-medium"
++                    >
++                      <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
++                      <span>{isHindi ? 'दोबारा सुनें (hi-IN)' : 'Listen again (en-IN)'}</span>
++                    </button>
++                    {isSpeaking && (
++                      <button
++                        onClick={stopSpeaking}
++                        className="flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
++                      >
++                        <VolumeX className="w-3.5 h-3.5" />
++                        <span>{isHindi ? 'आवाज़ रोकें' : 'Stop'}</span>
++                      </button>
++                    )}
++                  </div>
++                )}
++              </div>
++
++              {/* Quick Action Chips attached to Tia reply */}
++              {msg.sender === 'tia' && msg.quickActions && msg.quickActions.length > 0 && (
++                <div className="flex items-center flex-wrap gap-1.5 pl-2 pt-1 max-w-[90%]">
++                  {msg.quickActions.map((qa, qIdx) => (
++                    <button
++                      key={qIdx}
++                      onClick={() => handleSendUserText(qa)}
++                      className="text-[11px] font-semibold text-black/70 dark:text-slate-300 bg-white dark:bg-[#161D2E] hover:bg-[#121212] dark:hover:bg-violet-600 hover:text-white px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] shadow-2xs transition-all cursor-pointer"
++                    >
++                      {qa}
++                    </button>
++                  ))}
++                </div>
++              )}
++            </div>
++          ))}
++
++          {/* Live transcript bubble while user is speaking or during follow-up listening */}
++          {isListening && (
++            <div className="flex flex-col items-end space-y-1 animate-fadeIn">
++              <div
++                className={`max-w-[80%] rounded-3xl p-4 border text-xs sm:text-sm shadow-2xs ${
++                  isFollowUpActive
++                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/50 text-amber-950 dark:text-amber-100'
++                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100'
++                }`}
++              >
++                <div
++                  className={`flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-widest mb-1 font-mono ${
++                    isFollowUpActive
++                      ? 'text-amber-800 dark:text-amber-300'
++                      : 'text-emerald-800 dark:text-emerald-300'
++                  }`}
++                >
++                  <Mic
++                    className={`w-3 h-3 ${
++                      isFollowUpActive
++                        ? 'text-amber-600 dark:text-amber-400 animate-pulse'
++                        : 'text-emerald-600 dark:text-emerald-400 animate-ping'
++                    }`}
++                  />
++                  <span>
++                    {isFollowUpActive
++                      ? isHindi
++                        ? `🎙️ फॉलो-अप सवाल पूछिए (${followUpCountdown}s)`
++                        : `🎙️ Ask Follow-Up Question (${followUpCountdown}s)`
++                      : isHindi
++                      ? '🎙️ लाइव वॉइस ट्रांसक्रिप्ट (hi-IN)'
++                      : '🎙️ Live Voice Transcript (en-IN)'}
++                  </span>
++                </div>
++                <p className="italic font-mono text-xs">
++                  {transcript ||
++                    (isFollowUpActive
++                      ? isHindi
++                        ? 'अगला सवाल पूछिए या शांत रहकर खत्म करें...'
++                        : 'Ask your follow-up, or stay quiet to finish...'
++                      : isHindi
++                      ? 'सुन रही हूँ... बोलिए!'
++                      : 'Listening... Speak now.')}
++                </p>
++              </div>
++            </div>
++          )}
++
++          {/* Thinking indicator */}
++          {isLoading && (
++            <div className="flex items-center gap-2.5 p-3.5 bg-white dark:bg-[#161D2E] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] w-fit text-xs text-black/60 dark:text-slate-300 animate-fadeIn shadow-2xs">
++              <div className="w-4 h-4 border-2 border-indigo-600 dark:border-violet-400 border-t-transparent rounded-full animate-spin" />
++              <span>
++                {isHindi
++                  ? 'टिया सोच रही है...'
++                  : 'Tia is thinking of a witty explanation...'}
++              </span>
++            </div>
++          )}
++
++          <div ref={messagesEndRef} />
++        </div>
++
++        {/* 4. Active Voice Waveform & Visualizer Strip */}
++        <div className="bg-[#FAFAF8] dark:bg-[#0B0F17] border-t border-black/[0.06] dark:border-white/[0.08] px-4 py-2.5 flex items-center justify-between shrink-0 transition-colors">
++          <div className="flex items-center gap-3">
++            <button
++              onClick={isListening ? stopListening : startListening}
++              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer ${
++                isFollowUpActive
++                  ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse'
++                  : isListening
++                  ? 'bg-rose-500 text-white hover:bg-rose-600 animate-pulse'
++                  : 'bg-[#121212] dark:bg-violet-600 text-white hover:bg-black dark:hover:bg-violet-500 active:scale-95'
++              }`}
++            >
++              {isFollowUpActive ? (
++                <>
++                  <MicOff className="w-4 h-4" />
++                  <span>
++                    {isHindi
++                      ? `फॉलो-अप रोकें (${followUpCountdown}s)`
++                      : `Stop Follow-Up (${followUpCountdown}s)`}
++                  </span>
++                </>
++              ) : isListening ? (
++                <>
++                  <MicOff className="w-4 h-4" />
++                  <span>{isHindi ? 'सुनना बंद करें' : 'Stop Listening'}</span>
++                </>
++              ) : (
++                <>
++                  <Mic className="w-4 h-4 text-emerald-400" />
++                  <span>{isHindi ? 'बोलने के लिए दबाएँ' : 'Tap to Speak'}</span>
++                </>
++              )}
++            </button>
++
++            {/* Animated Waveform Visualizer */}
++            <div className="flex items-center gap-1 h-6">
++              {[0.4, 0.8, 1.2, 0.6, 1.0, 0.5, 0.9].map((scale, i) => {
++                const height =
++                  isListening || isSpeaking
++                    ? Math.max(4, Math.min(22, 22 * voiceVolumeLevel * scale))
++                    : 4;
++                return (
++                  <span
++                    key={i}
++                    style={{ height: `${height}px` }}
++                    className={`w-1 rounded-full transition-all duration-100 ${
++                      isListening
++                        ? 'bg-emerald-500'
++                        : isSpeaking
++                        ? 'bg-indigo-600 dark:bg-indigo-400'
++                        : 'bg-black/15 dark:bg-white/20'
++                    }`}
++                  />
++                );
++              })}
++            </div>
++          </div>
++
++          <div className="flex items-center gap-2">
++            {isSpeaking && (
++              <button
++                onClick={stopSpeaking}
++                className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline px-2 py-1 cursor-pointer"
++              >
++                {isHindi ? 'आवाज़ रोकें' : 'Stop Speech'}
++              </button>
++            )}
++            <button
++              onClick={replayLastSpeech}
++              className="p-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1A2234] hover:bg-black/[0.03] dark:hover:bg-white/[0.06] text-black/60 dark:text-slate-300 cursor-pointer shadow-2xs"
++              title={isHindi ? 'पिछली आवाज़ दोबारा सुनें' : 'Replay last speech'}
++            >
++              <RotateCcw className="w-3.5 h-3.5" />
++            </button>
++          </div>
++        </div>
++
++        {/* 5. Bottom Text Input Bar */}
++        <div className="p-3 sm:p-4 bg-white dark:bg-[#131926] border-t border-black/[0.06] dark:border-white/[0.08] space-y-2.5 shrink-0 transition-colors">
++          <form
++            onSubmit={(e) => {
++              e.preventDefault();
++              const val = inputText.trim();
++              if (!val || isLoading) return;
++              handleSendUserText(val);
++            }}
++            className="flex items-center gap-2"
++          >
++            <input
++              type="text"
++              value={inputText}
++              onChange={(e) => setInputText(e.target.value)}
++              placeholder={
++                isHindi
++                  ? 'टिया से कुछ भी पूछें या उदाहरण मांगें...'
++                  : 'Ask Tia anything or request an example...'
++              }
++              className="flex-1 bg-black/[0.03] dark:bg-[#0B0F17] border border-black/[0.06] dark:border-white/[0.08] text-[#121212] dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500 rounded-full px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-violet-500/20 font-light"
++            />
++            <button
++              type="submit"
++              disabled={!inputText.trim() || isLoading}
++              className="p-2.5 rounded-full bg-[#121212] dark:bg-violet-600 hover:bg-black dark:hover:bg-violet-500 disabled:opacity-30 text-white transition-all shadow-sm cursor-pointer shrink-0"
++              aria-label={isHindi ? 'संदेश भेजें' : 'Send message'}
++            >
++              <Send className="w-4 h-4" />
++            </button>
++          </form>
++
++          {/* Quick preset suggestion pills */}
++          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-[11px]">
++            {presetPills.map((chip, idx) => (
++              <button
++                key={idx}
++                type="button"
++                onClick={() => handleSendUserText(chip)}
++                className="px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-black/70 dark:text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
++              >
++                {chip}
++              </button>
++            ))}
++          </div>
++        </div>
++          </>
++        )}
++      </div>
++    </div>
++  );
++};
+--- a/src/components/profile/ProfileView.tsx
++++ b/src/components/profile/ProfileView.tsx
+@@ -0,0 +1,586 @@
++import React, { useState, useEffect } from 'react';
++import {
++  Calendar,
++  Pencil,
++  Globe,
++  Target,
++  Bell,
++  Moon,
++  Sun,
++  Laptop,
++  ChevronRight,
++  Crown,
++  LogOut,
++  Save,
++  CheckCircle2,
++  Sparkles,
++} from 'lucide-react';
++import { TiaSettingsView } from '../tia/TiaSettingsView';
++import { useAuth } from '../../context/AuthContext';
++import { useLearning } from '../../context/LearningContext';
++import { useLanguage } from '../../context/LanguageContext';
++import { useTheme } from '../../context/ThemeContext';
++import {
++  DailyMinutes,
++  LearningLevel,
++  PreferredTime,
++  SubjectId,
++  UserPreferences,
++} from '../../types';
++import { PROFILE_COVER_IMAGE, USER_AVATAR_IMAGE } from '../../data/courseImages';
++import { MattersImage } from '../common/MattersImage';
++import { AvatarPickerModal } from './AvatarPickerModal';
++import { DailyGoalModal } from './DailyGoalModal';
++import { NotificationSettingsModal } from './NotificationSettingsModal';
++import { AchievementsView } from './AchievementsView';
++import {
++  getStoredDailyGoal,
++  setStoredDailyGoal,
++  getStoredNotificationSettings,
++  setStoredNotificationSettings,
++  NotificationSettings,
++} from '../../data/preferencesStorage';
++import {
++  getStoredUserAvatar,
++  setStoredUserAvatar,
++  INDIAN_MALE_AVATARS,
++} from '../../data/avatars';
++
++interface ProfileViewProps {
++  onOpenSchemaModal?: () => void;
++}
++
++export const ProfileView: React.FC<ProfileViewProps> = () => {
++  const { user, preferences, updatePreferences, logOut } = useAuth();
++  const { stats, currentStreak: ctxStreak } = useLearning();
++  const { language, setLanguage } = useLanguage();
++  const { theme, resolvedTheme, setTheme } = useTheme();
++
++  const [activeTab, setActiveTab] = useState<'preferences' | 'achievements' | 'account'>('preferences');
++
++  const [dailyMinutes, setDailyMinutes] = useState<DailyMinutes>(
++    preferences?.daily_minutes || 10
++  );
++  const [level, setLevel] = useState<LearningLevel>(
++    preferences?.level || 'Beginner'
++  );
++  const [preferredTime, setPreferredTime] = useState<PreferredTime>(
++    preferences?.preferred_time || 'Morning'
++  );
++  const [selectedSubjects, setSelectedSubjects] = useState<SubjectId[]>(
++    preferences?.selected_subjects || ['law-rights', 'money-finance', 'economics']
++  );
++  const [saving, setSaving] = useState<boolean>(false);
++  const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
++  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
++  const [isDailyGoalModalOpen, setIsDailyGoalModalOpen] = useState<boolean>(false);
++  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
++  const [isTiaSettingsModalOpen, setIsTiaSettingsModalOpen] = useState<boolean>(false);
++
++  const [dailyGoal, setDailyGoal] = useState<number>(() => {
++    return getStoredDailyGoal(user?.id);
++  });
++  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
++    return getStoredNotificationSettings(user?.id);
++  });
++
++  const [currentAvatar, setCurrentAvatar] = useState<string>(() => {
++    return (
++      getStoredUserAvatar() ||
++      (user as any)?.avatar_url ||
++      INDIAN_MALE_AVATARS[0].image
++    );
++  });
++
++  const handleAvatarChange = (newAvatarUrl: string) => {
++    setCurrentAvatar(newAvatarUrl);
++    setStoredUserAvatar(newAvatarUrl);
++    try {
++      window.dispatchEvent(
++        new CustomEvent('matters:avatar-changed', {
++          detail: { avatarUrl: newAvatarUrl },
++        })
++      );
++    } catch {
++      // ignore
++    }
++  };
++
++  const handleSaveDailyGoal = async (newGoal: number) => {
++    setDailyGoal(newGoal);
++    setStoredDailyGoal(newGoal, user?.id);
++    const newMinutes: DailyMinutes = (newGoal >= 3 ? 20 : 10) as DailyMinutes;
++    setDailyMinutes(newMinutes);
++    try {
++      await updatePreferences({
++        daily_minutes: newMinutes,
++      });
++    } catch (err) {
++      console.warn('Error saving daily goal preference', err);
++    }
++  };
++
++  const handleSaveNotificationSettings = async (newSettings: NotificationSettings) => {
++    setNotificationSettings(newSettings);
++    setStoredNotificationSettings(newSettings, user?.id);
++    let mappedTime: PreferredTime = 'Morning';
++    if (newSettings.reminderTime.startsWith('Morning')) mappedTime = 'Morning';
++    else if (newSettings.reminderTime.startsWith('Afternoon')) mappedTime = 'Afternoon';
++    else if (newSettings.reminderTime.startsWith('Evening')) mappedTime = 'Evening';
++    else mappedTime = 'Custom';
++
++    setPreferredTime(mappedTime);
++    try {
++      await updatePreferences({
++        preferred_time: mappedTime,
++      });
++    } catch (err) {
++      console.warn('Error saving notification preferences', err);
++    }
++  };
++
++  const currentStreak = ctxStreak ?? stats?.current_streak ?? 7;
++  const totalXp = stats?.total_xp || 1250;
++  const lessonsCompleted = stats?.lessons_completed_count || 12;
++
++  // Sync state if preferences change externally
++  useEffect(() => {
++    if (preferences) {
++      setDailyMinutes(preferences.daily_minutes);
++      setLevel(preferences.level);
++      setPreferredTime(preferences.preferred_time);
++      setSelectedSubjects(preferences.selected_subjects || []);
++    }
++    if (user?.id) {
++      setDailyGoal(getStoredDailyGoal(user.id));
++      setNotificationSettings(getStoredNotificationSettings(user.id));
++    }
++  }, [preferences, user?.id]);
++
++  const handleSavePreferences = async () => {
++    setSaving(true);
++    setSavedSuccess(false);
++    try {
++      const updated: Partial<UserPreferences> = {
++        daily_minutes: dailyMinutes,
++        level: level,
++        preferred_time: preferredTime,
++        selected_subjects: selectedSubjects,
++      };
++      await updatePreferences(updated);
++      setSavedSuccess(true);
++      setTimeout(() => setSavedSuccess(false), 3000);
++    } catch (err) {
++      console.error('Failed to update preferences:', err);
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  const avatarUrl = currentAvatar || (user as any)?.avatar_url || USER_AVATAR_IMAGE;
++
++  return (
++    <div className="max-w-md mx-auto px-4 sm:px-5 py-2 space-y-4 animate-fadeIn pb-28">
++      {/* 1. PROFILE COVER (MATCHING REFERENCE MOCKUP SCREEN 5) */}
++      <section aria-label="Profile Header" className="relative">
++        <div className="relative rounded-3xl h-36 sm:h-44 w-full overflow-hidden shadow-sm border border-black/10">
++          <MattersImage
++            src={PROFILE_COVER_IMAGE}
++            fallbackSrc={PROFILE_COVER_IMAGE}
++            alt="Profile Cover"
++            className="w-full h-full object-cover object-center"
++          />
++          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
++        </div>
++
++        {/* Circular Avatar Overlapping Cover with Edit Pencil Badge */}
++        <div className="relative -mt-14 flex flex-col items-center text-center">
++          <div className="relative group">
++            <button
++              type="button"
++              onClick={() => setIsAvatarModalOpen(true)}
++              className="relative w-24 h-24 rounded-full border-4 border-white dark:border-[#131926] overflow-hidden shadow-md bg-[#090D16] focus:outline-none focus:ring-4 focus:ring-violet-500/40 cursor-pointer transition-transform active:scale-95 block"
++              title="Change profile avatar"
++              aria-label="Change profile avatar"
++            >
++              <img
++                src={avatarUrl}
++                alt={user?.name || 'User Profile'}
++                referrerPolicy="no-referrer"
++                className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-200"
++              />
++              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
++            </button>
++            {/* Edit pencil icon */}
++            <button
++              type="button"
++              onClick={() => setIsAvatarModalOpen(true)}
++              className="absolute bottom-0 right-1 w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-md border-2 border-white dark:border-[#131926] transition-transform active:scale-90 cursor-pointer"
++              title="Change profile avatar"
++              aria-label="Change profile avatar"
++            >
++              <Pencil className="w-3.5 h-3.5" />
++            </button>
++          </div>
++
++          {/* User Name & Info */}
++          <div className="mt-2 space-y-0.5">
++            <h1 className="text-xl sm:text-2xl font-serif italic text-[#090D16] dark:text-[#F8FAFC] font-bold">
++              {user?.name || 'Anurag'}
++            </h1>
++            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
++              @{user?.username || 'anurag'} · <span className="font-bold text-violet-700 dark:text-violet-400">Level 2</span>
++            </p>
++            <p className="text-[11px] text-slate-400 dark:text-slate-400 font-mono flex items-center justify-center gap-1 pt-0.5">
++              <Calendar className="w-3 h-3 text-slate-400" />
++              <span>Member since Aug 2026</span>
++            </p>
++          </div>
++        </div>
++      </section>
++
++      {/* 2. THREE STAT CARDS (MATCHING REFERENCE MOCKUP SCREEN 5) */}
++      <section aria-label="Profile Stats">
++        <div className="grid grid-cols-3 gap-2.5">
++          {/* ⭐ 1,250 Total XP */}
++          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
++            <span className="text-xl block">⭐</span>
++            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
++              {totalXp}
++            </p>
++            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
++              Total XP
++            </span>
++          </div>
++
++          {/* 🔥 7 Streak */}
++          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
++            <span className="text-xl block">🔥</span>
++            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
++              {currentStreak}
++            </p>
++            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
++              Streak
++            </span>
++          </div>
++
++          {/* 📖 12 Lessons */}
++          <div className="p-3 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm text-center space-y-0.5">
++            <span className="text-xl block">📖</span>
++            <p className="text-lg font-serif italic font-bold text-[#090D16] dark:text-[#F8FAFC]">
++              {lessonsCompleted}
++            </p>
++            <span className="text-[10px] font-mono uppercase tracking-tight text-slate-400 dark:text-slate-400 block font-semibold truncate">
++              Lessons
++            </span>
++          </div>
++        </div>
++      </section>
++
++      {/* 3. TABS: PREFERENCES / ACHIEVEMENTS / ACCOUNT */}
++      <div className="flex bg-slate-100 dark:bg-[#161D2C] p-1 rounded-2xl border border-black/[0.04] dark:border-white/[0.06]">
++        {[
++          { id: 'preferences' as const, label: 'Preferences' },
++          { id: 'achievements' as const, label: 'Achievements' },
++          { id: 'account' as const, label: 'Account' },
++        ].map((tab) => (
++          <button
++            key={tab.id}
++            onClick={() => setActiveTab(tab.id)}
++            className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
++              activeTab === tab.id
++                ? 'bg-violet-700 text-white shadow-xs font-bold'
++                : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
++            }`}
++          >
++            {tab.label}
++          </button>
++        ))}
++      </div>
++
++      {/* 4. PREFERENCES TAB (MATCHING REFERENCE MOCKUP SCREEN 5) */}
++      {activeTab === 'preferences' && (
++        <div className="space-y-2.5">
++          {/* Learning Language Row */}
++          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between">
++            <div className="flex items-center gap-3">
++              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shrink-0">
++                <Globe className="w-4 h-4" />
++              </div>
++              <span className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                Learning Language
++              </span>
++            </div>
++
++            {/* Segmented language toggle */}
++            <div className="flex items-center bg-slate-100 dark:bg-[#1A2234] p-0.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08]">
++              <button
++                type="button"
++                onClick={() => setLanguage('en')}
++                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
++                  language === 'en'
++                    ? 'bg-white text-violet-700 shadow-2xs'
++                    : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
++                }`}
++              >
++                {language === 'en' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
++                <span>English</span>
++              </button>
++              <button
++                type="button"
++                onClick={() => setLanguage('hi')}
++                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
++                  language === 'hi'
++                    ? 'bg-white text-violet-700 shadow-2xs'
++                    : 'text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white'
++                }`}
++              >
++                {language === 'hi' && <CheckCircle2 className="w-3 h-3 text-violet-700" />}
++                <span>हिंदी</span>
++              </button>
++            </div>
++          </div>
++
++          {/* Daily Goal Row */}
++          <div
++            onClick={() => setIsDailyGoalModalOpen(true)}
++            id="profile-daily-goal-btn"
++            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all"
++          >
++            <div className="flex items-center gap-3">
++              <div className="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0">
++                <Target className="w-4 h-4" />
++              </div>
++              <div>
++                <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Daily Goal</p>
++                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
++                  {dailyGoal === 1 ? '1 lesson per day' : `${dailyGoal} lessons per day`}
++                </p>
++              </div>
++            </div>
++            <ChevronRight className="w-4 h-4 text-slate-400" />
++          </div>
++
++          {/* Notifications Row */}
++          <div
++            onClick={() => setIsNotificationModalOpen(true)}
++            id="profile-notifications-btn"
++            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] transition-all"
++          >
++            <div className="flex items-center gap-3">
++              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
++                <Bell className="w-4 h-4" />
++              </div>
++              <div>
++                <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">Notifications</p>
++                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
++                  {notificationSettings.dailyReminders
++                    ? 'Lesson reminders and updates'
++                    : 'Reminders paused'}
++                </p>
++              </div>
++            </div>
++            <ChevronRight className="w-4 h-4 text-slate-400" />
++          </div>
++
++          {/* Tia Assistant Settings Row */}
++          <div
++            onClick={() => setIsTiaSettingsModalOpen(true)}
++            id="profile-tia-settings-btn"
++            className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex items-center justify-between cursor-pointer hover:border-violet-300 dark:hover:border-violet-700/50 active:scale-[0.99] transition-all group"
++          >
++            <div className="flex items-center gap-3">
++              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
++                <Sparkles className="w-4 h-4" />
++              </div>
++              <div>
++                <div className="flex items-center gap-1.5">
++                  <p className="text-xs font-semibold text-[#090D16] dark:text-[#F8FAFC]">
++                    {language === 'hi' ? 'टिया एआई सेटिंग्स' : 'Tia AI Settings'}
++                  </p>
++                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
++                    Voice & Persona
++                  </span>
++                </div>
++                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
++                  {language === 'hi'
++                    ? 'आवाज़, गति, हास्य और बोलने का अंदाज़'
++                    : 'Voice, speed, humor, and assistant behavior'}
++                </p>
++              </div>
++            </div>
++            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-violet-600 transition-colors" />
++          </div>
++
++          {/* Appearance Row with 3-Way Toggle: Light / Dark / System */}
++          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
++            <div className="flex items-center gap-3">
++              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
++                {theme === 'dark' ? (
++                  <Moon className="w-4 h-4 text-violet-400" />
++                ) : theme === 'light' ? (
++                  <Sun className="w-4 h-4 text-amber-500" />
++                ) : (
++                  <Laptop className="w-4 h-4 text-indigo-400" />
++                )}
++              </div>
++              <div>
++                <p className="text-xs font-semibold text-[#090D16] dark:text-slate-100">
++                  {language === 'hi' ? 'दिखावट (थीम)' : 'Appearance'}
++                </p>
++                <p className="text-[11px] text-slate-400 dark:text-slate-400 font-light">
++                  {theme === 'light'
++                    ? (language === 'hi' ? 'लाइट मोड' : 'Light Mode')
++                    : theme === 'dark'
++                    ? (language === 'hi' ? 'डार्क मोड' : 'Dark Mode')
++                    : (language === 'hi'
++                        ? `सिस्टम (${resolvedTheme === 'dark' ? 'डार्क' : 'लाइट'})`
++                        : `System (${resolvedTheme === 'dark' ? 'Dark' : 'Light'})`)}
++                </p>
++              </div>
++            </div>
++
++            {/* Segmented Appearance Toggle: Light | Dark | System */}
++            <div className="flex items-center bg-slate-100 dark:bg-[#1A2234] p-0.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08] self-stretch sm:self-auto justify-between sm:justify-start">
++              <button
++                type="button"
++                id="theme-light-btn"
++                onClick={() => setTheme('light')}
++                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
++                  theme === 'light'
++                    ? 'bg-white text-slate-900 shadow-2xs'
++                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
++                }`}
++                title={language === 'hi' ? 'लाइट' : 'Light'}
++              >
++                <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : ''}`} />
++                <span>{language === 'hi' ? 'लाइट' : 'Light'}</span>
++              </button>
++              <button
++                type="button"
++                id="theme-dark-btn"
++                onClick={() => setTheme('dark')}
++                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
++                  theme === 'dark'
++                    ? 'bg-violet-600 text-white shadow-2xs'
++                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
++                }`}
++                title={language === 'hi' ? 'डार्क' : 'Dark'}
++              >
++                <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-violet-200' : ''}`} />
++                <span>{language === 'hi' ? 'डार्क' : 'Dark'}</span>
++              </button>
++              <button
++                type="button"
++                id="theme-system-btn"
++                onClick={() => setTheme('system')}
++                className={`flex-1 sm:flex-none px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
++                  theme === 'system'
++                    ? 'bg-white dark:bg-[#253046] text-slate-900 dark:text-white shadow-2xs'
++                    : 'text-slate-500 hover:text-black dark:text-slate-400 dark:hover:text-white'
++                }`}
++                title={language === 'hi' ? 'सिस्टम' : 'System'}
++              >
++                <Laptop className="w-3.5 h-3.5" />
++                <span>{language === 'hi' ? 'सिस्टम' : 'System'}</span>
++              </button>
++            </div>
++          </div>
++
++          {/* 5. LEVEL 2 ACHIEVEMENT CARD AT BOTTOM (MATCHING REFERENCE MOCKUP SCREEN 5) */}
++          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#090D16] via-[#1E1138] to-[#120B24] text-white shadow-md border border-white/[0.08] space-y-2 relative overflow-hidden">
++            <div className="flex items-center gap-2.5">
++              <div className="w-7 h-7 rounded-xl bg-[#FBBF24] text-slate-950 flex items-center justify-center shadow-xs">
++                <Crown className="w-4 h-4 fill-slate-950" />
++              </div>
++              <div>
++                <h4 className="font-serif italic font-bold text-sm text-white">Level 2</h4>
++                <p className="text-[10px] text-slate-300 font-light">
++                  Keep learning to unlock new achievements!
++                </p>
++              </div>
++            </div>
++
++            <div className="space-y-1 pt-1">
++              <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
++                <div
++                  className="h-full bg-gradient-to-r from-purple-500 to-[#FBBF24] rounded-full"
++                  style={{ width: '53%' }}
++                />
++              </div>
++              <p className="text-[10px] font-mono text-slate-300 text-right">
++                265 / 500 XP
++              </p>
++            </div>
++          </div>
++        </div>
++      )}
++
++      {/* ACHIEVEMENTS TAB */}
++      {activeTab === 'achievements' && (
++        <AchievementsView />
++      )}
++
++      {/* ACCOUNT TAB */}
++      {activeTab === 'account' && (
++        <div className="p-4 rounded-2xl bg-white dark:bg-[#131926] border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
++          <h3 className="font-serif italic font-bold text-sm text-[#090D16] dark:text-[#F8FAFC]">
++            Account Info
++          </h3>
++          <div className="space-y-2 text-xs">
++            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] flex items-center justify-between">
++              <span className="text-slate-400 dark:text-slate-400">Name</span>
++              <strong className="text-[#090D16] dark:text-[#F8FAFC]">{user?.name || 'Anurag'}</strong>
++            </div>
++            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] flex items-center justify-between">
++              <span className="text-slate-400 dark:text-slate-400">Username</span>
++              <strong className="text-[#090D16] dark:text-[#F8FAFC] font-mono">@{user?.username || 'anurag'}</strong>
++            </div>
++          </div>
++
++          <button
++            onClick={logOut}
++            id="logout-btn"
++            className="w-full py-3 px-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs font-bold transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 mt-2"
++          >
++            <LogOut className="w-4 h-4" />
++            <span>Log Out</span>
++          </button>
++        </div>
++      )}
++
++      {/* Avatar Selection Modal */}
++      <AvatarPickerModal
++        isOpen={isAvatarModalOpen}
++        onClose={() => setIsAvatarModalOpen(false)}
++        currentAvatar={avatarUrl}
++        onSelectAvatar={handleAvatarChange}
++      />
++
++      {/* Daily Goal Settings Modal */}
++      <DailyGoalModal
++        isOpen={isDailyGoalModalOpen}
++        onClose={() => setIsDailyGoalModalOpen(false)}
++        currentGoal={dailyGoal}
++        onSaveGoal={handleSaveDailyGoal}
++      />
++
++      {/* Notification Settings Modal */}
++      <NotificationSettingsModal
++        isOpen={isNotificationModalOpen}
++        onClose={() => setIsNotificationModalOpen(false)}
++        currentSettings={notificationSettings}
++        onSaveSettings={handleSaveNotificationSettings}
++      />
++
++      {/* Dedicated Tia Assistant Settings Modal */}
++      {isTiaSettingsModalOpen && (
++        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
++          <div className="bg-[#FAFAF8] dark:bg-[#0E131F] w-full sm:max-w-2xl h-[92vh] sm:h-[86vh] rounded-t-[36px] sm:rounded-[36px] border border-black/10 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden animate-slideUp transition-colors">
++            <TiaSettingsView onBack={() => setIsTiaSettingsModalOpen(false)} />
++          </div>
++        </div>
++      )}
++    </div>
++  );
++};
+--- a/server.ts
++++ b/server.ts
+@@ -0,0 +1,202 @@
++import 'dotenv/config';
++import express from 'express';
++import path from 'path';
++import fs from 'fs';
++import http from 'http';
++import { fileURLToPath } from 'url';
++
++// Use compiled ESM modules with explicit .js extension for native Node 22 execution
++import { processTiaChat, getGeminiApiKey } from './src/services/tiaAiHandler.js';
++import { getTtsStatus, synthesizeTiaAudio } from './src/services/tiaTtsServerHandler.js';
++import { processSignup } from './src/services/authServerHandler.js';
++
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
++
++async function startServer() {
++  const app = express();
++  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
++
++  // CORS middleware to ensure seamless communication in all environments (iframes, shared previews, local)
++  app.use((req, res, next) => {
++    res.header('Access-Control-Allow-Origin', '*');
++    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
++    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
++    if (req.method === 'OPTIONS') {
++      return res.sendStatus(204);
++    }
++    next();
++  });
++
++  app.use(express.json());
++
++  // Health checks for Cloud Run & Google Cloud Load Balancer
++  app.get('/healthz', (req, res) => {
++    res.status(200).json({ status: 'ok' });
++  });
++  app.get('/health', (req, res) => {
++    res.status(200).json({ status: 'ok' });
++  });
++  app.get('/api/health', (req, res) => {
++    res.status(200).json({ status: 'ok', hasGeminiApiKey: Boolean(getGeminiApiKey()) });
++  });
++
++  // Diagnostic status check for API configuration (no secrets exposed)
++  app.get('/api/tia/status', (req, res) => {
++    const hasKey = Boolean(getGeminiApiKey());
++    res.json({
++      ok: true,
++      hasGeminiApiKey: hasKey,
++      nodeEnv: process.env.NODE_ENV || 'production',
++    });
++  });
++
++  // Tia TTS status & provider readiness endpoint
++  app.get('/api/tia/tts/status', (req, res) => {
++    try {
++      const status = getTtsStatus();
++      return res.status(200).json(status);
++    } catch (err: any) {
++      console.error('[Tia Server] Error handling /api/tia/tts/status:', err?.message || err);
++      return res.status(500).json({ ok: false, error: 'Failed to retrieve TTS status' });
++    }
++  });
++
++  // Tia TTS audio synthesis endpoint
++  app.post('/api/tia/tts/synthesize', async (req, res) => {
++    try {
++      const result = await synthesizeTiaAudio(req.body || {});
++      return res.status(result.status).json(result.data);
++    } catch (err: any) {
++      console.error('[Tia Server] Error handling /api/tia/tts/synthesize:', err?.message || err);
++      return res.status(500).json({ ok: false, error: 'Internal server error synthesizing audio', fallbackToBrowser: true });
++    }
++  });
++
++  // Tia AI chat endpoint - accepts message/question, course (optional), lesson (optional)
++  app.post('/api/tia/chat', async (req, res) => {
++    try {
++      const result = await processTiaChat(req.body || {});
++      return res.status(result.status).json(result.data);
++    } catch (err: any) {
++      console.error('[Tia Server] Error handling /api/tia/chat:', err?.message || err);
++      return res.status(500).json({ ok: false, error: 'Internal server error processing Tia chat' });
++    }
++  });
++
++  // Secure Server-side Signup Endpoint (replaces client-side /auth/v1/signup)
++  app.post('/api/auth/signup', async (req, res) => {
++    try {
++      const clientIp =
++        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
++        req.socket.remoteAddress ||
++        '127.0.0.1';
++      const result = await processSignup(req.body || {}, clientIp);
++      return res.status(result.status).json(result.data);
++    } catch (err: any) {
++      console.error('[Auth Server] Error handling /api/auth/signup:', err?.message || err);
++      return res.status(500).json({
++        ok: false,
++        error: 'Oops, kuch technical problem aa gayi. Dobara try karo.',
++      });
++    }
++  });
++
++  // Detect Cloud Run container vs local dev environment
++  // Detect deployed Cloud Run production container vs local/cloud preview dev environment
++  const isCloudRun = Boolean(process.env.K_SERVICE || process.env.K_REVISION);
++  const isProduction =
++    process.env.NODE_ENV === 'production' ||
++    process.env.npm_lifecycle_event === 'start';
++
++  // Find dist directory dynamically if built, or use Vite middleware in dev
++  const getDistPath = () => {
++    const candidates = [
++      path.join(process.cwd(), 'dist'),
++      path.resolve(__dirname, 'dist'),
++      path.resolve(__dirname, '..', 'dist'),
++      '/app/applet/dist',
++      '/workspace/dist',
++    ];
++    return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html')));
++  };
++
++  const initialDist = getDistPath();
++
++  if (isProduction || initialDist) {
++    // Serve static files dynamically from dist
++    app.use((req, res, next) => {
++      const currentDist = getDistPath();
++      if (currentDist) {
++        express.static(currentDist)(req, res, next);
++      } else {
++        next();
++      }
++    });
++
++    // SPA fallback: return index.html if dist exists
++    app.get('*', (req, res) => {
++      const currentDist = getDistPath();
++      if (currentDist) {
++        const indexPath = path.join(currentDist, 'index.html');
++        if (fs.existsSync(indexPath)) {
++          return res.sendFile(indexPath);
++        }
++      }
++
++      res.status(200).send('<!doctype html><html><head><title>Matters</title><meta http-equiv="refresh" content="2"></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#0b0f19;color:#e2e8f0;"><div style="text-align:center;"><h2 style="font-size:1.5rem;margin-bottom:0.5rem;">Matters is starting up...</h2><p style="color:#94a3b8;font-size:0.95rem;">Building application and preparing workspace, please wait...</p></div></body></html>');
++    });
++  } else {
++    console.log('[Server] Initializing Vite middleware for development');
++    const { createServer: createViteServer } = await import('vite');
++    const vite = await createViteServer({
++      server: { middlewareMode: true },
++      appType: 'spa',
++    });
++    app.use(vite.middlewares);
++  }
++
++  // Cloud Run assigns PORT (usually 8080). Local dev server uses port 3000.
++  const listenPort = isCloudRun
++    ? (process.env.PORT ? parseInt(process.env.PORT, 10) : 8080)
++    : 3000;
++
++  const server = http.createServer(app);
++
++  server.on('error', (err: any) => {
++    console.error(`[Server] Error on port ${listenPort}:`, err);
++    if (err.code === 'EADDRINUSE') {
++      console.warn(`[Server] Port ${listenPort} in use.`);
++    }
++  });
++
++  server.listen(listenPort, '0.0.0.0', () => {
++    console.log(`[Server] Ready and listening on http://0.0.0.0:${listenPort} (CloudRun: ${isCloudRun})`);
++  });
++
++  // If in dev environment and PORT is set to something other than 3000, also bind to it if available
++  if (!isCloudRun && process.env.PORT && parseInt(process.env.PORT, 10) !== 3000) {
++    const extraPort = parseInt(process.env.PORT, 10);
++    try {
++      const extraServer = http.createServer(app);
++      extraServer.on('error', () => {
++        // Silently skip if extra port is unavailable (e.g. nginx proxy port)
++      });
++      extraServer.listen(extraPort, '0.0.0.0', () => {
++        console.log(`[Server] Additional listener active on http://0.0.0.0:${extraPort}`);
++      });
++    } catch {
++      // Ignore
++    }
++  }
++
++  // Graceful shutdown on Cloud Run SIGTERM
++  process.on('SIGTERM', () => {
++    console.log('[Server] Received SIGTERM, shutting down gracefully');
++    server.close(() => {
++      process.exit(0);
++    });
++  });
++}
++
++startServer();
+--- a/package.json
++++ b/package.json
+@@ -0,0 +1,45 @@
++{
++  "name": "react-example",
++  "private": true,
++  "version": "0.0.0",
++  "type": "module",
++  "engines": {
++    "node": ">=22.0.0"
++  },
++  "scripts": {
++    "dev": "tsx server.ts",
++    "build": "esbuild src/services/tiaAiHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/tiaAiHandler.js && esbuild src/services/authServerHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/authServerHandler.js && esbuild src/services/tiaTtsServerHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/tiaTtsServerHandler.js && vite build",
++    "gcp-build": "npm run build",
++    "start": "node server.ts",
++    "preview": "vite preview",
++    "clean": "rm -rf dist server.cjs server.js",
++    "lint": "tsc --noEmit"
++  },
++  "dependencies": {
++    "@google/genai": "^2.4.0",
++    "@supabase/supabase-js": "^2.112.4",
++    "@tailwindcss/vite": "^4.1.14",
++    "@types/pdfkit": "^0.17.6",
++    "@vitejs/plugin-react": "^5.0.4",
++    "canvas-confetti": "^1.9.4",
++    "dotenv": "^17.2.3",
++    "express": "^4.21.2",
++    "lucide-react": "^0.546.0",
++    "motion": "^12.23.24",
++    "pdfkit": "^0.20.2",
++    "react": "^19.0.1",
++    "react-dom": "^19.0.1",
++    "vite": "^6.2.3"
++  },
++  "devDependencies": {
++    "@types/canvas-confetti": "^1.9.0",
++    "@types/express": "^4.17.21",
++    "@types/node": "^22.14.0",
++    "autoprefixer": "^10.4.21",
++    "esbuild": "^0.25.0",
++    "tailwindcss": "^4.1.14",
++    "tsx": "^4.21.0",
++    "typescript": "~5.8.2",
++    "vite": "^6.2.3"
++  }
++}

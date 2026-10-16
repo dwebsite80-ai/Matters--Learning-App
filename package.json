@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "esbuild src/services/tiaAiHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/tiaAiHandler.js && esbuild src/services/authServerHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/authServerHandler.js && vite build",
+    "build": "esbuild src/services/tiaAiHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/tiaAiHandler.js && esbuild src/services/authServerHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/authServerHandler.js && esbuild src/services/tiaTtsServerHandler.ts --bundle --platform=node --packages=external --format=esm --outfile=src/services/tiaTtsServerHandler.js && vite build",
     "gcp-build": "npm run build",
     "start": "node server.ts",
     "preview": "vite preview",

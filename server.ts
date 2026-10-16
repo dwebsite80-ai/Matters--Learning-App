@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 
 // Use compiled ESM modules with explicit .js extension for native Node 22 execution
 import { processTiaChat, getGeminiApiKey } from './src/services/tiaAiHandler.js';
+import { getTtsStatus, synthesizeTiaAudio } from './src/services/tiaTtsServerHandler.js';
 import { processSignup } from './src/services/authServerHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +49,28 @@ async function startServer() {
       hasGeminiApiKey: hasKey,
       nodeEnv: process.env.NODE_ENV || 'production',
     });
+  });
+
+  // Tia TTS status & provider readiness endpoint
+  app.get('/api/tia/tts/status', (req, res) => {
+    try {
+      const status = getTtsStatus();
+      return res.status(200).json(status);
+    } catch (err: any) {
+      console.error('[Tia Server] Error handling /api/tia/tts/status:', err?.message || err);
+      return res.status(500).json({ ok: false, error: 'Failed to retrieve TTS status' });
+    }
+  });
+
+  // Tia TTS audio synthesis endpoint
+  app.post('/api/tia/tts/synthesize', async (req, res) => {
+    try {
+      const result = await synthesizeTiaAudio(req.body || {});
+      return res.status(result.status).json(result.data);
+    } catch (err: any) {
+      console.error('[Tia Server] Error handling /api/tia/tts/synthesize:', err?.message || err);
+      return res.status(500).json({ ok: false, error: 'Internal server error synthesizing audio', fallbackToBrowser: true });
+    }
   });
 
   // Tia AI chat endpoint - accepts message/question, course (optional), lesson (optional)
