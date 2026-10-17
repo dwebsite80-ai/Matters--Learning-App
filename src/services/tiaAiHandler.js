@@ -29978,7 +29978,15 @@ ${historyString}
 ` : ""}USER_LATEST_QUESTION (HIGHEST PRIORITY): "${userText}"
 TARGET_LANGUAGE: ${isHindi ? "Hindi (speechText in pure Devanagari script for hi-IN TTS)" : "English"}`;
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const modelsToTry = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"];
+  const modelsToTry = [
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3.8-flash"
+  ];
   let response = null;
   let lastGeminiError = null;
   for (let i = 0; i < modelsToTry.length; i++) {

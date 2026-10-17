@@ -8,6 +8,19 @@
  * - Non-sensitive diagnostic reporting to help user see exact active engine.
  */
 
+export interface TiaTtsDiagnosticInfo {
+  engine: string;
+  voiceName: string;
+  model?: string;
+  rawFormat?: 'wav' | 'pcm';
+  headerAdded?: boolean;
+  mimeType?: string;
+  isFallback: boolean;
+  status: 'success' | 'fallback' | 'failed';
+  reason?: string;
+  timestamp?: number;
+}
+
 export interface PlayTiaAudioOptions {
   text: string;
   language: 'hi' | 'en';
@@ -17,13 +30,7 @@ export interface PlayTiaAudioOptions {
   onEnd?: () => void;
   onError?: (err: any) => void;
   fallbackToBrowser: (reason?: string) => void;
-  onDiagnosticUpdate?: (info: {
-    engine: string;
-    voiceName: string;
-    model?: string;
-    isFallback: boolean;
-    reason?: string;
-  }) => void;
+  onDiagnosticUpdate?: (info: TiaTtsDiagnosticInfo) => void;
 }
 
 let activeAudioElement: HTMLAudioElement | null = null;
@@ -61,6 +68,8 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
         engine: 'Browser Voice',
         voiceName: language === 'hi' ? 'Female Hindi' : 'Female English',
         isFallback: false,
+        status: 'success',
+        timestamp: Date.now(),
       });
     }
     fallbackToBrowser();
@@ -91,15 +100,18 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
         onDiagnosticUpdate({
           engine: 'Browser Voice (Fallback)',
           voiceName,
+          model: data?.model,
           isFallback: true,
+          status: 'fallback',
           reason,
+          timestamp: Date.now(),
         });
       }
       fallbackToBrowser(reason);
       return;
     }
 
-    // Convert base64 to Blob & Object URL for pristine HTML5 audio playback
+    // Convert base64 to Blob & Object URL for pristine HTML5 audio playback without modifying speed or pitch
     const byteCharacters = atob(data.audioBase64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -114,15 +126,20 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
 
     if (onDiagnosticUpdate) {
       onDiagnosticUpdate({
-        engine: 'Gemini Studio HD (Real Audio)',
+        engine: 'Gemini Studio HD (HTML5 Audio)',
         voiceName: data.voiceName || voiceName,
-        model: data.model || 'gemini-2.5-flash-preview-tts',
+        model: data.model || 'gemini-3.8-flash-lite-tts',
+        rawFormat: data.rawFormat || 'wav',
+        headerAdded: Boolean(data.headerAdded),
+        mimeType: data.mimeType || 'audio/wav',
         isFallback: false,
+        status: 'success',
+        timestamp: Date.now(),
       });
     }
 
     audio.onplay = () => {
-      console.log(`[Tia Audio] Playing real Gemini TTS audio | Voice: ${data.voiceName || voiceName} | Model: ${data.model || 'gemini-2.5-flash-preview-tts'}`);
+      console.log(`[Tia Audio] Playing real Gemini TTS audio | Voice: ${data.voiceName || voiceName} | Model: ${data.model} | Format: ${data.rawFormat} | HeaderAdded: ${data.headerAdded}`);
       if (onStart) onStart();
     };
 
@@ -145,8 +162,11 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
         onDiagnosticUpdate({
           engine: 'Browser Voice (Fallback)',
           voiceName,
+          model: data.model,
           isFallback: true,
+          status: 'fallback',
           reason: 'Browser HTML5 Audio decode error',
+          timestamp: Date.now(),
         });
       }
       fallbackToBrowser('Audio element decode error');
@@ -161,7 +181,9 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
         engine: 'Browser Voice (Fallback)',
         voiceName,
         isFallback: true,
+        status: 'fallback',
         reason,
+        timestamp: Date.now(),
       });
     }
     fallbackToBrowser(reason);

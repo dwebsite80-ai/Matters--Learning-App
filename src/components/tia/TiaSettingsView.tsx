@@ -35,7 +35,7 @@ import {
   TiaVoiceEngine,
 } from '../../services/tiaSettingsStorage';
 import { selectTiaVoice } from '../../services/tiaLanguageConfig';
-import { stopActiveAudioPlayback, playTiaResponseAudio } from '../../services/tiaAudioPlayer';
+import { stopActiveAudioPlayback, playTiaResponseAudio, TiaTtsDiagnosticInfo } from '../../services/tiaAudioPlayer';
 
 interface TiaSettingsViewProps {
   onBack: () => void;
@@ -56,13 +56,23 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
 
   // Server-side provider availability status
   const [serverTtsStatus, setServerTtsStatus] = useState<any>(null);
-  const [lastTestResult, setLastTestResult] = useState<{
-    engine: string;
-    voiceName: string;
-    model?: string;
-    isFallback: boolean;
-    reason?: string;
-  } | null>(null);
+  const [lastTestResult, setLastTestResult] = useState<TiaTtsDiagnosticInfo | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('matters_last_tts_test');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const saveLastTest = (diag: TiaTtsDiagnosticInfo) => {
+    saveLastTest(diag);
+    try {
+      sessionStorage.setItem('matters_last_tts_test', JSON.stringify(diag));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     // Fetch live TTS status from server
@@ -213,10 +223,12 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
     };
 
     if (settings.voice.engine === 'browser') {
-      setLastTestResult({
+      saveLastTest({
         engine: 'Browser Voice',
         voiceName: language === 'hi' ? 'Female Hindi' : 'Female English',
         isFallback: false,
+        status: 'success',
+        timestamp: Date.now(),
       });
       runBrowserFallback();
       return;
@@ -233,7 +245,7 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
             ? settings.voice.geminiVoice
             : settings.voice.chirpVoice,
         onDiagnosticUpdate: (diag) => {
-          setLastTestResult(diag);
+          saveLastTest(diag);
         },
         onStart: () => setIsPlayingPreview(true),
         onEnd: () => setIsPlayingPreview(false),
@@ -242,11 +254,13 @@ export const TiaSettingsView: React.FC<TiaSettingsViewProps> = ({ onBack }) => {
         },
         fallbackToBrowser: (reason) => {
           console.log('[Tia Preview] Executing browser fallback, reason:', reason);
-          setLastTestResult({
+          saveLastTest({
             engine: 'Browser Voice (Fallback)',
             voiceName: settings.voice.geminiVoice,
             isFallback: true,
+            status: 'fallback',
             reason: reason || 'Cloud synthesis unavailable',
+            timestamp: Date.now(),
           });
           runBrowserFallback();
         },

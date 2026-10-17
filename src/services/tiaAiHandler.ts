@@ -321,8 +321,17 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // High-availability model cascade: gemini-3.1-flash-lite has optimal throughput & lowest latency, with flash-latest and 3.8-flash as resilient fallbacks
-  const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+  // High-availability resilient model cascade:
+  // Starts with gemini-3.5-flash and gemini-3.6-flash which have active quotas, then falls back across flash family
+  const modelsToTry = [
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-flash-lite-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+    'gemini-3.8-flash',
+  ];
   let response: any = null;
   let lastGeminiError: any = null;
 

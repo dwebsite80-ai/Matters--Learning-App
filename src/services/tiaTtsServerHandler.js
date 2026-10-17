@@ -27345,6 +27345,10 @@ var MAX_CACHE_SIZE = 100;
 function getCacheKey(text, voiceName, lang) {
   return `${voiceName}:${lang}:${text.slice(0, 120).trim()}`;
 }
+function isRiffWav(buffer) {
+  if (buffer.length < 12) return false;
+  return buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WAVE";
+}
 function pcmToWav(pcmBuffer, sampleRate = 24e3, numChannels = 1, bitsPerSample = 16) {
   const byteRate = sampleRate * numChannels * bitsPerSample / 8;
   const blockAlign = numChannels * bitsPerSample / 8;
@@ -27385,7 +27389,8 @@ function getTtsStatus() {
         available: hasGeminiKey,
         status: hasGeminiKey ? "active" : "missing_key",
         name: "Gemini Premium Studio HD",
-        model: "gemini-2.5-flash-preview-tts",
+        model: "gemini-3.8-flash-lite-tts",
+        fallbackModel: "gemini-3.8-flash-tts",
         voices: ["Aoede", "Kore"],
         cost: "Included in Gemini API tier (~\u20B90.002 / response)",
         latency: "Cloud neural audio (~600ms - 1.2s)"
@@ -27416,7 +27421,7 @@ async function synthesizeTiaAudio(body) {
   const cacheKey = getCacheKey(cleanText, voiceName, language);
   if (audioCache.has(cacheKey)) {
     const cached = audioCache.get(cacheKey);
-    console.log(`[Tia TTS] Cache hit for "${voiceName}" (${language})`);
+    console.log(`[Tia TTS] Cache hit for "${voiceName}" (${language}) | Model: ${cached.model}`);
     return {
       status: 200,
       data: {
@@ -27426,7 +27431,9 @@ async function synthesizeTiaAudio(body) {
         cached: true,
         voiceName,
         provider,
-        model: "gemini-2.5-flash-preview-tts"
+        model: cached.model,
+        rawFormat: cached.rawFormat,
+        headerAdded: cached.headerAdded
       }
     };
   }
@@ -27455,10 +27462,9 @@ async function synthesizeTiaAudio(body) {
       });
       const selectedVoice = voiceName.toLowerCase().includes("kore") ? "Kore" : "Aoede";
       const ttsModels = [
-        "gemini-2.5-flash-preview-tts",
         "gemini-3.8-flash-lite-tts",
         "gemini-3.8-flash-tts",
-        "gemini-3.1-flash-tts-preview"
+        "gemini-2.5-flash-preview-tts"
       ];
       let audioResult = null;
       let lastError = null;
@@ -27483,29 +27489,38 @@ async function synthesizeTiaAudio(body) {
           const parts = candidate?.content?.parts || [];
           for (const p of parts) {
             if (p.inlineData && p.inlineData.data) {
-              const rawMime = p.inlineData.mimeType || "audio/L16;codec=pcm;rate=24000";
+              const rawData = Buffer.from(p.inlineData.data, "base64");
+              const alreadyWav = isRiffWav(rawData);
               let finalBase64 = p.inlineData.data;
               let finalMime = "audio/wav";
-              if (rawMime.includes("audio/L16") || rawMime.includes("pcm")) {
-                const pcmBuffer = Buffer.from(p.inlineData.data, "base64");
-                const wavBuffer = pcmToWav(pcmBuffer, 24e3, 1, 16);
-                finalBase64 = wavBuffer.toString("base64");
+              let rawFormat = alreadyWav ? "wav" : "pcm";
+              let headerAdded = false;
+              if (alreadyWav) {
+                finalBase64 = p.inlineData.data;
+                finalMime = "audio/wav";
+                headerAdded = false;
+                console.log(`[Tia TTS] Received complete native RIFF/WAV from ${modelName} (${rawData.length} bytes). Passed unchanged.`);
               } else {
-                finalMime = rawMime;
+                const wavBuffer = pcmToWav(rawData, 24e3, 1, 16);
+                finalBase64 = wavBuffer.toString("base64");
+                finalMime = "audio/wav";
+                headerAdded = true;
+                console.log(`[Tia TTS] Received raw PCM from ${modelName} (${rawData.length} bytes). Added standard 44-byte WAV header.`);
               }
               audioResult = {
                 audioBase64: finalBase64,
                 mimeType: finalMime,
-                rawModel: modelName
+                rawModel: modelName,
+                rawFormat,
+                headerAdded
               };
-              console.log(`[Tia TTS] Successfully generated audio via ${modelName} | Size: ${finalBase64.length} chars | Format: ${finalMime}`);
               break;
             }
           }
           if (audioResult) break;
         } catch (modelErr) {
           lastError = modelErr;
-          console.warn(`[Tia TTS] Model ${modelName} issue:`, modelErr?.message || modelErr);
+          console.warn(`[Tia TTS] Model ${modelName} issue:`, modelErr?.status || modelErr?.code, modelErr?.message?.slice(0, 120) || modelErr);
         }
       }
       if (audioResult) {
@@ -27516,6 +27531,10 @@ async function synthesizeTiaAudio(body) {
         audioCache.set(cacheKey, {
           audioBase64: audioResult.audioBase64,
           mimeType: audioResult.mimeType,
+          model: audioResult.rawModel,
+          voiceName: selectedVoice,
+          rawFormat: audioResult.rawFormat,
+          headerAdded: audioResult.headerAdded,
           timestamp: Date.now()
         });
         return {
@@ -27526,7 +27545,9 @@ async function synthesizeTiaAudio(body) {
             mimeType: audioResult.mimeType,
             voiceName: selectedVoice,
             provider: "gemini_tts",
-            model: audioResult.rawModel
+            model: audioResult.rawModel,
+            rawFormat: audioResult.rawFormat,
+            headerAdded: audioResult.headerAdded
           }
         };
       }
