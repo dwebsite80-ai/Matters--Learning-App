@@ -1,4 +1,5 @@
 // src/services/tiaTtsServerHandler.ts
+import crypto from "crypto";
 import { GoogleGenAI as GoogleGenAI2 } from "@google/genai";
 
 // src/services/tiaAiHandler.ts
@@ -27343,7 +27344,8 @@ function getGeminiApiKey() {
 var audioCache = /* @__PURE__ */ new Map();
 var MAX_CACHE_SIZE = 100;
 function getCacheKey(text, voiceName, lang) {
-  return `${voiceName}:${lang}:${text.slice(0, 120).trim()}`;
+  const hash = crypto.createHash("sha256").update(text.trim()).digest("hex").slice(0, 16);
+  return `${voiceName}:${lang}:${text.length}:${hash}`;
 }
 function isRiffWav(buffer) {
   if (buffer.length < 12) return false;
@@ -27417,11 +27419,13 @@ async function synthesizeTiaAudio(body) {
       data: { ok: false, error: "Text to synthesize cannot be empty" }
     };
   }
-  const cleanText = text.slice(0, 600);
+  const cleanText = text;
   const cacheKey = getCacheKey(cleanText, voiceName, language);
   if (audioCache.has(cacheKey)) {
     const cached = audioCache.get(cacheKey);
     console.log(`[Tia TTS] Cache hit for "${voiceName}" (${language}) | Model: ${cached.model}`);
+    const cachedBuf = Buffer.from(cached.audioBase64, "base64");
+    const estDurationSec = cachedBuf.length > 44 ? Number(((cachedBuf.length - 44) / 48e3).toFixed(2)) : 0;
     return {
       status: 200,
       data: {
@@ -27433,7 +27437,10 @@ async function synthesizeTiaAudio(body) {
         provider,
         model: cached.model,
         rawFormat: cached.rawFormat,
-        headerAdded: cached.headerAdded
+        headerAdded: cached.headerAdded,
+        inputCharCount: cleanText.length,
+        audioBytes: cachedBuf.length,
+        audioDurationSec: estDurationSec
       }
     };
   }
@@ -27537,6 +27544,8 @@ async function synthesizeTiaAudio(body) {
           headerAdded: audioResult.headerAdded,
           timestamp: Date.now()
         });
+        const rawBuf = Buffer.from(audioResult.audioBase64, "base64");
+        const estDurationSec = rawBuf.length > 44 ? Number(((rawBuf.length - 44) / 48e3).toFixed(2)) : 0;
         return {
           status: 200,
           data: {
@@ -27547,7 +27556,10 @@ async function synthesizeTiaAudio(body) {
             provider: "gemini_tts",
             model: audioResult.rawModel,
             rawFormat: audioResult.rawFormat,
-            headerAdded: audioResult.headerAdded
+            headerAdded: audioResult.headerAdded,
+            inputCharCount: cleanText.length,
+            audioBytes: rawBuf.length,
+            audioDurationSec: estDurationSec
           }
         };
       }

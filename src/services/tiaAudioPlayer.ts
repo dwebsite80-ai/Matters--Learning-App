@@ -17,6 +17,10 @@ export interface TiaTtsDiagnosticInfo {
   mimeType?: string;
   isFallback: boolean;
   status: 'success' | 'fallback' | 'failed';
+  inputCharCount?: number;
+  audioDurationSec?: number;
+  audioBytes?: number;
+  playbackCompleted?: boolean;
   reason?: string;
   timestamp?: number;
 }
@@ -124,26 +128,39 @@ export async function playTiaResponseAudio(options: PlayTiaAudioOptions): Promis
     const audio = new Audio(audioUrl);
     activeAudioElement = audio;
 
+    const audioInfo = {
+      engine: 'Gemini Studio HD (HTML5 Audio)',
+      voiceName: data.voiceName || voiceName,
+      model: data.model || 'gemini-3.8-flash-lite-tts',
+      rawFormat: data.rawFormat || 'wav',
+      headerAdded: Boolean(data.headerAdded),
+      mimeType: data.mimeType || 'audio/wav',
+      isFallback: false,
+      status: 'success' as const,
+      inputCharCount: data.inputCharCount || text.length,
+      audioDurationSec: data.audioDurationSec,
+      audioBytes: data.audioBytes,
+      playbackCompleted: false,
+      timestamp: Date.now(),
+    };
+
     if (onDiagnosticUpdate) {
-      onDiagnosticUpdate({
-        engine: 'Gemini Studio HD (HTML5 Audio)',
-        voiceName: data.voiceName || voiceName,
-        model: data.model || 'gemini-3.8-flash-lite-tts',
-        rawFormat: data.rawFormat || 'wav',
-        headerAdded: Boolean(data.headerAdded),
-        mimeType: data.mimeType || 'audio/wav',
-        isFallback: false,
-        status: 'success',
-        timestamp: Date.now(),
-      });
+      onDiagnosticUpdate(audioInfo);
     }
 
     audio.onplay = () => {
-      console.log(`[Tia Audio] Playing real Gemini TTS audio | Voice: ${data.voiceName || voiceName} | Model: ${data.model} | Format: ${data.rawFormat} | HeaderAdded: ${data.headerAdded}`);
+      console.log(`[Tia Audio] Playing real Gemini TTS audio | Voice: ${audioInfo.voiceName} | Model: ${audioInfo.model} | Chars: ${audioInfo.inputCharCount} | EstDuration: ${audioInfo.audioDurationSec}s | Bytes: ${audioInfo.audioBytes}`);
       if (onStart) onStart();
     };
 
     audio.onended = () => {
+      console.log(`[Tia Audio] Audio playback completed naturally for full answer (${audioInfo.inputCharCount} chars, ${audioInfo.audioDurationSec}s)`);
+      if (onDiagnosticUpdate) {
+        onDiagnosticUpdate({
+          ...audioInfo,
+          playbackCompleted: true,
+        });
+      }
       URL.revokeObjectURL(audioUrl);
       if (activeAudioElement === audio) {
         activeAudioElement = null;

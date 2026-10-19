@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 /**
  * Server-side TTS synthesis handler for Tia AI Assistant
  * 
@@ -25,7 +26,8 @@ const audioCache = new Map<
 const MAX_CACHE_SIZE = 100;
 
 function getCacheKey(text: string, voiceName: string, lang: string): string {
-  return `${voiceName}:${lang}:${text.slice(0, 120).trim()}`;
+  const hash = crypto.createHash('sha256').update(text.trim()).digest('hex').slice(0, 16);
+  return `${voiceName}:${lang}:${text.length}:${hash}`;
 }
 
 /**
@@ -132,13 +134,15 @@ export async function synthesizeTiaAudio(body: {
     };
   }
 
-  // Cap audio synthesis text at 600 chars to avoid timeout & high latency
-  const cleanText = text.slice(0, 600);
+  // Send the complete input text to TTS for natural, un-truncated audio answers
+  const cleanText = text;
   const cacheKey = getCacheKey(cleanText, voiceName, language);
 
   if (audioCache.has(cacheKey)) {
     const cached = audioCache.get(cacheKey)!;
     console.log(`[Tia TTS] Cache hit for "${voiceName}" (${language}) | Model: ${cached.model}`);
+    const cachedBuf = Buffer.from(cached.audioBase64, 'base64');
+    const estDurationSec = cachedBuf.length > 44 ? Number(((cachedBuf.length - 44) / 48000).toFixed(2)) : 0;
     return {
       status: 200,
       data: {
@@ -151,6 +155,9 @@ export async function synthesizeTiaAudio(body: {
         model: cached.model,
         rawFormat: cached.rawFormat,
         headerAdded: cached.headerAdded,
+        inputCharCount: cleanText.length,
+        audioBytes: cachedBuf.length,
+        audioDurationSec: estDurationSec,
       },
     };
   }
@@ -281,6 +288,10 @@ export async function synthesizeTiaAudio(body: {
           timestamp: Date.now(),
         });
 
+        // Calculate audio duration in seconds: (byteLength - 44) / (sampleRate * channels * bytesPerSample)
+        const rawBuf = Buffer.from(audioResult.audioBase64, 'base64');
+        const estDurationSec = rawBuf.length > 44 ? Number(((rawBuf.length - 44) / 48000).toFixed(2)) : 0;
+
         return {
           status: 200,
           data: {
@@ -292,6 +303,9 @@ export async function synthesizeTiaAudio(body: {
             model: audioResult.rawModel,
             rawFormat: audioResult.rawFormat,
             headerAdded: audioResult.headerAdded,
+            inputCharCount: cleanText.length,
+            audioBytes: rawBuf.length,
+            audioDurationSec: estDurationSec,
           },
         };
       }
