@@ -859,7 +859,8 @@ export async function sendTextMessage(
 
       // Stage 3: Extracted answer text
       const extracted = extractAnswerFromPayload(data);
-      console.log(`[Tia Frontend] 3. Extracted answer text: length=${extracted.text.length}, preview="${extracted.text.slice(0, 60)}..."`);
+      const respId = data?.id || data?.message?.id || `tia-${Date.now()}`;
+      console.log(`[Tia Pipeline Diagnostic] id=${respId} | textLen=${extracted.text.length} | speechLen=${extracted.speechText.length}`);
 
       if (extracted.text) {
         return {

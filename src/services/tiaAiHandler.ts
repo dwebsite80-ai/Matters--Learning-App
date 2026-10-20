@@ -311,10 +311,15 @@ ${isHindi ? `- HINDI SPECIFICATIONS:
 OUTPUT FORMAT:
 Return ONLY a valid JSON object matching this exact structure:
 {
-  "displayText": "Text formatted for user screen with markdown",
-  "speechText": "Spoken text specifically optimized for TTS engine without symbols or emojis",
+  "displayText": "Complete text formatted for user screen with markdown",
+  "speechText": "Complete spoken text specifically optimized for TTS engine without symbols or emojis",
   "quickActions": ["Relevant follow-up 1", "Relevant follow-up 2"]
-}`;
+}
+CRITICAL CONTENT PARITY RULE:
+- "displayText" and "speechText" MUST convey the EXACT SAME content, message, and paragraphs.
+- NEVER include extra sentences, conclusions, or final paragraphs in "speechText" that are not present in "displayText".
+- NEVER omit the final sentence or concluding paragraph from "displayText".
+- Every thought spoken in "speechText" must be visibly readable in "displayText".`;
 
   const userContextPrompt = `${hasCourse ? `ACTIVE_COURSE: ${courseName} ${courseDescription ? `(${courseDescription})` : ''}\n` : ''}${lessonTitle ? `ACTIVE_LESSON: ${lessonTitle}\n` : ''}${relevantContentText ? `COURSE_CONTEXT:\n${relevantContentText}\n` : ''}${historyString ? `RECENT_CONVERSATION:\n${historyString}\n` : ''}USER_LATEST_QUESTION (HIGHEST PRIORITY): "${userText}"
 TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi-IN TTS)' : 'English'}`;
@@ -324,10 +329,10 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
   // High-availability resilient model cascade:
   // Starts with gemini-3.5-flash and gemini-3.6-flash which have active quotas, then falls back across flash family
   const modelsToTry = [
-    'gemini-3.5-flash',
-    'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
     'gemini-flash-lite-latest',
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
     'gemini-3.1-flash-lite',
     'gemini-flash-latest',
     'gemini-3.8-flash',
@@ -348,15 +353,25 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
         config: {
           systemInstruction: systemPrompt,
           temperature: 0.75,
-          maxOutputTokens: 1500,
+          maxOutputTokens: 3000,
           responseMimeType: 'application/json',
         },
       });
 
       if (response?.text) {
+        const candidate = response?.candidates?.[0];
+        const finishReason = candidate?.finishReason;
         console.log(
-          `[Tia Backend] Gemini response received | Model: ${modelName} | Length: ${response.text.length}`
+          `[Tia Backend] Gemini response received | Model: ${modelName} | Length: ${response.text.length} | FinishReason: ${finishReason}`
         );
+        // If the model was abruptly cut off by MAX_TOKENS mid-generation, do not accept the truncated JSON; failover to next model or retry
+        if (finishReason === 'MAX_TOKENS') {
+          console.warn(`[Tia Backend] Model ${modelName} terminated with MAX_TOKENS (incomplete generation). Failing over to next model...`);
+          if (i < modelsToTry.length - 1) {
+            await sleep(250);
+            continue;
+          }
+        }
         break;
       }
     } catch (err: any) {
@@ -514,10 +529,14 @@ TARGET_LANGUAGE: ${isHindi ? 'Hindi (speechText in pure Devanagari script for hi
     quickActions,
   };
 
+  const responseId = `tia-resp-${Date.now()}`;
+  console.log(`[Tia Backend Diagnostic] Response Generated: id=${responseId} | displayLen=${generatedDisplayText.length} | speechLen=${generatedSpeechText.length}`);
+
   return {
     status: 200,
     data: {
       ok: true,
+      id: responseId,
       text: generatedDisplayText,
       answer: generatedDisplayText,
       displayText: generatedDisplayText,
